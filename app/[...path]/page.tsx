@@ -7,11 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import SectionClient from '@/components/SectionClient'
 
 interface Props {
-  params: { path: string[] }
+  params: Promise<{ path: string[] }>
 }
 
 export default async function Page({ params }: Props) {
-  const segments = params.path
+  const { path: segments } = await params
 
   // Single segment → topic overview
   if (segments.length === 1) {
