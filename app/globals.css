@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 30% 98%;
+    --foreground: 240 10% 3.9%;
+    --card: 40 30% 98%;
+    --card-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 40 20% 94%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 40 20% 94%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 40 20% 94%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 40 15% 88%;
+    --input: 40 15% 88%;
+    --ring: 240 10% 3.9%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 240 6% 10%;
+    --foreground: 0 0% 98%;
+    --card: 240 6% 10%;
+    --card-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 5% 18%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 5% 18%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 5% 18%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5% 18%;
+    --input: 240 5% 18%;
+    --ring: 240 4.9% 83.9%;
+  }
+
+  .sepia {
+    --background: 35 40% 93%;
+    --foreground: 25 40% 18%;
+    --card: 35 40% 93%;
+    --card-foreground: 25 40% 18%;
+    --primary: 25 40% 18%;
+    --primary-foreground: 35 40% 93%;
+    --secondary: 35 30% 87%;
+    --secondary-foreground: 25 40% 18%;
+    --muted: 35 30% 87%;
+    --muted-foreground: 25 25% 42%;
+    --accent: 35 30% 87%;
+    --accent-foreground: 25 40% 18%;
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 35 40% 93%;
+    --border: 35 25% 76%;
+    --input: 35 25% 76%;
+    --ring: 25 40% 18%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  .sepia .prose {
+    --tw-prose-body: hsl(25 40% 18%);
+    --tw-prose-headings: hsl(25 50% 12%);
+    --tw-prose-bold: hsl(25 45% 12%);
+    --tw-prose-links: hsl(25 65% 28%);
+    --tw-prose-code: hsl(25 40% 18%);
+    --tw-prose-pre-bg: hsl(25 30% 22%);
+    --tw-prose-pre-code: hsl(35 35% 90%);
+    --tw-prose-bullets: hsl(35 25% 58%);
+    --tw-prose-counters: hsl(25 30% 38%);
+    --tw-prose-hr: hsl(35 25% 74%);
+    --tw-prose-th-borders: hsl(35 25% 70%);
+    --tw-prose-td-borders: hsl(35 25% 80%);
+    --tw-prose-quotes: hsl(25 40% 18%);
+    --tw-prose-quote-borders: hsl(35 25% 70%);
+    --tw-prose-captions: hsl(25 25% 42%);
+  }
+}
