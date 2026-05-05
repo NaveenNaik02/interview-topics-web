@@ -55,10 +55,15 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     })
 
     // 2. Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         setUser(session.user)
         loadProgress(session.user.id)
+        
+        // Remove hash from URL after successful login (Implicit flow leaves a #)
+        if (event === 'SIGNED_IN' && window.location.hash) {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search)
+        }
       } else {
         setUser(null)
         setStore({})
