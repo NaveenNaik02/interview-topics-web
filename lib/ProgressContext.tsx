@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { supabase } from './supabase'
+import type { User } from '@supabase/supabase-js'
 
 type ProgressStore = Record<string, boolean>
 
@@ -12,67 +13,94 @@ interface ProgressContextType {
   sectionStats: (topic: string, file: string, total: number) => { done: number; total: number }
   allStats: (sections: { topic: string; file: string; total: number }[]) => { done: number; total: number }
   mounted: boolean
+  user: User | null
+  signInWithGitHub: () => Promise<void>
+  signOut: () => Promise<void>
 }
 
 const ProgressContext = createContext<ProgressContextType | null>(null)
 
 export function ProgressProvider({ children }: { children: React.ReactNode }) {
   const [store, setStore] = useState<ProgressStore>({})
-  const [userId, setUserId] = useState<string | null>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [mounted, setMounted] = useState(false)
 
-  useEffect(() => {
-    async function init() {
-      let { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        const { data, error } = await supabase.auth.signInAnonymously({
-          options: {
-            data: {
-              initial_visit: new Date().toISOString()
-            }
-          }
-        })
-        if (error) {
-          console.error('Anonymous sign-in failed:', error.message)
-          return
-        }
-        session = data.session
-      }
-      if (!session) return
+  const loadProgress = useCallback(async (uid: string) => {
+    const { data: rows } = await supabase
+      .from('progress')
+      .select('question_id')
+      .eq('user_id', uid)
 
-      const uid = session.user.id
-      const { data: rows } = await supabase
-        .from('progress')
-        .select('question_id')
-        .eq('user_id', uid)
-
-      const initialStore: ProgressStore = {}
-      rows?.forEach(r => { initialStore[r.question_id] = true })
-      setStore(initialStore)
-      setUserId(uid)
-      setMounted(true)
-    }
-    init()
+    const initialStore: ProgressStore = {}
+    rows?.forEach(r => { initialStore[r.question_id] = true })
+    setStore(initialStore)
+    setMounted(true)
   }, [])
 
+  useEffect(() => {
+    // 1. Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setUser(session.user)
+        loadProgress(session.user.id)
+      } else {
+        // Only sign in anonymously if no session exists at all
+        supabase.auth.signInAnonymously().then(({ data: { session: anonSession } }) => {
+          if (anonSession) {
+            setUser(anonSession.user)
+            loadProgress(anonSession.user.id)
+          }
+        })
+      }
+    })
+
+    // 2. Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setUser(session.user)
+        loadProgress(session.user.id)
+      } else {
+        setUser(null)
+        setStore({})
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [loadProgress])
+
+  const signInWithGitHub = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: {
+        redirectTo: window.location.origin
+      }
+    })
+    if (error) console.error('GitHub sign-in failed:', error.message)
+  }
+
+  const signOut = async () => {
+    await supabase.auth.signOut()
+    // Resetting state is handled by onAuthStateChange listener
+  }
+
   const toggle = useCallback((id: string) => {
-    if (!userId) return
+    if (!user) return
     setStore(prev => {
       const next = { ...prev, [id]: !prev[id] }
       if (next[id]) {
-        supabase.from('progress').upsert({ user_id: userId, question_id: id }).then()
+        supabase.from('progress').upsert({ user_id: user.id, question_id: id }).then()
       } else {
-        supabase.from('progress').delete().eq('user_id', userId).eq('question_id', id).then()
+        supabase.from('progress').delete().eq('user_id', user.id).eq('question_id', id).then()
       }
       return next
     })
-  }, [userId])
+  }, [user])
 
   const resetAll = useCallback(() => {
-    if (!userId) return
+    if (!user) return
     setStore({})
-    supabase.from('progress').delete().eq('user_id', userId).then()
-  }, [userId])
+    supabase.from('progress').delete().eq('user_id', user.id).then()
+  }, [user])
 
   const isComplete = useCallback(
     (id: string) => mounted && !!store[id],
@@ -104,7 +132,10 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
   )
 
   return (
-    <ProgressContext.Provider value={{ isComplete, toggle, resetAll, sectionStats, allStats, mounted }}>
+    <ProgressContext.Provider value={{ 
+      isComplete, toggle, resetAll, sectionStats, allStats, mounted, 
+      user, signInWithGitHub, signOut 
+    }}>
       {children}
     </ProgressContext.Provider>
   )
