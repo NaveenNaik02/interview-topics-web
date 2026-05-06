@@ -6,6 +6,8 @@ import { parseSection, countQuestions } from '@/lib/parser'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import SectionClient from '@/components/SectionClient'
 
+export const dynamic = 'force-dynamic'
+
 interface Props {
   params: Promise<{ path: string[] }>
 }
