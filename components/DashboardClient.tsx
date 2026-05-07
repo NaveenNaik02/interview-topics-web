@@ -1,94 +1,97 @@
 'use client'
 
+import React, { useEffect } from 'react'
 import Link from 'next/link'
 import { useProgress } from '@/lib/ProgressContext'
-import type { TopicGroup, SectionMeta } from '@/lib/topics'
-import { Progress } from '@/components/ui/progress'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import ResetButton from './ResetButton'
+import { TopicGroup, SectionMeta, sectionUrl } from '@/lib/topics'
 
 type SectionWithTotal = SectionMeta & { total: number }
 type GroupWithTotals = Omit<TopicGroup, 'sections'> & { sections: SectionWithTotal[] }
 
 export default function DashboardClient({ groups }: { groups: GroupWithTotals[] }) {
-  const { sectionStats, allStats, mounted } = useProgress()
+  const { stats, setSectionTotal, mounted } = useProgress()
 
-  const allSections = groups.flatMap(g => g.sections)
-  const overall = allStats(allSections)
-  const overallPct = overall.total ? Math.round((overall.done / overall.total) * 100) : 0
+  useEffect(() => {
+    groups.forEach(group => {
+      group.sections.forEach(section => {
+        setSectionTotal(sectionUrl(section), section.total)
+      })
+    })
+  }, [groups, setSectionTotal])
+
+  const doneCount = stats.completed
+  const totalCount = stats.total
+  const overallPct = totalCount ? Math.round((doneCount / totalCount) * 100) : 0
+
+  const today = new Date().toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  })
 
   return (
-    <div className="space-y-10">
-      {/* Overall progress header */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Study Progress</h1>
-          <ResetButton />
+    <div className="dashboard-view">
+      <header className="dash-hero">
+        <div>
+          <div className="dash-eyebrow">{today} · Curriculum</div>
+          <h1 className="dash-title">Frontend interview prep, organized.</h1>
+          <p className="dash-sub">A curated track across {totalCount} questions. Pick a topic, expand a question, mark it done. Your progress is saved in the cloud.</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Progress value={mounted ? overallPct : 0} className="flex-1 h-3" />
-          <span className="text-sm text-muted-foreground tabular-nums w-32 text-right">
-            {mounted ? `${overall.done} / ${overall.total}` : `— / ${overall.total}`} ({overallPct}%)
-          </span>
-        </div>
-      </div>
-
-      {/* Topic groups */}
-      {groups.map(group => {
-        const groupStats = allStats(group.sections)
-        const groupPct = groupStats.total ? Math.round((groupStats.done / groupStats.total) * 100) : 0
-
-        return (
-          <div key={group.slug} className="space-y-3">
-            <div className="flex items-center gap-3">
-              <Link href={`/${group.slug}`} className="text-base font-semibold hover:underline">
-                {group.groupName}
-              </Link>
-              <Progress value={mounted ? groupPct : 0} className="flex-1 h-2" />
-              <span className="text-sm text-muted-foreground tabular-nums w-20 text-right">
-                {mounted ? `${groupStats.done}/${groupStats.total}` : `—/${groupStats.total}`}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {group.sections.map(section => {
-                const stats = sectionStats(section.topic, section.file, section.total)
-                const pct = stats.total ? Math.round((stats.done / stats.total) * 100) : 0
-                const isDone = mounted && pct === 100
-
-                return (
-                  <Link
-                    key={`${section.topic}/${section.file}`}
-                    href={`/${section.topic}/${section.file}`}
-                  >
-                    <Card className={`hover:shadow-md transition-shadow cursor-pointer h-full ${isDone ? 'border-green-300' : ''}`}>
-                      <CardHeader className="pb-2 pt-4 px-4">
-                        <div className="flex items-center justify-between gap-2">
-                          <CardTitle className="text-sm font-medium">{section.label}</CardTitle>
-                          {isDone ? (
-                            <Badge variant="success" className="shrink-0">Done</Badge>
-                          ) : (
-                            <span className="text-xs text-muted-foreground shrink-0">{section.total}Q</span>
-                          )}
-                        </div>
-                      </CardHeader>
-                      <CardContent className="px-4 pb-4">
-                        <div className="flex items-center gap-2">
-                          <Progress value={mounted ? pct : 0} className="flex-1 h-1.5" />
-                          <span className="text-xs text-muted-foreground tabular-nums w-8 text-right">
-                            {mounted ? `${pct}%` : '—'}
-                          </span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                )
-              })}
-            </div>
+        <div className="overall-card">
+          <div className="label">Overall</div>
+          <div className="overall-row">
+            <span className="overall-num">{mounted ? overallPct : 0}%</span>
+            <span className="overall-of">{mounted ? doneCount : 0} / {totalCount}</span>
           </div>
-        )
-      })}
+          <div className="bar">
+            <div 
+              className="bar-fill" 
+              style={{ width: `${mounted ? overallPct : 0}%` }} 
+            />
+          </div>
+        </div>
+      </header>
+
+      <div className="dash-grid">
+        {groups.map((group) => {
+          let groupDone = 0
+          let groupTotal = 0
+          group.sections.forEach(s => {
+            const sUrl = sectionUrl(s)
+            const sStats = stats.bySection[sUrl]
+            if (sStats) {
+              groupDone += sStats.completed
+              groupTotal += sStats.total
+            }
+          })
+          
+          const pct = groupTotal ? Math.round((groupDone / groupTotal) * 100) : 0
+          const firstSection = group.sections[0]
+
+          return (
+            <Link 
+              key={group.slug} 
+              href={sectionUrl(firstSection)}
+              className="topic-card"
+            >
+              <div className="tc-head">
+                <span className="tc-name">{group.groupName}</span>
+                <span className="tc-count">{groupTotal} Q</span>
+              </div>
+              <p className="tc-blurb">{group.blurb}</p>
+              <div className="tc-progress">
+                <div className="bar">
+                  <div 
+                    className="bar-fill" 
+                    style={{ width: `${mounted ? pct : 0}%` }} 
+                  />
+                </div>
+                <span>{mounted ? groupDone : 0}/{groupTotal}</span>
+              </div>
+            </Link>
+          )
+        })}
+      </div>
     </div>
   )
 }

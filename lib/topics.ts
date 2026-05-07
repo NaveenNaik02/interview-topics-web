@@ -8,12 +8,14 @@ export interface TopicGroup {
   groupName: string
   slug: string  // single URL segment, e.g. "javascript"
   sections: SectionMeta[]
+  blurb?: string
 }
 
 export const TOPIC_GROUPS: TopicGroup[] = [
   {
     groupName: 'JavaScript',
     slug: 'javascript',
+    blurb: 'Core language — scope, types, async, engines, and the DOM.',
     sections: [
       { topic: 'javascript', file: 'foundations',       label: 'Foundations' },
       { topic: 'javascript', file: 'variables',         label: 'Variables' },
@@ -31,6 +33,7 @@ export const TOPIC_GROUPS: TopicGroup[] = [
   {
     groupName: 'React',
     slug: 'react',
+    blurb: 'Hooks, rendering, architecture, and the wider ecosystem.',
     sections: [
       { topic: 'react', file: 'basics',              label: 'Basics' },
       { topic: 'react', file: 'hooks',               label: 'Hooks' },
@@ -52,6 +55,7 @@ export const TOPIC_GROUPS: TopicGroup[] = [
   {
     groupName: 'Node.js',
     slug: 'node',
+    blurb: 'Runtime, Express, and GraphQL.',
     sections: [
       { topic: 'node', file: 'node',    label: 'Node.js' },
       { topic: 'node', file: 'express', label: 'Express' },
@@ -61,6 +65,7 @@ export const TOPIC_GROUPS: TopicGroup[] = [
   {
     groupName: 'SQL',
     slug: 'sql',
+    blurb: 'Queries, joins, indexes, and database design.',
     sections: [
       { topic: 'sql', file: 'sql', label: 'SQL' },
     ],
@@ -68,6 +73,7 @@ export const TOPIC_GROUPS: TopicGroup[] = [
   {
     groupName: 'Next.js',
     slug: 'next',
+    blurb: 'App Router, server components, rendering modes.',
     sections: [
       { topic: 'next', file: 'next', label: 'Next.js' },
     ],
@@ -75,6 +81,7 @@ export const TOPIC_GROUPS: TopicGroup[] = [
   {
     groupName: 'CSS',
     slug: 'css',
+    blurb: 'Layout, specificity, and modern features.',
     sections: [
       { topic: 'css', file: 'css', label: 'CSS' },
     ],
@@ -82,6 +89,7 @@ export const TOPIC_GROUPS: TopicGroup[] = [
   {
     groupName: 'TypeScript',
     slug: 'typescript',
+    blurb: 'Types, generics, narrowing.',
     sections: [
       { topic: 'typescript', file: 'typescript', label: 'TypeScript' },
     ],
@@ -89,6 +97,7 @@ export const TOPIC_GROUPS: TopicGroup[] = [
   {
     groupName: 'AI',
     slug: 'ai',
+    blurb: 'LLMs, tooling, and agentic patterns.',
     sections: [
       { topic: 'ai', file: 'ai', label: 'AI' },
     ],
@@ -96,6 +105,7 @@ export const TOPIC_GROUPS: TopicGroup[] = [
   {
     groupName: 'HTML',
     slug: 'html',
+    blurb: 'Semantics and accessibility.',
     sections: [
       { topic: 'html', file: 'html', label: 'HTML' },
     ],
@@ -103,6 +113,7 @@ export const TOPIC_GROUPS: TopicGroup[] = [
   {
     groupName: 'Professional',
     slug: 'professional',
+    blurb: 'Behavioral and engineering process questions.',
     sections: [
       { topic: 'professional', file: 'intro',      label: 'Introduction' },
       { topic: 'professional', file: 'behavioral', label: 'Behavioral' },

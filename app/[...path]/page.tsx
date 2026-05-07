@@ -1,9 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { findGroup, findSection, findGroupForSection, findPrevNextSections, sectionUrl, TOPIC_GROUPS } from '@/lib/topics'
 import { parseSection, countQuestions } from '@/lib/parser'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import SectionClient from '@/components/SectionClient'
 
 export const dynamic = 'force-dynamic'
@@ -20,97 +18,61 @@ export default async function Page({ params }: Props) {
     const group = findGroup(segments[0])
     if (!group) notFound()
 
-    // Single-section group: redirect straight to the section
-    if (group.sections.length === 1) {
-      const s = group.sections[0]
-      redirect(`/${s.topic}/${s.file}`)
-    }
-
-    const sections = await Promise.all(
-      group.sections.map(async s => ({
-        ...s,
-        total: await countQuestions(s),
-      }))
-    )
-
-    return (
-      <div className="space-y-6">
-        <div>
-          <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            ← Dashboard
-          </Link>
-          <h1 className="text-2xl font-bold mt-1">{group.groupName}</h1>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {sections.map(section => (
-            <Link key={`${section.topic}/${section.file}`} href={`/${section.topic}/${section.file}`}>
-              <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">{section.label}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">{section.total} questions</p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      </div>
-    )
+    // Redirect straight to the first section
+    const s = group.sections[0]
+    redirect(`/${s.topic}/${s.file}`)
   }
 
   // Multi-segment → section view
   const section = findSection(segments)
   if (!section) notFound()
 
-  const [questions, parentGroup] = await Promise.all([
+  const [questions, group] = await Promise.all([
     parseSection(section),
     Promise.resolve(findGroupForSection(section)),
   ])
 
+  if (!group) notFound()
+
   const { prev, next } = findPrevNextSections(section)
 
   return (
-    <div className="space-y-6">
-      <div>
-        {parentGroup && (
-          <Link
-            href={`/${parentGroup.slug}`}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            ← {parentGroup.groupName}
-          </Link>
-        )}
-        <h1 className="text-2xl font-bold mt-1">{section.label}</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">{questions.length} questions</p>
-      </div>
+    <div className="space-y-12">
+      <SectionClient 
+        section={section} 
+        group={group} 
+        questions={questions} 
+      />
 
-      <SectionClient section={section} questions={questions} />
-
-      <div className="flex items-center justify-between pt-4 border-t border-border">
-        {prev ? (
-          <Link
-            href={sectionUrl(prev)}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            <span>{prev.label}</span>
-          </Link>
-        ) : (
-          <div />
-        )}
-        {next ? (
-          <Link
-            href={sectionUrl(next)}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <span>{next.label}</span>
-            <ChevronRight className="h-4 w-4" />
-          </Link>
-        ) : (
-          <div />
-        )}
+      <div className="content-wrapper !pt-0">
+        <div className="flex items-center justify-between pt-8 border-t border-[var(--border)]">
+          {prev ? (
+            <Link
+              href={sectionUrl(prev)}
+              className="flex flex-col gap-1 text-left group"
+            >
+              <span className="text-[10px] uppercase tracking-wider text-[var(--text-subtle)] font-semibold">Previous</span>
+              <span className="text-sm font-medium text-[var(--text-muted)] group-hover:text-[var(--text)] transition-colors">
+                {prev.label}
+              </span>
+            </Link>
+          ) : (
+            <div />
+          )}
+          {next ? (
+            <Link
+              href={sectionUrl(next)}
+              className="flex flex-col gap-1 text-right group"
+            >
+              <span className="text-[10px] uppercase tracking-wider text-[var(--text-subtle)] font-semibold">Next</span>
+              <span className="text-sm font-medium text-[var(--text-muted)] group-hover:text-[var(--text)] transition-colors">
+                {next.label}
+              </span>
+            </Link>
+          ) : (
+            <div />
+          )}
+        </div>
       </div>
     </div>
   )
