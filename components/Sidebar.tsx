@@ -88,7 +88,7 @@ export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
             })
 
             return (
-              <div className="topic-group-nav" key={group.slug}>
+              <div className="topic-group" key={group.slug}>
                 <button
                   className="topic-row"
                   aria-expanded={isExp}
@@ -108,6 +108,7 @@ export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
                       const total = sStats?.total || 0
                       const pct = total ? (done / total) * 100 : 0
                       const complete = total > 0 && done === total
+                      const hasQuestions = total > 0
 
                       return (
                         <li key={url}>
@@ -117,11 +118,15 @@ export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
                             onClick={() => setDrawerOpen(false)}
                           >
                             <span
-                              className={`ring ${complete ? 'complete' : ''}`}
+                              className={`progress-ring ${complete ? 'complete' : ''}`}
                               style={{ '--p': pct } as React.CSSProperties}
                             />
                             <span className="subtopic-name">{s.label}</span>
-                            <span className="topic-progress">{done}/{total}</span>
+                            {!hasQuestions ? (
+                              <span className="placeholder-tag">soon</span>
+                            ) : (
+                              <span className="topic-progress">{done}/{total}</span>
+                            )}
                           </Link>
                         </li>
                       )

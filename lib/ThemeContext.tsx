@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 
 export type Theme = 'light' | 'dark' | 'sepia'
 
-const CYCLE: Theme[] = ['light', 'dark', 'sepia']
+const CYCLE: Theme[] = ['light', 'sepia', 'dark']
 
 interface ThemeContextType {
   theme: Theme
@@ -15,9 +15,9 @@ const ThemeContext = createContext<ThemeContextType | null>(null)
 
 function applyTheme(t: Theme) {
   const cl = document.documentElement.classList
-  cl.remove('dark', 'sepia')
+  cl.remove('dark', 'theme-sepia')
   if (t === 'dark') cl.add('dark')
-  if (t === 'sepia') cl.add('sepia')
+  if (t === 'sepia') cl.add('theme-sepia')
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {

@@ -34,7 +34,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${ibmSans.variable} ${ibmSerif.variable} ${ibmMono.variable}`}>
+    <html lang="en" suppressHydrationWarning data-density="cozy" className={`${ibmSans.variable} ${ibmSerif.variable} ${ibmMono.variable}`}>
       <body>
         <ThemeProvider>
           <FontSizeProvider>

@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Sun, Moon, Coffee, Menu, Github, LogOut } from 'lucide-react'
+import { Sun, Moon, Book, Menu, Github, LogOut } from 'lucide-react'
 import { useTheme } from '@/lib/ThemeContext'
 import { useUI } from '@/lib/UIContext'
 import { useProgress } from '@/lib/ProgressContext'
@@ -11,9 +11,9 @@ import { findSection, findGroupForSection } from '@/lib/topics'
 import { Button } from './ui/button'
 
 const THEME_ICONS = {
-  light: Sun,
-  dark: Moon,
-  sepia: Coffee,
+  light: Book,
+  sepia: Moon,
+  dark: Sun,
 }
 
 export default function Topbar() {
