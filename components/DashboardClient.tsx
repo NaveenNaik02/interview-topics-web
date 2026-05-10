@@ -1,23 +1,12 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React from 'react'
 import Link from 'next/link'
 import { useProgress } from '@/lib/ProgressContext'
-import { TopicGroup, SectionMeta, sectionUrl } from '@/lib/topics'
+import { TopicGroup, sectionUrl } from '@/lib/topics'
 
-type SectionWithTotal = SectionMeta & { total: number }
-type GroupWithTotals = Omit<TopicGroup, 'sections'> & { sections: SectionWithTotal[] }
-
-export default function DashboardClient({ groups }: { groups: GroupWithTotals[] }) {
-  const { stats, setSectionTotal, mounted } = useProgress()
-
-  useEffect(() => {
-    groups.forEach(group => {
-      group.sections.forEach(section => {
-        setSectionTotal(sectionUrl(section), section.total)
-      })
-    })
-  }, [groups, setSectionTotal])
+export default function DashboardClient({ groups }: { groups: TopicGroup[] }) {
+  const { stats, mounted } = useProgress()
 
   const doneCount = stats.completed
   const totalCount = stats.total

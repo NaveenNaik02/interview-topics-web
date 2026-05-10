@@ -29,9 +29,15 @@ interface ProgressContextType {
 
 const ProgressContext = createContext<ProgressContextType | null>(null)
 
-export function ProgressProvider({ children }: { children: React.ReactNode }) {
+export function ProgressProvider({ 
+  children, 
+  initialTotals = {} 
+}: { 
+  children: React.ReactNode
+  initialTotals?: Record<string, number>
+}) {
   const [store, setStore] = useState<ProgressStore>({})
-  const [totals, setTotals] = useState<Record<string, number>>({})
+  const [totals, setTotals] = useState<Record<string, number>>(initialTotals)
   const [user, setUser] = useState<User | null>(null)
   const [mounted, setMounted] = useState(false)
 

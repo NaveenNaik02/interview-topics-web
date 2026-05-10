@@ -18,6 +18,23 @@ export async function countQuestions(section: SectionMeta): Promise<number> {
   return count ?? 0
 }
 
+export async function fetchAllCounts(): Promise<Record<string, number>> {
+  // Fetch only topic and file for all questions and count them in memory
+  // This is much faster than 50 separate count queries
+  const { data, error } = await supabase
+    .from('questions')
+    .select('topic, file')
+  
+  if (error || !data) return {}
+
+  const counts: Record<string, number> = {}
+  data.forEach(r => {
+    const key = `/${r.topic}/${r.file}`
+    counts[key] = (counts[key] || 0) + 1
+  })
+  return counts
+}
+
 export async function parseSection(section: SectionMeta): Promise<ParsedQuestion[]> {
   const { data } = await supabase
     .from('questions')

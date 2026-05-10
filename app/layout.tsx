@@ -8,6 +8,7 @@ import { ThemeProvider } from '@/lib/ThemeContext'
 import { FontSizeProvider } from '@/lib/FontSizeContext'
 import { TOPIC_GROUPS } from '@/lib/topics'
 import { UIProvider } from '@/lib/UIContext'
+import { fetchAllCounts } from '@/lib/parser'
 
 const ibmSans = IBM_Plex_Sans({
   subsets: ['latin'],
@@ -32,13 +33,15 @@ export const metadata: Metadata = {
   description: 'Interview Prep · Curated questions across JavaScript, React, and platform topics',
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const initialTotals = await fetchAllCounts()
+
   return (
     <html lang="en" suppressHydrationWarning data-density="cozy" className={`${ibmSans.variable} ${ibmSerif.variable} ${ibmMono.variable}`}>
       <body>
         <ThemeProvider>
           <FontSizeProvider>
-            <ProgressProvider>
+            <ProgressProvider initialTotals={initialTotals}>
               <UIProvider>
                 <div className="app-container">
                   <Sidebar groups={TOPIC_GROUPS} />
