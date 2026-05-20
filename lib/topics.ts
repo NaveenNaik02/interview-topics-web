@@ -50,6 +50,7 @@ export const TOPIC_GROUPS: TopicGroup[] = [
       { topic: 'react/ecosystem', file: 'mobx',                label: 'MobX' },
       { topic: 'react/ecosystem', file: 'inversify',           label: 'InversifyJS' },
       { topic: 'react/ecosystem', file: 'performance-patterns', label: 'Perf Patterns' },
+      { topic: 'react/ecosystem', file: 'zustand',             label: 'Zustand' },
     ],
   },
   {
