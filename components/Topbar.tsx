@@ -1,9 +1,9 @@
 'use client'
 
-import React from 'react'
+import React, { useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Sun, Moon, Book, Menu, Github, LogOut } from 'lucide-react'
+import { Sun, Moon, Book, Menu, Github, LogOut, Search, X } from 'lucide-react'
 import { useTheme } from '@/lib/ThemeContext'
 import { useUI } from '@/lib/UIContext'
 import { useProgress } from '@/lib/ProgressContext'
@@ -19,16 +19,20 @@ const THEME_ICONS = {
 export default function Topbar() {
   const pathname = usePathname()
   const { theme, toggle } = useTheme()
-  const { setDrawerOpen } = useUI()
+  const { setDrawerOpen, query, setQuery } = useUI()
   const { user, signInWithGitHub, signOut, mounted } = useProgress()
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const ThemeIcon = THEME_ICONS[theme]
   const isHome = pathname === '/'
   const isAnonymous = user?.is_anonymous
-  
+  const searching = query.trim().length >= 2
+
   // Breadcrumbs logic
   let breadcrumbs: React.ReactNode = null
-  if (!isHome) {
+  if (searching) {
+    breadcrumbs = <span className="crumb">Search results</span>
+  } else if (!isHome) {
     const segments = pathname.split('/').filter(Boolean)
     const section = findSection(segments)
     if (section) {
@@ -50,9 +54,9 @@ export default function Topbar() {
   return (
     <header className="topbar">
       <div className="topbar-left">
-        <button 
-          className="icon-btn menu-btn" 
-          onClick={() => setDrawerOpen(true)} 
+        <button
+          className="icon-btn menu-btn"
+          onClick={() => setDrawerOpen(true)}
           aria-label="Open menu"
         >
           <Menu size={16} />
@@ -60,9 +64,28 @@ export default function Topbar() {
         {breadcrumbs}
       </div>
       <div className="topbar-right flex items-center gap-2">
-        <button 
-          className="icon-btn" 
-          onClick={toggle} 
+        <div className="search-box">
+          <span className="search-icon"><Search size={15} /></span>
+          <input
+            ref={inputRef}
+            type="text"
+            className="search-input"
+            placeholder="Search questions…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Escape') setQuery('') }}
+            aria-label="Search questions"
+          />
+          {query && (
+            <button className="search-clear" onClick={() => { setQuery(''); inputRef.current?.focus() }} aria-label="Clear search">
+              <X size={12} />
+            </button>
+          )}
+        </div>
+
+        <button
+          className="icon-btn"
+          onClick={toggle}
           aria-label={`Switch theme (current: ${theme})`}
         >
           <ThemeIcon size={16} />
@@ -72,9 +95,9 @@ export default function Topbar() {
 
         {mounted && (
           isAnonymous ? (
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={signInWithGitHub}
               className="gap-2 h-8 text-xs font-semibold bg-transparent border-[var(--border)] hover:bg-[var(--bg-hover)] text-[var(--text-muted)] hover:text-[var(--text)]"
             >
@@ -82,9 +105,9 @@ export default function Topbar() {
               <span className="hidden xs:inline">Login</span>
             </Button>
           ) : (
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={signOut}
               className="gap-2 h-8 text-xs font-semibold text-[var(--text-subtle)] hover:text-[var(--text)] hover:bg-[var(--bg-hover)]"
             >

@@ -492,6 +492,78 @@ a:hover { text-decoration: underline; } */
 
 .menu-btn { display: none; }
 
+/* Search */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 0 var(--s-3);
+  height: 36px;
+  width: 240px;
+  transition: border-color 0.15s, background 0.15s, width 0.2s;
+}
+.search-box:focus-within {
+  border-color: var(--accent);
+  background: var(--bg-card);
+  width: 300px;
+}
+.search-icon {
+  display: inline-flex;
+  color: var(--text-subtle);
+  flex-shrink: 0;
+}
+.search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+.search-input::placeholder { color: var(--text-subtle); }
+.search-clear {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  color: var(--text-subtle);
+  flex-shrink: 0;
+}
+.search-clear:hover { background: var(--bg-hover); color: var(--text); }
+
+/* Search result extras */
+.result-crumb {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  color: var(--accent-text);
+  margin-bottom: 4px;
+  display: block;
+  text-align: left;
+}
+.result-crumb:hover { text-decoration: underline; }
+.result-crumb .crumb-sep { color: var(--border-strong); }
+.result-snippet {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-top: 5px;
+}
+mark {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  border-radius: 3px;
+  padding: 0 2px;
+  font-weight: 600;
+}
+
 /* =========================================================
    Content
    ========================================================= */
@@ -893,4 +965,6 @@ a:hover { text-decoration: underline; } */
   .subtopic-meta .bar { width: 140px; }
   .q-head { padding: var(--s-4); gap: var(--s-3); }
   .q-text { font-size: 15px; }
+  .search-box { width: 150px; }
+  .search-box:focus-within { width: 180px; }
 }

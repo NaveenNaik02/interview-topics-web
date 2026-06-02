@@ -58,9 +58,10 @@ export const TOPIC_GROUPS: TopicGroup[] = [
     slug: 'node',
     blurb: 'Runtime, Express, and GraphQL.',
     sections: [
-      { topic: 'node', file: 'node',    label: 'Node.js' },
+      { topic: 'node', file: 'node',     label: 'Node.js' },
       { topic: 'node', file: 'express', label: 'Express' },
       { topic: 'node', file: 'graphQL', label: 'GraphQL' },
+      { topic: 'node', file: 'rest-api', label: 'REST API' },
     ],
   },
   {
@@ -116,9 +117,12 @@ export const TOPIC_GROUPS: TopicGroup[] = [
     slug: 'professional',
     blurb: 'Behavioral and engineering process questions.',
     sections: [
-      { topic: 'professional', file: 'intro',      label: 'Introduction' },
-      { topic: 'professional', file: 'behavioral', label: 'Behavioral' },
-      { topic: 'professional', file: 'process',    label: 'Process' },
+      { topic: 'professional', file: 'intro',        label: 'Introduction' },
+      { topic: 'professional', file: 'behavioral',  label: 'Behavioral' },
+      { topic: 'professional', file: 'process',     label: 'Process' },
+      { topic: 'professional', file: 'agilepoint',  label: 'AgilePoint' },
+      { topic: 'professional', file: 'ust-global',  label: 'UST Global' },
+      { topic: 'professional', file: 'ai-workflow', label: 'AI Workflow' },
     ],
   },
 ]

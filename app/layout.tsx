@@ -3,6 +3,7 @@ import { IBM_Plex_Sans, IBM_Plex_Serif, IBM_Plex_Mono } from 'next/font/google'
 import './globals.css'
 import Sidebar from '@/components/Sidebar'
 import Topbar from '@/components/Topbar'
+import MainContent from '@/components/MainContent'
 import { ProgressProvider } from '@/lib/ProgressContext'
 import { ThemeProvider } from '@/lib/ThemeContext'
 import { FontSizeProvider } from '@/lib/FontSizeContext'
@@ -47,7 +48,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   <Sidebar groups={TOPIC_GROUPS} />
                   <main className="main-content">
                     <Topbar />
-                    {children}
+                    <MainContent>{children}</MainContent>
                   </main>
                 </div>
               </UIProvider>
