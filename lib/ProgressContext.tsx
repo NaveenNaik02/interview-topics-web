@@ -16,6 +16,7 @@ interface ProgressStats {
 interface ProgressContextType {
   isComplete: (id: string) => boolean
   toggle: (id: string) => void
+  setMany: (ids: string[], value: boolean) => void
   resetAll: () => void
   sectionStats: (topic: string, file: string, total: number) => { done: number; total: number }
   allStats: (sections: { topic: string; file: string; total: number }[]) => { done: number; total: number }
@@ -142,6 +143,20 @@ export function ProgressProvider({
     })
   }, [user])
 
+  const setMany = useCallback((ids: string[], value: boolean) => {
+    if (!user) return
+    setStore(prev => {
+      const next = { ...prev }
+      for (const id of ids) next[id] = value
+      if (value) {
+        supabase.from('progress').upsert(ids.map(id => ({ user_id: user.id, question_id: id }))).then()
+      } else {
+        supabase.from('progress').delete().eq('user_id', user.id).in('question_id', ids).then()
+      }
+      return next
+    })
+  }, [user])
+
   const resetAll = useCallback(() => {
     if (!user) return
     setStore({})
@@ -178,9 +193,9 @@ export function ProgressProvider({
   )
 
   return (
-    <ProgressContext.Provider value={{ 
-      isComplete, toggle, resetAll, sectionStats, allStats, stats, setSectionTotal, mounted, 
-      user, signInWithGitHub, signOut 
+    <ProgressContext.Provider value={{
+      isComplete, toggle, setMany, resetAll, sectionStats, allStats, stats, setSectionTotal, mounted,
+      user, signInWithGitHub, signOut
     }}>
       {children}
     </ProgressContext.Provider>

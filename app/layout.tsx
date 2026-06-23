@@ -9,7 +9,7 @@ import { ThemeProvider } from '@/lib/ThemeContext'
 import { FontSizeProvider } from '@/lib/FontSizeContext'
 import { TOPIC_GROUPS } from '@/lib/topics'
 import { UIProvider } from '@/lib/UIContext'
-import { fetchAllCounts } from '@/lib/parser'
+import { fetchAllCounts, fetchAllQuestionIds } from '@/lib/parser'
 
 const ibmSans = IBM_Plex_Sans({
   subsets: ['latin'],
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const initialTotals = await fetchAllCounts()
+  const [initialTotals, questionIds] = await Promise.all([fetchAllCounts(), fetchAllQuestionIds()])
 
   return (
     <html lang="en" suppressHydrationWarning data-density="cozy" className={`${ibmSans.variable} ${ibmSerif.variable} ${ibmMono.variable}`}>
@@ -45,7 +45,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <ProgressProvider initialTotals={initialTotals}>
               <UIProvider>
                 <div className="app-container">
-                  <Sidebar groups={TOPIC_GROUPS} />
+                  <Sidebar groups={TOPIC_GROUPS} questionIds={questionIds} />
                   <main className="main-content">
                     <Topbar />
                     <MainContent>{children}</MainContent>

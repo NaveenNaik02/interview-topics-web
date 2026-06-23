@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:local": "sh -c 'set -a && . ./.env.local.docker && set +a && next dev'",
     "build": "next build",
     "start": "next start"
   },
@@ -28,6 +29,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.19",
+    "dotenv-cli": "^11.0.0",
     "postcss": "^8.5.14",
     "tailwindcss": "^3.4.4",
     "typescript": "^5.4.5"

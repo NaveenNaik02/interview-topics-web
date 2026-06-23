@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { TopicGroup, sectionUrl } from '@/lib/topics'
 import { useProgress } from '@/lib/ProgressContext'
 import { useUI } from '@/lib/UIContext'
+import ConfirmDialog from './ConfirmDialog'
 
 const Icon = {
   Chevron: () => (
@@ -18,13 +19,30 @@ const Icon = {
       <path d="M2 7l6-5 6 5v6.5a1 1 0 0 1-1 1h-2.5v-4h-5v4H3a1 1 0 0 1-1-1V7z" />
     </svg>
   ),
+  Check: () => (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3.5 8.5 6.5 11.5 12.5 5" />
+    </svg>
+  ),
+  Close: () => (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <line x1="4" y1="4" x2="12" y2="12" />
+      <line x1="12" y1="4" x2="4" y2="12" />
+    </svg>
+  ),
 }
 
-export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
+export default function Sidebar({ groups, questionIds }: { groups: TopicGroup[]; questionIds: Record<string, string[]> }) {
   const pathname = usePathname()
-  const { stats, isComplete } = useProgress()
+  const { stats, resetAll, setMany } = useProgress()
   const { drawerOpen, setDrawerOpen } = useUI()
   const [expanded, setExpanded] = useState<Set<string>>(new Set(['javascript', 'react']))
+  const [confirmReset, setConfirmReset] = useState(false)
+  const [confirm, setConfirm] = useState<{ slug: string; action: 'select' | 'unselect' } | null>(null)
+
+  const doneCount = stats.completed
+  const totalCount = stats.total
+  const overallPct = totalCount ? Math.round((doneCount / totalCount) * 100) : 0
 
   const toggleExpanded = (id: string) => {
     setExpanded((prev) => {
@@ -34,10 +52,6 @@ export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
       return next
     })
   }
-
-  const doneCount = stats.completed
-  const totalCount = stats.total
-  const overallPct = totalCount ? Math.round((doneCount / totalCount) * 100) : 0
 
   return (
     <>
@@ -60,6 +74,13 @@ export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
             <span className="stat-of">of {totalCount} · {overallPct}%</span>
           </div>
           <div className="bar"><div className="bar-fill" style={{ width: `${overallPct}%` }} /></div>
+          <button
+            className="reset-all"
+            onClick={() => setConfirmReset(true)}
+            disabled={doneCount === 0}
+          >
+            Reset all progress
+          </button>
         </div>
 
         <nav className="sidebar-nav">
@@ -75,8 +96,7 @@ export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
 
           {groups.map((group) => {
             const isExp = expanded.has(group.slug)
-            
-            // Calculate progress for this group
+
             let groupDone = 0
             let groupTotal = 0
             group.sections.forEach(s => {
@@ -87,17 +107,44 @@ export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
               }
             })
 
+            const allDone = groupTotal > 0 && groupDone === groupTotal
+            const noneDone = groupDone === 0
+
             return (
               <div className="topic-group" key={group.slug}>
-                <button
-                  className="topic-row"
-                  aria-expanded={isExp}
-                  onClick={() => toggleExpanded(group.slug)}
-                >
-                  <Icon.Chevron />
-                  <span className="topic-name">{group.groupName}</span>
-                  <span className="topic-progress">{groupDone}/{groupTotal}</span>
-                </button>
+                <div className="topic-row-wrap">
+                  <button
+                    className="topic-row"
+                    aria-expanded={isExp}
+                    onClick={() => toggleExpanded(group.slug)}
+                  >
+                    <Icon.Chevron />
+                    <span className="topic-name">{group.groupName}</span>
+                    <span className="topic-progress">{groupDone}/{groupTotal}</span>
+                  </button>
+                  {groupTotal > 0 && (
+                    <div className="topic-row-tools">
+                      <button
+                        className="tr-tool"
+                        title={`Mark all of ${group.groupName} done`}
+                        aria-label={`Mark all of ${group.groupName} done`}
+                        disabled={allDone}
+                        onClick={() => setConfirm({ slug: group.slug, action: 'select' })}
+                      >
+                        <Icon.Check />
+                      </button>
+                      <button
+                        className="tr-tool"
+                        title={`Clear all progress in ${group.groupName}`}
+                        aria-label={`Clear all progress in ${group.groupName}`}
+                        disabled={noneDone}
+                        onClick={() => setConfirm({ slug: group.slug, action: 'unselect' })}
+                      >
+                        <Icon.Close />
+                      </button>
+                    </div>
+                  )}
+                </div>
                 {isExp && (
                   <ul className="subtopic-list">
                     {group.sections.map((s) => {
@@ -138,6 +185,33 @@ export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
           })}
         </nav>
       </aside>
+
+      <ConfirmDialog
+        open={confirmReset}
+        danger
+        requireText="RESET"
+        title="Reset everything?"
+        message={`This permanently clears progress on all ${doneCount} completed questions across every topic. This action cannot be undone.`}
+        confirmLabel="Reset everything"
+        onConfirm={() => { resetAll(); setConfirmReset(false) }}
+        onCancel={() => setConfirmReset(false)}
+      />
+      <ConfirmDialog
+        open={!!confirm && confirm.action === 'select'}
+        title="Mark all as done?"
+        message={confirm ? `This will mark all questions in "${groups.find(g => g.slug === confirm.slug)?.groupName}" as complete.` : ''}
+        confirmLabel="Select all"
+        onConfirm={() => { if (confirm) { setMany(questionIds[confirm.slug] ?? [], true) } setConfirm(null) }}
+        onCancel={() => setConfirm(null)}
+      />
+      <ConfirmDialog
+        open={!!confirm && confirm.action === 'unselect'}
+        title="Unselect all?"
+        message={confirm ? `This will clear all progress in "${groups.find(g => g.slug === confirm.slug)?.groupName}". This can't be undone.` : ''}
+        confirmLabel="Unselect all"
+        onConfirm={() => { if (confirm) { setMany(questionIds[confirm.slug] ?? [], false) } setConfirm(null) }}
+        onCancel={() => setConfirm(null)}
+      />
     </>
   )
 }

@@ -10,13 +10,14 @@ npm run build    # Production build (queries Supabase at build time)
 npm run start    # Serve production build
 ```
 
-Run from the **repo root** (not `web/`):
+ETL lives in the sibling `content/` repo — run from there:
 ```bash
+cd ../content
 npm run etl      # Parse all .md files and upsert questions into Supabase
                  # Re-run whenever markdown content changes
 ```
 
-Requires `web/.env.local` with `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`. See `web/.env.local.example`.
+Requires `.env.local` in `web/` with `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`.
 
 There are no tests or linting scripts configured.
 
