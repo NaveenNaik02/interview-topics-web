@@ -9,6 +9,7 @@ import { useUI } from '@/lib/UIContext'
 import { useProgress } from '@/lib/ProgressContext'
 import { findSection, findGroupForSection } from '@/lib/topics'
 import { Button } from './ui/button'
+import OfflineStatusPill from './OfflineStatusPill'
 
 const THEME_ICONS = {
   light: Book,
@@ -64,6 +65,7 @@ export default function Topbar() {
         {breadcrumbs}
       </div>
       <div className="topbar-right flex items-center gap-2">
+        <OfflineStatusPill />
         <div className="search-box">
           <span className="search-icon"><Search size={15} /></span>
           <input

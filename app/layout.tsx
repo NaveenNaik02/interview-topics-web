@@ -10,28 +10,34 @@ import { FontSizeProvider } from '@/lib/FontSizeContext'
 import { TOPIC_GROUPS } from '@/lib/topics'
 import { UIProvider } from '@/lib/UIContext'
 import { fetchAllCounts, fetchAllQuestionIds } from '@/lib/parser'
+import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration'
+import OfflineToast from '@/components/OfflineToast'
 
 const ibmSans = IBM_Plex_Sans({
   subsets: ['latin'],
   weight: ['400', '500', '600'],
   variable: '--font-ibm-sans',
+  display: 'swap',
 })
 
 const ibmSerif = IBM_Plex_Serif({
   subsets: ['latin'],
   weight: ['500', '600'],
   variable: '--font-ibm-serif',
+  display: 'swap',
 })
 
 const ibmMono = IBM_Plex_Mono({
   subsets: ['latin'],
   weight: ['400', '500'],
   variable: '--font-ibm-mono',
+  display: 'swap',
 })
 
 export const metadata: Metadata = {
   title: 'Prep Tracker',
   description: 'Interview Prep · Curated questions across JavaScript, React, and platform topics',
+  manifest: '/manifest.json',
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -40,9 +46,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en" suppressHydrationWarning data-density="cozy" className={`${ibmSans.variable} ${ibmSerif.variable} ${ibmMono.variable}`}>
       <body>
+        <ServiceWorkerRegistration />
         <ThemeProvider>
           <FontSizeProvider>
             <ProgressProvider initialTotals={initialTotals}>
+              <OfflineToast />
               <UIProvider>
                 <div className="app-container">
                   <Sidebar groups={TOPIC_GROUPS} questionIds={questionIds} />

@@ -46,17 +46,17 @@ function fallbackCopy(text: string, done: (ok: boolean) => void) {
 
 const Icon = {
   ChevronDown: () => (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <polyline points="4 6 8 10 12 6" />
     </svg>
   ),
   Check: () => (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <polyline points="3.5 8.5 6.5 11.5 12.5 5" />
     </svg>
   ),
   Copy: () => (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" />
       <path d="M3.5 10.5h-.5a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v.5" />
     </svg>
@@ -78,15 +78,7 @@ export default function QuestionItem({ q, idx, isDone, isOpen, onToggleOpen, onT
 
   return (
     <div className={`q-item ${isDone ? 'done' : ''} ${isOpen ? 'open' : ''}`}>
-      <div
-        className="q-head"
-        role="button"
-        tabIndex={0}
-        onClick={onToggleOpen}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggleOpen() }
-        }}
-      >
+      <div className="q-head">
         <button
           className={`q-check ${isDone ? 'checked' : ''}`}
           onClick={(e) => { e.stopPropagation(); onToggleDone() }}
@@ -95,8 +87,15 @@ export default function QuestionItem({ q, idx, isDone, isOpen, onToggleOpen, onT
         >
           <Icon.Check />
         </button>
-        <span className="q-num">{String(idx + 1).padStart(2, '0')}</span>
-        <span className="q-text" dangerouslySetInnerHTML={{ __html: q.title }} />
+        <button
+          className="q-expand"
+          onClick={onToggleOpen}
+          aria-expanded={isOpen}
+        >
+          <span className="q-num">{String(idx + 1).padStart(2, '0')}</span>
+          <span className="q-text" dangerouslySetInnerHTML={{ __html: q.title }} />
+          <span className="q-toggle"><Icon.ChevronDown /></span>
+        </button>
         <button
           className={`copy-btn q-copy ${qCopied ? 'copied' : ''}`}
           onClick={(e) => copyQuestion(stripHtml(q.title), e)}
@@ -105,7 +104,6 @@ export default function QuestionItem({ q, idx, isDone, isOpen, onToggleOpen, onT
         >
           {qCopied ? <Icon.Check /> : <Icon.Copy />}
         </button>
-        <span className="q-toggle"><Icon.ChevronDown /></span>
       </div>
       {isOpen && (
         <div className="q-body prose prose-slate dark:prose-invert max-w-none">

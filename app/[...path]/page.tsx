@@ -4,7 +4,7 @@ import { findGroup, findSection, findGroupForSection, findPrevNextSections, sect
 import { parseSection, countQuestions } from '@/lib/parser'
 import SectionClient from '@/components/SectionClient'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600
 
 interface Props {
   params: Promise<{ path: string[] }>

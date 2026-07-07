@@ -4,6 +4,17 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo } 
 import { supabase } from './supabase'
 import type { User } from '@supabase/supabase-js'
 import { TOPIC_GROUPS } from './topics'
+import {
+  getOfflineEnabled, setOfflineEnabled,
+  getCachedProgress, setCachedProgress,
+  getCachedAt, setCachedAt,
+  getCachedTotals, setCachedTotals,
+  setCachedQuestions,
+  getPendingOps, appendPendingOp, clearPendingOps,
+  setCachedUserId,
+  flushPendingOps,
+} from './offlineSync'
+import { PAGES_CACHE_NAME, ASSETS_CACHE_NAME } from './swConstants'
 
 type ProgressStore = Record<string, boolean>
 
@@ -26,14 +37,25 @@ interface ProgressContextType {
   user: User | null
   signInWithGitHub: () => Promise<void>
   signOut: () => Promise<void>
+  // Offline mode
+  isOnline: boolean
+  offlineModeEnabled: boolean
+  isCaching: boolean
+  cachingProgress: { done: number; total: number } | null
+  pendingOpsCount: number
+  isSyncing: boolean
+  cachedAt: string | null
+  enableOfflineMode: () => Promise<void>
+  disableOfflineMode: () => Promise<void>
+  syncNow: () => Promise<void>
 }
 
 const ProgressContext = createContext<ProgressContextType | null>(null)
 
-export function ProgressProvider({ 
-  children, 
-  initialTotals = {} 
-}: { 
+export function ProgressProvider({
+  children,
+  initialTotals = {}
+}: {
   children: React.ReactNode
   initialTotals?: Record<string, number>
 }) {
@@ -42,19 +64,27 @@ export function ProgressProvider({
   const [user, setUser] = useState<User | null>(null)
   const [mounted, setMounted] = useState(false)
 
+  // Offline state
+  const [isOnline, setIsOnline] = useState(true)
+  const [offlineModeEnabled, setOfflineModeEnabled] = useState(false)
+  const [isCaching, setIsCaching] = useState(false)
+  const [cachingProgress, setCachingProgress] = useState<{ done: number; total: number } | null>(null)
+  const [pendingOpsCount, setPendingOpsCount] = useState(0)
+  const [isSyncing, setIsSyncing] = useState(false)
+  const [cachedAt, setCachedAtState] = useState<string | null>(null)
+
   const stats = useMemo(() => {
     const bySection: Record<string, { completed: number; total: number }> = {}
     let totalCompleted = 0
     let totalQuestions = 0
 
-    // Initialize all sections from TOPIC_GROUPS
     TOPIC_GROUPS.forEach(group => {
       group.sections.forEach(section => {
         const url = `/${section.topic}/${section.file}`
         const prefix = `${section.topic}/${section.file}/`
         const completed = Object.keys(store).filter(k => k.startsWith(prefix) && store[k]).length
         const total = totals[url] || 0
-        
+
         bySection[url] = { completed, total }
         totalCompleted += completed
         totalQuestions += total
@@ -75,7 +105,70 @@ export function ProgressProvider({
     })
   }, [])
 
+  // Initialize offline state from localStorage on client mount
+  useEffect(() => {
+    setIsOnline(navigator.onLine)
+    const offlineEnabled = getOfflineEnabled()
+    setOfflineModeEnabled(offlineEnabled)
+    if (offlineEnabled) {
+      setPendingOpsCount(getPendingOps().length)
+      setCachedAtState(getCachedAt())
+      // Restore question totals if the server couldn't fetch them (e.g. Supabase unreachable offline)
+      const cachedTotals = getCachedTotals()
+      if (Object.keys(cachedTotals).length > 0) {
+        setTotals(prev => {
+          // Merge: prefer live values (non-zero) over cached fallback
+          const merged = { ...cachedTotals }
+          Object.entries(prev).forEach(([k, v]) => { if (v > 0) merged[k] = v })
+          return merged
+        })
+      }
+    }
+  }, [])
+
+  // Online/offline event listeners
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true)
+      // Don't auto-sync — just update state so UI shows "Sync available" prompt
+    }
+    const handleOffline = () => setIsOnline(false)
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
+
   const loadProgress = useCallback(async (uid: string) => {
+    const offlineEnabled = getOfflineEnabled()
+
+    if (offlineEnabled) {
+      const cached = getCachedProgress()
+      // Hydrate immediately from cache if we have data or are offline
+      if (cached.length > 0 || !navigator.onLine) {
+        const initialStore: ProgressStore = {}
+        cached.forEach(id => { initialStore[id] = true })
+        setStore(initialStore)
+        setMounted(true)
+
+        // Background refresh from Supabase when online
+        if (navigator.onLine) {
+          supabase.from('progress').select('question_id').eq('user_id', uid)
+            .then(({ data: rows }) => {
+              if (!rows) return
+              const freshStore: ProgressStore = {}
+              rows.forEach(r => { freshStore[r.question_id] = true })
+              setStore(freshStore)
+              setCachedProgress(rows.map(r => r.question_id))
+            })
+        }
+        return
+      }
+    }
+
     const { data: rows } = await supabase
       .from('progress')
       .select('question_id')
@@ -84,6 +177,7 @@ export function ProgressProvider({
     const initialStore: ProgressStore = {}
     rows?.forEach(r => { initialStore[r.question_id] = true })
     setStore(initialStore)
+    if (offlineEnabled) setCachedProgress(rows?.map(r => r.question_id) ?? [])
     setMounted(true)
   }, [])
 
@@ -134,34 +228,84 @@ export function ProgressProvider({
     if (!user) return
     setStore(prev => {
       const next = { ...prev, [id]: !prev[id] }
-      if (next[id]) {
-        supabase.from('progress').upsert({ user_id: user.id, question_id: id }).then()
+      const isAdd = next[id]
+      const action = isAdd ? 'add' : 'remove'
+
+      if (!isOnline && offlineModeEnabled) {
+        appendPendingOp({ questionId: id, action, ts: Date.now() })
+        setPendingOpsCount(getPendingOps().length)
+        const cached = getCachedProgress()
+        setCachedProgress(
+          isAdd ? [...new Set([...cached, id])] : cached.filter(q => q !== id)
+        )
       } else {
-        supabase.from('progress').delete().eq('user_id', user.id).eq('question_id', id).then()
+        if (isAdd) {
+          supabase.from('progress').upsert({ user_id: user.id, question_id: id }).then()
+        } else {
+          supabase.from('progress').delete().eq('user_id', user.id).eq('question_id', id).then()
+        }
+        if (offlineModeEnabled) {
+          const cached = getCachedProgress()
+          setCachedProgress(
+            isAdd ? [...new Set([...cached, id])] : cached.filter(q => q !== id)
+          )
+        }
       }
       return next
     })
-  }, [user])
+  }, [user, isOnline, offlineModeEnabled])
 
   const setMany = useCallback((ids: string[], value: boolean) => {
     if (!user) return
     setStore(prev => {
       const next = { ...prev }
       for (const id of ids) next[id] = value
-      if (value) {
-        supabase.from('progress').upsert(ids.map(id => ({ user_id: user.id, question_id: id }))).then()
+
+      if (!isOnline && offlineModeEnabled) {
+        const ts = Date.now()
+        ids.forEach(id => appendPendingOp({ questionId: id, action: value ? 'add' : 'remove', ts }))
+        setPendingOpsCount(getPendingOps().length)
+        const cached = getCachedProgress()
+        if (value) {
+          setCachedProgress([...new Set([...cached, ...ids])])
+        } else {
+          const removeSet = new Set(ids)
+          setCachedProgress(cached.filter(q => !removeSet.has(q)))
+        }
       } else {
-        supabase.from('progress').delete().eq('user_id', user.id).in('question_id', ids).then()
+        if (value) {
+          supabase.from('progress').upsert(ids.map(id => ({ user_id: user.id, question_id: id }))).then()
+        } else {
+          supabase.from('progress').delete().eq('user_id', user.id).in('question_id', ids).then()
+        }
+        if (offlineModeEnabled) {
+          const cached = getCachedProgress()
+          if (value) {
+            setCachedProgress([...new Set([...cached, ...ids])])
+          } else {
+            const removeSet = new Set(ids)
+            setCachedProgress(cached.filter(q => !removeSet.has(q)))
+          }
+        }
       }
       return next
     })
-  }, [user])
+  }, [user, isOnline, offlineModeEnabled])
 
   const resetAll = useCallback(() => {
     if (!user) return
+    if (!isOnline && offlineModeEnabled) {
+      const completed = Object.keys(store).filter(k => store[k])
+      const ts = Date.now()
+      completed.forEach(id => appendPendingOp({ questionId: id, action: 'remove', ts }))
+      setPendingOpsCount(getPendingOps().length)
+      setCachedProgress([])
+    } else {
+      supabase.from('progress').delete().eq('user_id', user.id).then()
+      if (offlineModeEnabled) setCachedProgress([])
+    }
     setStore({})
-    supabase.from('progress').delete().eq('user_id', user.id).then()
-  }, [user])
+  }, [user, isOnline, offlineModeEnabled, store])
 
   const isComplete = useCallback(
     (id: string) => mounted && !!store[id],
@@ -183,19 +327,118 @@ export function ProgressProvider({
       let totalQ = 0
       let doneQ = 0
       for (const s of sections) {
-        const stats = sectionStats(s.topic, s.file, s.total)
+        const st = sectionStats(s.topic, s.file, s.total)
         totalQ += s.total
-        doneQ += stats.done
+        doneQ += st.done
       }
       return { done: doneQ, total: totalQ }
     },
     [sectionStats]
   )
 
+  // ── Offline mode actions ──────────────────────────────────────────────────
+
+  const enableOfflineMode = useCallback(async () => {
+    if (!user) return
+    setIsCaching(true)
+    setOfflineEnabled(true)
+    setOfflineModeEnabled(true)
+    setCachedUserId(user.id)
+
+    // Snapshot current progress and question totals to localStorage
+    const completedIds = Object.keys(store).filter(k => store[k])
+    setCachedProgress(completedIds)
+    setCachedTotals(totals)
+
+    const allSections = TOPIC_GROUPS.flatMap(g => g.sections)
+    const urls = ['/', ...allSections.map(s => `/${s.topic}/${s.file}`)]
+
+    // Fetch and cache question content for each section using browser Supabase client
+    for (const section of allSections) {
+      try {
+        const { data } = await supabase
+          .from('questions')
+          .select('id, number, title, body_html')
+          .eq('topic', section.topic)
+          .eq('file', section.file)
+          .order('number')
+        if (data && data.length > 0) {
+          setCachedQuestions(section.topic, section.file,
+            data.map(r => ({ id: r.id, number: r.number, title: r.title, bodyHtml: r.body_html }))
+          )
+        }
+      } catch {
+        // skip individual section failures
+      }
+    }
+
+    if ('caches' in window) {
+      try {
+        const cache = await caches.open(PAGES_CACHE_NAME)
+        let done = 0
+        for (const url of urls) {
+          try {
+            const response = await fetch(url, { cache: 'no-store' })
+            if (response.ok) await cache.put(url, response)
+          } catch {
+            // skip individual failures — partial cache still useful
+          }
+          done++
+          setCachingProgress({ done, total: urls.length })
+        }
+      } catch (err) {
+        console.error('[enableOfflineMode] caches API unavailable:', err)
+      }
+    }
+
+    const now = new Date().toISOString()
+    setCachedAt(now)
+    setCachedAtState(now)
+    setCachingProgress(null)
+    setIsCaching(false)
+  }, [user, store])
+
+  const disableOfflineMode = useCallback(async () => {
+    // Flush pending ops if online before disabling
+    if (isOnline && user && getPendingOps().length > 0) {
+      setIsSyncing(true)
+      await flushPendingOps(user.id)
+      setPendingOpsCount(0)
+      setIsSyncing(false)
+    }
+    clearPendingOps()
+    setOfflineEnabled(false)
+    setOfflineModeEnabled(false)
+    setPendingOpsCount(0)
+    setCachedAtState(null)
+
+    if ('caches' in window) {
+      try {
+        await caches.delete(PAGES_CACHE_NAME)
+        await caches.delete(ASSETS_CACHE_NAME)
+      } catch {}
+    }
+  }, [isOnline, user])
+
+  const syncNow = useCallback(async () => {
+    if (!user || isSyncing) return
+    setIsSyncing(true)
+    const ok = await flushPendingOps(user.id)
+    if (ok) {
+      setPendingOpsCount(0)
+      const now = new Date().toISOString()
+      setCachedAt(now)
+      setCachedAtState(now)
+    }
+    setIsSyncing(false)
+  }, [user, isSyncing])
+
   return (
     <ProgressContext.Provider value={{
       isComplete, toggle, setMany, resetAll, sectionStats, allStats, stats, setSectionTotal, mounted,
-      user, signInWithGitHub, signOut
+      user, signInWithGitHub, signOut,
+      isOnline, offlineModeEnabled, isCaching, cachingProgress, pendingOpsCount, isSyncing, cachedAt,
+      enableOfflineMode, disableOfflineMode, syncNow,
     }}>
       {children}
     </ProgressContext.Provider>

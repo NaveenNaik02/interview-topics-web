@@ -33,8 +33,8 @@ export default function ConfirmDialog({ open, title, message, confirmLabel, onCo
 
   return (
     <div className="confirm-overlay" onClick={onCancel}>
-      <div className="confirm-dialog" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-        <h2 className="confirm-title">{title}</h2>
+      <div className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title" onClick={(e) => e.stopPropagation()}>
+        <h2 id="confirm-title" className="confirm-title">{title}</h2>
         <p className="confirm-message">{message}</p>
         {requireText && (
           <div className="confirm-field">

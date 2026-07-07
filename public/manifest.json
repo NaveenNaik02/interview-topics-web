@@ -1,0 +1,17 @@
+{
+  "name": "Prep Tracker",
+  "short_name": "PrepTracker",
+  "description": "Interview Prep · Curated questions across JavaScript, React, and platform topics",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f5f0",
+  "theme_color": "#f7f5f0",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ]
+}

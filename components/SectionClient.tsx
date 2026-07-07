@@ -1,9 +1,11 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
+import { Plane } from 'lucide-react'
 import { useProgress } from '@/lib/ProgressContext'
 import type { ParsedQuestion } from '@/lib/parser'
 import type { SectionMeta, TopicGroup } from '@/lib/topics'
+import { getCachedQuestions } from '@/lib/offlineSync'
 import QuestionItem from './QuestionItem'
 import ConfirmDialog from './ConfirmDialog'
 
@@ -13,10 +15,24 @@ interface Props {
   questions: ParsedQuestion[]
 }
 
-export default function SectionClient({ section, group, questions }: Props) {
-  const { isComplete, toggle, setMany, sectionStats, setSectionTotal, mounted } = useProgress()
+export default function SectionClient({ section, group, questions: serverQuestions }: Props) {
+  const { isComplete, toggle, setMany, sectionStats, setSectionTotal, mounted, isOnline, offlineModeEnabled } = useProgress()
   const [openId, setOpenId] = useState<string | null>(null)
   const [confirm, setConfirm] = useState<'select' | 'unselect' | null>(null)
+  const [questions, setQuestions] = useState<ParsedQuestion[]>(serverQuestions)
+  const [showOfflineModal, setShowOfflineModal] = useState(false)
+
+  // When offline and server returned empty questions, load from localStorage cache
+  useEffect(() => {
+    if (serverQuestions.length > 0) {
+      setQuestions(serverQuestions)
+      return
+    }
+    if (offlineModeEnabled) {
+      const cached = getCachedQuestions(section.topic, section.file)
+      if (cached && cached.length > 0) setQuestions(cached as ParsedQuestion[])
+    }
+  }, [serverQuestions, section.topic, section.file, offlineModeEnabled, isOnline])
 
   useEffect(() => {
     const url = `/${section.topic}/${section.file}`
@@ -61,7 +77,10 @@ export default function SectionClient({ section, group, questions }: Props) {
         <div className="section-actions">
           <button
             className="btn btn-outline"
-            onClick={() => setConfirm('select')}
+            onClick={() => {
+              if (!isOnline && !offlineModeEnabled) { setShowOfflineModal(true); return }
+              setConfirm('select')
+            }}
             disabled={allDone}
           >
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -71,7 +90,10 @@ export default function SectionClient({ section, group, questions }: Props) {
           </button>
           <button
             className="btn btn-outline"
-            onClick={() => setConfirm('unselect')}
+            onClick={() => {
+              if (!isOnline && !offlineModeEnabled) { setShowOfflineModal(true); return }
+              setConfirm('unselect')
+            }}
             disabled={noneDone}
           >
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
@@ -91,8 +113,20 @@ export default function SectionClient({ section, group, questions }: Props) {
             idx={idx}
             isDone={isComplete(q.id)}
             isOpen={openId === q.id}
-            onToggleOpen={() => setOpenId(openId === q.id ? null : q.id)}
-            onToggleDone={() => toggle(q.id)}
+            onToggleOpen={() => {
+              if (!isOnline && !offlineModeEnabled) {
+                setShowOfflineModal(true)
+                return
+              }
+              setOpenId(openId === q.id ? null : q.id)
+            }}
+            onToggleDone={() => {
+              if (!isOnline && !offlineModeEnabled) {
+                setShowOfflineModal(true)
+                return
+              }
+              toggle(q.id)
+            }}
           />
         ))}
       </div>
@@ -113,6 +147,33 @@ export default function SectionClient({ section, group, questions }: Props) {
         onConfirm={handleUnselectAll}
         onCancel={() => setConfirm(null)}
       />
+
+      {showOfflineModal && (
+        <div className="confirm-overlay" onClick={() => setShowOfflineModal(false)}>
+          <div className="confirm-dialog" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+            <div className="offline-notavail-icon">
+              <Plane size={22} />
+            </div>
+            <h2 className="confirm-title">Not available offline</h2>
+            <p className="confirm-message">
+              You&apos;re offline and haven&apos;t downloaded this content yet, so questions and answers can&apos;t be
+              opened right now. Reconnect, or download an offline copy next time you&apos;re online to study anywhere.
+            </p>
+            <div className="confirm-actions">
+              <button className="btn btn-ghost" onClick={() => setShowOfflineModal(false)}>Dismiss</button>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  setShowOfflineModal(false)
+                  document.dispatchEvent(new Event('open-offline-options'))
+                }}
+              >
+                Offline options
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
