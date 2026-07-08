@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
-import { Wifi, Plane, RefreshCw, Loader2, Download, CloudDownload } from 'lucide-react'
+import { Wifi, Send, RefreshCw, Loader2, Download, CloudDownload } from 'lucide-react'
 import { useProgress } from '@/lib/ProgressContext'
 import { TOPIC_GROUPS } from '@/lib/topics'
 
@@ -78,7 +78,7 @@ export default function OfflineStatusPill() {
       case 'downloading': return <Loader2 size={12} className="op-pill-spin" />
       case 'ready':       return <RefreshCw size={12} />
       case 'sync':        return <RefreshCw size={12} />
-      case 'offline':     return <Plane size={12} />
+      case 'offline':     return <Send size={12} />
       default:            return <Wifi size={12} />
     }
   }

@@ -2,6 +2,8 @@
 
 import React, { useState, useCallback } from 'react'
 import type { ParsedQuestion } from '@/lib/parser'
+import type { PriorityLevel } from '@/lib/offlineSync'
+import PriorityPicker from './PriorityPicker'
 
 function stripHtml(html: string): string {
   return html
@@ -45,11 +47,6 @@ function fallbackCopy(text: string, done: (ok: boolean) => void) {
 }
 
 const Icon = {
-  ChevronDown: () => (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polyline points="4 6 8 10 12 6" />
-    </svg>
-  ),
   Check: () => (
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <polyline points="3.5 8.5 6.5 11.5 12.5 5" />
@@ -68,17 +65,26 @@ interface Props {
   idx: number
   isDone: boolean
   isOpen: boolean
+  priority: PriorityLevel | null
   onToggleOpen: () => void
   onToggleDone: () => void
+  onSetPriority: (level: PriorityLevel | null) => void
 }
 
-export default function QuestionItem({ q, idx, isDone, isOpen, onToggleOpen, onToggleDone }: Props) {
+export default function QuestionItem({ q, idx, isDone, isOpen, priority, onToggleOpen, onToggleDone, onSetPriority }: Props) {
   const [qCopied, copyQuestion] = useCopy()
   const [aCopied, copyAnswer] = useCopy()
 
   return (
-    <div className={`q-item ${isDone ? 'done' : ''} ${isOpen ? 'open' : ''}`}>
-      <div className="q-head">
+    <div className={`q-item ${isDone ? 'done' : ''} ${isOpen ? 'open' : ''} ${priority ? `pri-${priority}` : ''}`}>
+      <div
+        className="q-head"
+        role="button"
+        tabIndex={0}
+        onClick={onToggleOpen}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggleOpen() } }}
+        aria-expanded={isOpen}
+      >
         <button
           className={`q-check ${isDone ? 'checked' : ''}`}
           onClick={(e) => { e.stopPropagation(); onToggleDone() }}
@@ -87,15 +93,8 @@ export default function QuestionItem({ q, idx, isDone, isOpen, onToggleOpen, onT
         >
           <Icon.Check />
         </button>
-        <button
-          className="q-expand"
-          onClick={onToggleOpen}
-          aria-expanded={isOpen}
-        >
-          <span className="q-num">{String(idx + 1).padStart(2, '0')}</span>
-          <span className="q-text" dangerouslySetInnerHTML={{ __html: q.title }} />
-          <span className="q-toggle"><Icon.ChevronDown /></span>
-        </button>
+        <span className="q-num">{String(idx + 1).padStart(2, '0')}</span>
+        <span className="q-text" dangerouslySetInnerHTML={{ __html: q.title }} />
         <button
           className={`copy-btn q-copy ${qCopied ? 'copied' : ''}`}
           onClick={(e) => copyQuestion(stripHtml(q.title), e)}
@@ -104,6 +103,7 @@ export default function QuestionItem({ q, idx, isDone, isOpen, onToggleOpen, onT
         >
           {qCopied ? <Icon.Check /> : <Icon.Copy />}
         </button>
+        <PriorityPicker value={priority} onChange={onSetPriority} />
       </div>
       {isOpen && (
         <div className="q-body prose prose-slate dark:prose-invert max-w-none">

@@ -7,11 +7,21 @@ export const OFFLINE_KEYS = {
   USER_ID:         'interview_user_id',
   CACHED_AT:       'interview_cached_at',
   QUESTION_TOTALS: 'interview_question_totals',
+  PRIORITY_CACHE:       'interview_priority_cache',
+  PENDING_PRIORITY_OPS: 'interview_pending_priority_ops',
 } as const
 
 export type PendingOp = {
   questionId: string
   action: 'add' | 'remove'
+  ts: number
+}
+
+export type PriorityLevel = 'high' | 'med' | 'low'
+
+export type PriorityPendingOp = {
+  questionId: string
+  level: PriorityLevel | null // null = unset
   ts: number
 }
 
@@ -91,6 +101,34 @@ export function clearPendingOps(): void {
   try { localStorage.removeItem(OFFLINE_KEYS.PENDING_OPS) } catch {}
 }
 
+// ── Priority cache ────────────────────────────────────────────────────────────
+export function getCachedPriority(): Record<string, PriorityLevel> {
+  try {
+    const raw = localStorage.getItem(OFFLINE_KEYS.PRIORITY_CACHE)
+    return raw ? (JSON.parse(raw) as Record<string, PriorityLevel>) : {}
+  } catch { return {} }
+}
+export function setCachedPriority(map: Record<string, PriorityLevel>): void {
+  try { localStorage.setItem(OFFLINE_KEYS.PRIORITY_CACHE, JSON.stringify(map)) } catch {}
+}
+
+// ── Pending priority ops queue ─────────────────────────────────────────────────
+export function getPendingPriorityOps(): PriorityPendingOp[] {
+  try {
+    const raw = localStorage.getItem(OFFLINE_KEYS.PENDING_PRIORITY_OPS)
+    return raw ? (JSON.parse(raw) as PriorityPendingOp[]) : []
+  } catch { return [] }
+}
+function setPendingPriorityOps(ops: PriorityPendingOp[]): void {
+  try { localStorage.setItem(OFFLINE_KEYS.PENDING_PRIORITY_OPS, JSON.stringify(ops)) } catch {}
+}
+export function appendPendingPriorityOp(op: PriorityPendingOp): void {
+  setPendingPriorityOps([...getPendingPriorityOps(), op])
+}
+export function clearPendingPriorityOps(): void {
+  try { localStorage.removeItem(OFFLINE_KEYS.PENDING_PRIORITY_OPS) } catch {}
+}
+
 // ── Cached user ID ────────────────────────────────────────────────────────────
 export function getCachedUserId(): string | null {
   try { return localStorage.getItem(OFFLINE_KEYS.USER_ID) } catch { return null }
@@ -133,6 +171,44 @@ export async function flushPendingOps(userId: string): Promise<boolean> {
     return true
   } catch (err) {
     console.error('[offlineSync] flush failed:', err)
+    return false
+  }
+}
+
+// ── Flush pending priority ops to Supabase ────────────────────────────────────
+// Deduplicates by questionId (last-write-wins on ts).
+// Only clears localStorage AFTER a successful Supabase write.
+// Returns true on success, false on failure (ops remain for next attempt).
+export async function flushPendingPriorityOps(userId: string): Promise<boolean> {
+  const ops = getPendingPriorityOps()
+  if (ops.length === 0) return true
+
+  const latest = new Map<string, PriorityPendingOp>()
+  for (const op of ops) {
+    const existing = latest.get(op.questionId)
+    if (!existing || op.ts > existing.ts) latest.set(op.questionId, op)
+  }
+
+  const upserts: { user_id: string; question_id: string; level: PriorityLevel }[] = []
+  const removes: string[] = []
+  latest.forEach(op => {
+    if (op.level) upserts.push({ user_id: userId, question_id: op.questionId, level: op.level })
+    else removes.push(op.questionId)
+  })
+
+  try {
+    await Promise.all([
+      upserts.length > 0
+        ? supabase.from('priority').upsert(upserts)
+        : null,
+      removes.length > 0
+        ? supabase.from('priority').delete().eq('user_id', userId).in('question_id', removes)
+        : null,
+    ])
+    clearPendingPriorityOps()
+    return true
+  } catch (err) {
+    console.error('[offlineSync] priority flush failed:', err)
     return false
   }
 }

@@ -1,13 +1,14 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
-import { Plane } from 'lucide-react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import { Send } from 'lucide-react'
 import { useProgress } from '@/lib/ProgressContext'
 import type { ParsedQuestion } from '@/lib/parser'
 import type { SectionMeta, TopicGroup } from '@/lib/topics'
 import { getCachedQuestions } from '@/lib/offlineSync'
 import QuestionItem from './QuestionItem'
 import ConfirmDialog from './ConfirmDialog'
+import FilterSortToolbar, { type PriorityFilterKey, type StatusFilter, type SortMode } from './FilterSortToolbar'
 
 interface Props {
   section: SectionMeta
@@ -16,11 +17,22 @@ interface Props {
 }
 
 export default function SectionClient({ section, group, questions: serverQuestions }: Props) {
-  const { isComplete, toggle, setMany, sectionStats, setSectionTotal, mounted, isOnline, offlineModeEnabled } = useProgress()
+  const { isComplete, toggle, setMany, sectionStats, setSectionTotal, mounted, isOnline, offlineModeEnabled, getPriority, setPriority, priorityStats } = useProgress()
   const [openId, setOpenId] = useState<string | null>(null)
   const [confirm, setConfirm] = useState<'select' | 'unselect' | null>(null)
   const [questions, setQuestions] = useState<ParsedQuestion[]>(serverQuestions)
   const [showOfflineModal, setShowOfflineModal] = useState(false)
+
+  // Filter/sort — resets whenever the section changes, not persisted
+  const [filterSet, setFilterSet] = useState<Set<PriorityFilterKey>>(() => new Set())
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(null)
+  const [sortMode, setSortMode] = useState<SortMode>('manual')
+
+  useEffect(() => {
+    setFilterSet(new Set())
+    setStatusFilter(null)
+    setSortMode('manual')
+  }, [section.topic, section.file])
 
   // When offline and server returned empty questions, load from localStorage cache
   useEffect(() => {
@@ -45,6 +57,43 @@ export default function SectionClient({ section, group, questions: serverQuestio
   const noneDone = !mounted || stats.done === 0
   const ids = questions.map(q => q.id)
 
+  const priCounts = priorityStats(section.topic, section.file, questions.length)
+
+  const processed = useMemo(() => {
+    let list = questions.map((q, i) => ({ q, origIdx: i, priority: getPriority(q.id) }))
+    if (filterSet.size) list = list.filter(x => filterSet.has(x.priority ?? 'none'))
+    if (statusFilter === 'done') list = list.filter(x => isComplete(x.q.id))
+    else if (statusFilter === 'notdone') list = list.filter(x => !isComplete(x.q.id))
+    if (sortMode !== 'manual') {
+      const RANK: Record<string, number> = { high: 3, med: 2, low: 1 }
+      list = [...list].sort((a, b) => {
+        const ar = RANK[a.priority ?? ''] || 0
+        const br = RANK[b.priority ?? ''] || 0
+        if ((ar === 0) !== (br === 0)) return ar === 0 ? 1 : -1
+        if (ar !== br) return sortMode === 'high' ? br - ar : ar - br
+        return a.origIdx - b.origIdx
+      })
+    }
+    return list
+  }, [questions, filterSet, statusFilter, sortMode, isComplete, getPriority])
+
+  const togglePriorityFilter = useCallback((key: PriorityFilterKey) => {
+    setFilterSet(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key); else next.add(key)
+      return next
+    })
+  }, [])
+
+  const toggleStatusFilter = useCallback((v: 'done' | 'notdone') => {
+    setStatusFilter(prev => (prev === v ? null : v))
+  }, [])
+
+  const clearFilters = useCallback(() => {
+    setFilterSet(new Set())
+    setStatusFilter(null)
+  }, [])
+
   const handleSelectAll = useCallback(() => {
     setMany(ids, true)
     setConfirm(null)
@@ -54,6 +103,16 @@ export default function SectionClient({ section, group, questions: serverQuestio
     setMany(ids, false)
     setConfirm(null)
   }, [ids, setMany])
+
+  const requestSelectAll = useCallback(() => {
+    if (!isOnline && !offlineModeEnabled) { setShowOfflineModal(true); return }
+    setConfirm('select')
+  }, [isOnline, offlineModeEnabled])
+
+  const requestUnselectAll = useCallback(() => {
+    if (!isOnline && !offlineModeEnabled) { setShowOfflineModal(true); return }
+    setConfirm('unselect')
+  }, [isOnline, offlineModeEnabled])
 
   return (
     <div className="content-wrapper">
@@ -74,45 +133,36 @@ export default function SectionClient({ section, group, questions: serverQuestio
             {mounted ? pct : 0}%
           </span>
         </div>
-        <div className="section-actions">
-          <button
-            className="btn btn-outline"
-            onClick={() => {
-              if (!isOnline && !offlineModeEnabled) { setShowOfflineModal(true); return }
-              setConfirm('select')
-            }}
-            disabled={allDone}
-          >
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <polyline points="3.5 8.5 6.5 11.5 12.5 5" />
-            </svg>
-            Select all
-          </button>
-          <button
-            className="btn btn-outline"
-            onClick={() => {
-              if (!isOnline && !offlineModeEnabled) { setShowOfflineModal(true); return }
-              setConfirm('unselect')
-            }}
-            disabled={noneDone}
-          >
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-              <line x1="4" y1="4" x2="12" y2="12" />
-              <line x1="12" y1="4" x2="4" y2="12" />
-            </svg>
-            Unselect all
-          </button>
-        </div>
+        <FilterSortToolbar
+          filterSet={filterSet}
+          statusFilter={statusFilter}
+          sortMode={sortMode}
+          counts={priCounts}
+          onTogglePriority={togglePriorityFilter}
+          onToggleStatus={toggleStatusFilter}
+          onSetSort={setSortMode}
+          onClear={clearFilters}
+          onSelectAll={requestSelectAll}
+          onUnselectAll={requestUnselectAll}
+          allDone={allDone}
+          noneDone={noneDone}
+        />
       </div>
 
       <div className="questions-list">
-        {questions.map((q, idx) => (
+        {processed.length === 0 ? (
+          <div className="filter-empty">
+            No questions match this filter.{' '}
+            <button type="button" className="link-btn" onClick={clearFilters}>Clear filter</button>
+          </div>
+        ) : processed.map(({ q, origIdx, priority }) => (
           <QuestionItem
             key={q.id}
             q={q}
-            idx={idx}
+            idx={origIdx}
             isDone={isComplete(q.id)}
             isOpen={openId === q.id}
+            priority={priority}
             onToggleOpen={() => {
               if (!isOnline && !offlineModeEnabled) {
                 setShowOfflineModal(true)
@@ -127,6 +177,7 @@ export default function SectionClient({ section, group, questions: serverQuestio
               }
               toggle(q.id)
             }}
+            onSetPriority={(level) => setPriority(q.id, level)}
           />
         ))}
       </div>
@@ -152,7 +203,7 @@ export default function SectionClient({ section, group, questions: serverQuestio
         <div className="confirm-overlay" onClick={() => setShowOfflineModal(false)}>
           <div className="confirm-dialog" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
             <div className="offline-notavail-icon">
-              <Plane size={22} />
+              <Send size={22} />
             </div>
             <h2 className="confirm-title">Not available offline</h2>
             <p className="confirm-message">

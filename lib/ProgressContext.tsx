@@ -11,12 +11,17 @@ import {
   getCachedTotals, setCachedTotals,
   setCachedQuestions,
   getPendingOps, appendPendingOp, clearPendingOps,
+  getCachedPriority, setCachedPriority,
+  getPendingPriorityOps, appendPendingPriorityOp, clearPendingPriorityOps,
+  flushPendingPriorityOps,
+  type PriorityLevel,
   setCachedUserId,
   flushPendingOps,
 } from './offlineSync'
 import { PAGES_CACHE_NAME, ASSETS_CACHE_NAME } from './swConstants'
 
 type ProgressStore = Record<string, boolean>
+type PriorityStore = Record<string, PriorityLevel>
 
 interface ProgressStats {
   completed: number
@@ -34,6 +39,10 @@ interface ProgressContextType {
   stats: ProgressStats
   setSectionTotal: (url: string, total: number) => void
   mounted: boolean
+  // Priority
+  getPriority: (id: string) => PriorityLevel | null
+  setPriority: (id: string, level: PriorityLevel | null) => void
+  priorityStats: (topic: string, file: string, total: number) => { high: number; med: number; low: number; none: number }
   user: User | null
   signInWithGitHub: () => Promise<void>
   signOut: () => Promise<void>
@@ -60,6 +69,7 @@ export function ProgressProvider({
   initialTotals?: Record<string, number>
 }) {
   const [store, setStore] = useState<ProgressStore>({})
+  const [priorityStore, setPriorityStore] = useState<PriorityStore>({})
   const [totals, setTotals] = useState<Record<string, number>>(initialTotals)
   const [user, setUser] = useState<User | null>(null)
   const [mounted, setMounted] = useState(false)
@@ -111,7 +121,7 @@ export function ProgressProvider({
     const offlineEnabled = getOfflineEnabled()
     setOfflineModeEnabled(offlineEnabled)
     if (offlineEnabled) {
-      setPendingOpsCount(getPendingOps().length)
+      setPendingOpsCount(getPendingOps().length + getPendingPriorityOps().length)
       setCachedAtState(getCachedAt())
       // Restore question totals if the server couldn't fetch them (e.g. Supabase unreachable offline)
       const cachedTotals = getCachedTotals()
@@ -181,16 +191,51 @@ export function ProgressProvider({
     setMounted(true)
   }, [])
 
+  const loadPriority = useCallback(async (uid: string) => {
+    const offlineEnabled = getOfflineEnabled()
+
+    if (offlineEnabled) {
+      const cached = getCachedPriority()
+      if (Object.keys(cached).length > 0 || !navigator.onLine) {
+        setPriorityStore(cached)
+
+        if (navigator.onLine) {
+          supabase.from('priority').select('question_id, level').eq('user_id', uid)
+            .then(({ data: rows }) => {
+              if (!rows) return
+              const fresh: PriorityStore = {}
+              rows.forEach(r => { fresh[r.question_id] = r.level as PriorityLevel })
+              setPriorityStore(fresh)
+              setCachedPriority(fresh)
+            })
+        }
+        return
+      }
+    }
+
+    const { data: rows } = await supabase
+      .from('priority')
+      .select('question_id, level')
+      .eq('user_id', uid)
+
+    const initial: PriorityStore = {}
+    rows?.forEach(r => { initial[r.question_id] = r.level as PriorityLevel })
+    setPriorityStore(initial)
+    if (offlineEnabled) setCachedPriority(initial)
+  }, [])
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setUser(session.user)
         loadProgress(session.user.id)
+        loadPriority(session.user.id)
       } else {
         supabase.auth.signInAnonymously().then(({ data: { session: anonSession } }) => {
           if (anonSession) {
             setUser(anonSession.user)
             loadProgress(anonSession.user.id)
+            loadPriority(anonSession.user.id)
           }
         })
       }
@@ -200,17 +245,19 @@ export function ProgressProvider({
       if (session) {
         setUser(session.user)
         loadProgress(session.user.id)
+        loadPriority(session.user.id)
         if (event === 'SIGNED_IN' && window.location.hash) {
           window.history.replaceState(null, '', window.location.pathname + window.location.search)
         }
       } else {
         setUser(null)
         setStore({})
+        setPriorityStore({})
       }
     })
 
     return () => subscription.unsubscribe()
-  }, [loadProgress])
+  }, [loadProgress, loadPriority])
 
   const signInWithGitHub = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
@@ -233,7 +280,7 @@ export function ProgressProvider({
 
       if (!isOnline && offlineModeEnabled) {
         appendPendingOp({ questionId: id, action, ts: Date.now() })
-        setPendingOpsCount(getPendingOps().length)
+        setPendingOpsCount(getPendingOps().length + getPendingPriorityOps().length)
         const cached = getCachedProgress()
         setCachedProgress(
           isAdd ? [...new Set([...cached, id])] : cached.filter(q => q !== id)
@@ -264,7 +311,7 @@ export function ProgressProvider({
       if (!isOnline && offlineModeEnabled) {
         const ts = Date.now()
         ids.forEach(id => appendPendingOp({ questionId: id, action: value ? 'add' : 'remove', ts }))
-        setPendingOpsCount(getPendingOps().length)
+        setPendingOpsCount(getPendingOps().length + getPendingPriorityOps().length)
         const cached = getCachedProgress()
         if (value) {
           setCachedProgress([...new Set([...cached, ...ids])])
@@ -298,7 +345,7 @@ export function ProgressProvider({
       const completed = Object.keys(store).filter(k => store[k])
       const ts = Date.now()
       completed.forEach(id => appendPendingOp({ questionId: id, action: 'remove', ts }))
-      setPendingOpsCount(getPendingOps().length)
+      setPendingOpsCount(getPendingOps().length + getPendingPriorityOps().length)
       setCachedProgress([])
     } else {
       supabase.from('progress').delete().eq('user_id', user.id).then()
@@ -336,6 +383,49 @@ export function ProgressProvider({
     [sectionStats]
   )
 
+  // ── Priority ─────────────────────────────────────────────────────────────
+
+  const getPriority = useCallback(
+    (id: string) => (mounted ? priorityStore[id] ?? null : null),
+    [priorityStore, mounted]
+  )
+
+  const setPriority = useCallback((id: string, level: PriorityLevel | null) => {
+    if (!user) return
+    setPriorityStore(prev => {
+      const next = { ...prev }
+      if (level) next[id] = level; else delete next[id]
+
+      if (!isOnline && offlineModeEnabled) {
+        appendPendingPriorityOp({ questionId: id, level, ts: Date.now() })
+        setPendingOpsCount(getPendingOps().length + getPendingPriorityOps().length)
+        setCachedPriority(next)
+      } else {
+        if (level) {
+          supabase.from('priority').upsert({ user_id: user.id, question_id: id, level }).then()
+        } else {
+          supabase.from('priority').delete().eq('user_id', user.id).eq('question_id', id).then()
+        }
+        if (offlineModeEnabled) setCachedPriority(next)
+      }
+      return next
+    })
+  }, [user, isOnline, offlineModeEnabled])
+
+  const priorityStats = useCallback(
+    (topic: string, file: string, total: number) => {
+      const prefix = `${topic}/${file}/`
+      const out = { high: 0, med: 0, low: 0, none: 0 }
+      if (!mounted) return out
+      Object.entries(priorityStore).forEach(([k, level]) => {
+        if (k.startsWith(prefix)) out[level]++
+      })
+      out.none = Math.max(0, total - out.high - out.med - out.low)
+      return out
+    },
+    [priorityStore, mounted]
+  )
+
   // ── Offline mode actions ──────────────────────────────────────────────────
 
   const enableOfflineMode = useCallback(async () => {
@@ -345,9 +435,10 @@ export function ProgressProvider({
     setOfflineModeEnabled(true)
     setCachedUserId(user.id)
 
-    // Snapshot current progress and question totals to localStorage
+    // Snapshot current progress, priority, and question totals to localStorage
     const completedIds = Object.keys(store).filter(k => store[k])
     setCachedProgress(completedIds)
+    setCachedPriority(priorityStore)
     setCachedTotals(totals)
 
     const allSections = TOPIC_GROUPS.flatMap(g => g.sections)
@@ -396,17 +487,18 @@ export function ProgressProvider({
     setCachedAtState(now)
     setCachingProgress(null)
     setIsCaching(false)
-  }, [user, store])
+  }, [user, store, priorityStore])
 
   const disableOfflineMode = useCallback(async () => {
     // Flush pending ops if online before disabling
-    if (isOnline && user && getPendingOps().length > 0) {
+    if (isOnline && user && (getPendingOps().length > 0 || getPendingPriorityOps().length > 0)) {
       setIsSyncing(true)
-      await flushPendingOps(user.id)
+      await Promise.all([flushPendingOps(user.id), flushPendingPriorityOps(user.id)])
       setPendingOpsCount(0)
       setIsSyncing(false)
     }
     clearPendingOps()
+    clearPendingPriorityOps()
     setOfflineEnabled(false)
     setOfflineModeEnabled(false)
     setPendingOpsCount(0)
@@ -423,12 +515,17 @@ export function ProgressProvider({
   const syncNow = useCallback(async () => {
     if (!user || isSyncing) return
     setIsSyncing(true)
-    const ok = await flushPendingOps(user.id)
-    if (ok) {
+    const [okProgress, okPriority] = await Promise.all([
+      flushPendingOps(user.id),
+      flushPendingPriorityOps(user.id),
+    ])
+    if (okProgress && okPriority) {
       setPendingOpsCount(0)
       const now = new Date().toISOString()
       setCachedAt(now)
       setCachedAtState(now)
+    } else {
+      setPendingOpsCount(getPendingOps().length + getPendingPriorityOps().length)
     }
     setIsSyncing(false)
   }, [user, isSyncing])
@@ -436,6 +533,7 @@ export function ProgressProvider({
   return (
     <ProgressContext.Provider value={{
       isComplete, toggle, setMany, resetAll, sectionStats, allStats, stats, setSectionTotal, mounted,
+      getPriority, setPriority, priorityStats,
       user, signInWithGitHub, signOut,
       isOnline, offlineModeEnabled, isCaching, cachingProgress, pendingOpsCount, isSyncing, cachedAt,
       enableOfflineMode, disableOfflineMode, syncNow,
