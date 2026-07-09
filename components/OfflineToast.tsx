@@ -9,7 +9,6 @@ type ToastType = 'offline' | 'offline-nodl' | 'back-online' | 'syncing' | 'synce
 export default function OfflineToast() {
   const { isOnline, offlineModeEnabled, pendingOpsCount, isSyncing, syncNow } = useProgress()
   const [toast, setToast] = useState<ToastType>(null)
-  const [showHint, setShowHint] = useState(false)
   const prevOnline = useRef(true)
   const prevSyncing = useRef(false)
   const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -17,7 +16,6 @@ export default function OfflineToast() {
   function dismiss() {
     if (dismissTimer.current) clearTimeout(dismissTimer.current)
     setToast(null)
-    setShowHint(false)
   }
 
   function autoDismiss(ms = 6000) {
@@ -32,7 +30,6 @@ export default function OfflineToast() {
 
     if (wasOnline && !isOnline) {
       // Just went offline — show different toast depending on whether files are downloaded
-      setShowHint(false)
       if (offlineModeEnabled) {
         setToast('offline')
       } else {
@@ -42,7 +39,6 @@ export default function OfflineToast() {
     } else if (!wasOnline && isOnline) {
       // Just came back online — only show sync prompt if user has downloaded files
       if (offlineModeEnabled) {
-        setShowHint(false)
         setToast('back-online')
         if (dismissTimer.current) clearTimeout(dismissTimer.current)
       } else {
@@ -58,7 +54,6 @@ export default function OfflineToast() {
     prevSyncing.current = isSyncing
 
     if (!wasSyncing && isSyncing) {
-      setShowHint(false)
       setToast('syncing')
       if (dismissTimer.current) clearTimeout(dismissTimer.current)
     } else if (wasSyncing && !isSyncing) {
@@ -107,9 +102,6 @@ export default function OfflineToast() {
             <>
               <div className="of-toast-title">You're back online</div>
               <div className="of-toast-desc">Sync your progress with your saved offline copy?</div>
-              {showHint && (
-                <div className="of-toast-hint">You can sync later from the status menu, top-right.</div>
-              )}
               <div className="of-toast-actions">
                 <button
                   className="of-toast-btn of-toast-btn--primary"
@@ -119,11 +111,12 @@ export default function OfflineToast() {
                 </button>
                 <button
                   className="of-toast-btn"
-                  onClick={() => setShowHint(true)}
+                  onClick={dismiss}
                 >
                   Not now
                 </button>
               </div>
+              <div className="of-toast-hint">You can sync later from the status menu, top-right.</div>
             </>
           )}
           {toast === 'syncing' && (

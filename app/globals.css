@@ -837,77 +837,81 @@ mark {
   content: '';
   position: absolute;
   left: 0; top: 0; bottom: 0;
-  width: 3px;
+  width: 4px;
 }
 .q-item.pri-high::before { background: var(--pri-high); }
 .q-item.pri-med::before { background: var(--pri-med); }
 .q-item.pri-low::before { background: var(--pri-low); }
 
-.pri-wrap { position: relative; flex-shrink: 0; margin-top: -3px; }
-
+/* Priority chip (trigger) */
+.pri-wrap { position: relative; flex-shrink: 0; display: inline-flex; }
 .pri-chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+  height: 26px;
+  padding: 0 11px 0 8px;
+  border-radius: 99px;
   font-size: 12px;
-  font-weight: 500;
-  padding: 5px 10px 5px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
+  font-weight: 600;
+  border: 1px solid var(--border-strong);
   background: var(--bg-soft);
-  color: var(--text-subtle);
+  color: var(--text-muted);
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s, color 0.15s;
   white-space: nowrap;
+  transition: opacity 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
 }
-.pri-chip:hover { border-color: var(--border-strong); color: var(--text-muted); }
-.pri-chip .pri-dot {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: var(--text-subtle);
-  flex-shrink: 0;
-}
-.pri-chip.pri-high { border-color: color-mix(in oklch, var(--pri-high) 45%, transparent); background: var(--pri-high-soft); color: var(--pri-high); }
-.pri-chip.pri-high .pri-dot { background: var(--pri-high); }
-.pri-chip.pri-med { border-color: color-mix(in oklch, var(--pri-med) 45%, transparent); background: var(--pri-med-soft); color: var(--pri-med); }
-.pri-chip.pri-med .pri-dot { background: var(--pri-med); }
-.pri-chip.pri-low { border-color: color-mix(in oklch, var(--pri-low) 45%, transparent); background: var(--pri-low-soft); color: var(--pri-low); }
-.pri-chip.pri-low .pri-dot { background: var(--pri-low); }
+.pri-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border-strong); flex-shrink: 0; }
+.pri-chip:hover { border-color: var(--border-strong); background: var(--bg-hover); }
+.pri-chip.high { border-color: color-mix(in oklch, var(--pri-high) 45%, transparent); background: var(--pri-high-soft); color: var(--pri-high); }
+.pri-chip.high .dot { background: var(--pri-high); }
+.pri-chip.med { border-color: color-mix(in oklch, var(--pri-med) 45%, transparent); background: var(--pri-med-soft); color: var(--pri-med); }
+.pri-chip.med .dot { background: var(--pri-med); }
+.pri-chip.low { border-color: color-mix(in oklch, var(--pri-low) 45%, transparent); background: var(--pri-low-soft); color: var(--pri-low); }
+.pri-chip.low .dot { background: var(--pri-low); }
+/* Unset chip stays quiet until the row is hovered / it's active */
+.pri-chip.none { opacity: 0; }
+.q-head:hover .pri-chip.none,
+.pri-wrap.open .pri-chip.none,
+.pri-chip.none:focus-visible { opacity: 1; }
+@media (hover: none) { .pri-chip.none { opacity: 1; } }
 
 .pop-pills {
   position: fixed;
   z-index: 300;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 6px;
+  display: inline-flex;
+  gap: 6px;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 99px;
   box-shadow: var(--shadow-lg);
-  min-width: 132px;
+  padding: 6px;
+  animation: popIn 0.16s cubic-bezier(0.2, 0.9, 0.25, 1);
 }
 .pop-pill {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  padding: 7px 10px;
-  border-radius: 6px;
+  gap: 7px;
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 99px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
   background: none;
   border: none;
-  color: var(--text);
   cursor: pointer;
-  text-align: left;
-  transition: background 0.12s;
+  transition: background 0.12s, color 0.12s;
 }
-.pop-pill:hover { background: var(--bg-hover); }
-.pop-pill .pri-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.pop-pill.pri-high .pri-dot { background: var(--pri-high); }
-.pop-pill.pri-med .pri-dot { background: var(--pri-med); }
-.pop-pill.pri-low .pri-dot { background: var(--pri-low); }
-.pop-pill.pri-none .pri-dot { background: var(--text-subtle); }
+.pop-pill .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--border-strong); flex-shrink: 0; }
+.pop-pill:hover { background: var(--bg-hover); color: var(--text); }
+.pop-pill.high.sel { background: var(--pri-high-soft); color: var(--pri-high); }
+.pop-pill.high.sel .dot { background: var(--pri-high); }
+.pop-pill.med.sel { background: var(--pri-med-soft); color: var(--pri-med); }
+.pop-pill.med.sel .dot { background: var(--pri-med); }
+.pop-pill.low.sel { background: var(--pri-low-soft); color: var(--pri-low); }
+.pop-pill.low.sel .dot { background: var(--pri-low); }
+.pop-pill.none.sel { background: var(--bg-soft); color: var(--text); }
 
 /* ── Section toolbar — Select all / Unselect all + priority filter + sort ── */
 .section-toolbar {
@@ -1438,7 +1442,12 @@ mark {
   .sidebar.open { transform: translateX(0); }
   .scrim.show { display: block; }
   .menu-btn { display: grid; }
-  .topbar { padding: var(--s-3) var(--s-4); }
+  .topbar { padding: var(--s-3) var(--s-4); gap: var(--s-2); }
+  .topbar-left { flex: 1 1 auto; min-width: 0; overflow: hidden; }
+  .topbar-right { flex-shrink: 0; gap: 4px; }
+  /* On mobile: hide parent breadcrumbs, show only current section label */
+  .topbar-left .crumb-parent { display: none; }
+  .topbar-left .crumb-current { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px; }
   .content-wrapper { padding: var(--s-5) var(--s-4) var(--s-7); }
   .dashboard-view { padding: var(--s-5) var(--s-4) var(--s-7); }
   .dash-hero { grid-template-columns: 1fr; gap: var(--s-5); }
@@ -1449,6 +1458,18 @@ mark {
   .q-text { font-size: 15px; }
   .search-box { width: 150px; }
   .search-box:focus-within { width: 180px; }
+  /* Offline pill — hide text label, show icon only */
+  .op-pill span:last-child { display: none; }
+  .op-pill { gap: 4px; padding: 0 8px; }
+  /* Offline popover — fixed position, full width */
+  .op-popover { position: fixed; top: 60px; left: var(--s-4); right: var(--s-4); width: auto; }
+  /* Offline toast — full width */
+  .of-toast { left: var(--s-4); right: var(--s-4); width: auto; }
+}
+
+/* Touch devices: always show hover-only elements */
+@media (hover: none) {
+  .topic-row-tools { opacity: 1; pointer-events: auto; }
 }
 
 /* ── Offline mode ───────────────────────────────────────────────────────────── */

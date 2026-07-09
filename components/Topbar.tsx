@@ -40,11 +40,11 @@ export default function Topbar() {
       const group = findGroupForSection(section)
       breadcrumbs = (
         <>
-          <Link href="/" className="crumb hover:text-[var(--text)] transition-colors">
+          <Link href="/" className="crumb crumb-parent hover:text-[var(--text)] transition-colors">
             {group?.groupName || 'Dashboard'}
           </Link>
-          <span className="crumb crumb-sep">/</span>
-          <span className="crumb" style={{ color: 'var(--text)' }}>{section.label}</span>
+          <span className="crumb crumb-sep crumb-parent">/</span>
+          <span className="crumb crumb-current" style={{ color: 'var(--text)' }}>{section.label}</span>
         </>
       )
     }

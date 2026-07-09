@@ -6,11 +6,11 @@ import type { PriorityLevel } from '@/lib/offlineSync'
 
 const PRI_LABEL: Record<PriorityLevel, string> = { high: 'High', med: 'Med', low: 'Low' }
 
-const OPTIONS: { level: PriorityLevel | null; label: string }[] = [
-  { level: 'high', label: 'High — must know cold' },
-  { level: 'med', label: 'Medium — review' },
-  { level: 'low', label: 'Low — nice to have' },
-  { level: null, label: 'None' },
+const OPTIONS: { level: PriorityLevel | null; cls: string; label: string }[] = [
+  { level: 'high', cls: 'high', label: 'High' },
+  { level: 'med', cls: 'med', label: 'Med' },
+  { level: 'low', cls: 'low', label: 'Low' },
+  { level: null, cls: 'none', label: 'None' },
 ]
 
 interface Props {
@@ -30,7 +30,7 @@ export default function PriorityPicker({ value, onChange }: Props) {
     e.stopPropagation()
     if (!open && triggerRef.current) {
       const r = triggerRef.current.getBoundingClientRect()
-      setPos({ top: r.bottom + 6, right: Math.max(8, window.innerWidth - r.right) })
+      setPos({ top: r.bottom + 8, right: Math.max(8, window.innerWidth - r.right) })
     }
     setOpen(o => !o)
   }, [open])
@@ -62,34 +62,35 @@ export default function PriorityPicker({ value, onChange }: Props) {
   }, [onChange, close])
 
   return (
-    <div className="pri-wrap">
+    <div className={`pri-wrap ${open ? 'open' : ''}`}>
       <button
         ref={triggerRef}
         type="button"
-        className={`pri-chip ${value ? `pri-${value}` : ''}`}
+        className={`pri-chip ${value ?? 'none'}`}
         onClick={toggleOpen}
-        aria-haspopup="true"
+        aria-haspopup="menu"
         aria-expanded={open}
-        title="Set priority"
+        title="Set importance"
       >
-        <span className="pri-dot" />
+        <span className="dot" />
         {value ? PRI_LABEL[value] : 'Priority'}
       </button>
       {open && pos && createPortal(
         <div
           ref={popRef}
           className="pop-pills"
-          style={{ top: pos.top, right: pos.right, position: 'fixed' }}
+          role="menu"
+          style={{ position: 'fixed', top: pos.top, right: pos.right }}
           onClick={(e) => e.stopPropagation()}
         >
           {OPTIONS.map(opt => (
             <button
-              key={opt.label}
+              key={opt.cls}
               type="button"
-              className={`pop-pill ${opt.level ? `pri-${opt.level}` : 'pri-none'}`}
+              className={`pop-pill ${opt.cls} ${opt.level === value ? 'sel' : ''}`}
               onClick={(e) => pick(opt.level, e)}
             >
-              <span className="pri-dot" />
+              <span className="dot" />
               {opt.label}
             </button>
           ))}
