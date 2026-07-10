@@ -17,6 +17,7 @@ import {
   type PriorityLevel,
   setCachedUserId,
   flushPendingOps,
+  clearAllCachedData,
 } from './offlineSync'
 import { PAGES_CACHE_NAME, ASSETS_CACHE_NAME } from './swConstants'
 import type { SortMode } from '@/components/FilterSortToolbar'
@@ -137,6 +138,23 @@ export function ProgressProvider({
     })
   }, [])
 
+  // Hydrate settings from localStorage immediately on mount so the correct
+  // sort/filter defaults are available on first paint, instead of waiting on
+  // the Supabase round-trip in loadSettings (which caused sections to briefly
+  // — or on a slow connection, not-so-briefly — render in manual order even
+  // when a different default was saved).
+  useEffect(() => {
+    try {
+      const s = localStorage.getItem('defaultSort')
+      if (s === 'manual' || s === 'high' || s === 'low') setDefaultSortState(s)
+      const r = localStorage.getItem('rememberFilters')
+      if (r !== null) setRememberFiltersState(r !== '0')
+      const t = localStorage.getItem('theme')
+      if (t === 'dark' || t === 'sepia' || t === 'light') setSettingsTheme(t)
+      setSettingsLoaded(true)
+    } catch {}
+  }, [])
+
   // Initialize offline state from localStorage on client mount
   useEffect(() => {
     setIsOnline(navigator.onLine)
@@ -237,6 +255,10 @@ export function ProgressProvider({
       setDefaultSortState(data.default_sort)
       setRememberFiltersState(data.remember_filters)
       setSettingsTheme(data.theme)
+      try {
+        localStorage.setItem('defaultSort', data.default_sort)
+        localStorage.setItem('rememberFilters', data.remember_filters ? '1' : '0')
+      } catch {}
     } else {
       // No row yet — bootstrap from localStorage so existing prefs aren't lost
       let lsTheme: Theme = 'light'
@@ -260,27 +282,20 @@ export function ProgressProvider({
 
   const setDefaultSort = useCallback((v: SortMode) => {
     setDefaultSortState(v)
-    setUser(u => {
-      if (u) settingsActions.upsertSetting({ default_sort: v }).catch(err => console.error('[settings] update failed:', err))
-      return u
-    })
-  }, [])
+    try { localStorage.setItem('defaultSort', v) } catch {}
+    if (user) settingsActions.upsertSetting({ default_sort: v }).catch(err => console.error('[settings] update failed:', err))
+  }, [user])
 
   const setRememberFilters = useCallback((v: boolean) => {
     setRememberFiltersState(v)
-    setUser(u => {
-      if (u) settingsActions.upsertSetting({ remember_filters: v }).catch(err => console.error('[settings] update failed:', err))
-      return u
-    })
-  }, [])
+    try { localStorage.setItem('rememberFilters', v ? '1' : '0') } catch {}
+    if (user) settingsActions.upsertSetting({ remember_filters: v }).catch(err => console.error('[settings] update failed:', err))
+  }, [user])
 
   const setThemeSetting = useCallback((v: Theme) => {
     setSettingsTheme(v)
-    setUser(u => {
-      if (u) settingsActions.upsertSetting({ theme: v }).catch(err => console.error('[settings] update failed:', err))
-      return u
-    })
-  }, [])
+    if (user) settingsActions.upsertSetting({ theme: v }).catch(err => console.error('[settings] update failed:', err))
+  }, [user])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -552,6 +567,7 @@ export function ProgressProvider({
     clearPendingOps()
     clearPendingPriorityOps()
     setOfflineEnabled(false)
+    clearAllCachedData()
     setOfflineModeEnabled(false)
     setPendingOpsCount(0)
     setCachedAtState(null)

@@ -167,18 +167,19 @@ export default function FilterSortToolbar({
       <button type="button" className="action-chip" onClick={onUnselectAll} disabled={noneDone}>
         <Icon.Close /> Unselect all
       </button>
-      <span className="tb-divider" />
-      {activeTokens.map(t => (
-        <span key={t.key} className={`f-token ${t.cls}`}>
-          {t.dot ? <span className="f-token-dot" /> : t.key === 'status' && statusFilter === 'done' ? <Icon.Check /> : <Icon.Circle />}
-          {t.label}
-          <button type="button" className="f-token-x" onClick={t.remove} aria-label={`Remove ${t.label} filter`}>
-            <Icon.Close />
-          </button>
-        </span>
-      ))}
-      {hasFilters && <button type="button" className="f-clear-all" onClick={onClear}>Clear all</button>}
-      <span className="tb-spacer" />
+      {hasFilters && <span className="tb-divider" />}
+      <div className="tb-chips">
+        {activeTokens.map(t => (
+          <span key={t.key} className={`f-token ${t.cls}`}>
+            {t.dot ? <span className="f-token-dot" /> : t.key === 'status' && statusFilter === 'done' ? <Icon.Check /> : <Icon.Circle />}
+            {t.label}
+            <button type="button" className="f-token-x" onClick={t.remove} aria-label={`Remove ${t.label} filter`}>
+              <Icon.Close />
+            </button>
+          </span>
+        ))}
+        {hasFilters && <button type="button" className="f-clear-all" onClick={onClear}>Clear all</button>}
+      </div>
       <FilterMenu
         counts={counts}
         filterSet={filterSet}

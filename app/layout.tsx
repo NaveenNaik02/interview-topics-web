@@ -13,6 +13,7 @@ import { fetchAllCounts, fetchAllQuestionIds } from '@/lib/parser'
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration'
 import OfflineToast from '@/components/OfflineToast'
 import ThemeSync from '@/components/ThemeSync'
+import AddQuestionFab from '@/components/AddQuestionFab'
 
 const ibmSans = IBM_Plex_Sans({
   subsets: ['latin'],
@@ -53,6 +54,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <ProgressProvider initialTotals={initialTotals}>
               <ThemeSync />
               <OfflineToast />
+              <AddQuestionFab />
               <UIProvider>
                 <div className="app-container">
                   <Sidebar groups={TOPIC_GROUPS} questionIds={questionIds} />

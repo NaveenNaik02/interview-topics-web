@@ -21,6 +21,8 @@ Requires `.env.local` in `web/` with `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SU
 
 There are no tests or linting scripts configured.
 
+Database schema changes: see "Database Migrations" in the root `CLAUDE.md` — add a `.sql` file to `../supabase/migrations/`, then `npm run migrate` from here to apply it.
+
 ## Architecture
 
 This is a **Next.js 14 App Router** application backed by **Supabase** (Postgres). Content and progress are both stored in the database — there is no runtime dependency on the local Markdown files.

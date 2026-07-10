@@ -100,16 +100,6 @@ export default function Sidebar({ groups, questionIds }: { groups: TopicGroup[];
             <span className="subtopic-name">Dashboard</span>
           </Link>
 
-          <Link
-            href="/settings"
-            className={`subtopic-row ${pathname === '/settings' ? 'active' : ''}`}
-            onClick={() => setDrawerOpen(false)}
-            style={{ marginBottom: 8 }}
-          >
-            <span style={{ display: 'inline-flex', color: 'var(--text-subtle)' }}><Icon.Gear /></span>
-            <span className="subtopic-name">Settings</span>
-          </Link>
-
           {groups.map((group) => {
             const isExp = expanded.has(group.slug)
 

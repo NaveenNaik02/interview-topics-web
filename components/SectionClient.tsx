@@ -92,7 +92,16 @@ export default function SectionClient({ section, group, questions: serverQuestio
   const togglePriorityFilter = useCallback((key: PriorityFilterKey) => {
     setFilterSet(prev => {
       const next = new Set(prev)
-      if (next.has(key)) next.delete(key); else next.add(key)
+      if (next.has(key)) {
+        next.delete(key)
+      } else if (key === 'none') {
+        // "None" means no priority set — mutually exclusive with high/med/low.
+        next.clear()
+        next.add('none')
+      } else {
+        next.delete('none')
+        next.add(key)
+      }
       return next
     })
   }, [])

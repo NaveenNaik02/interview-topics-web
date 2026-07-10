@@ -138,6 +138,23 @@ export function setCachedUserId(id: string): void {
   try { localStorage.setItem(OFFLINE_KEYS.USER_ID, id) } catch {}
 }
 
+// ── Full teardown (called when the user removes the offline download) ────────
+// Per-section question content is cached under dynamically named keys
+// (`interview_qs_<topic>_<file>`, one per section), so it can't be cleared via
+// a fixed OFFLINE_KEYS entry — it has to be found by prefix scan.
+export function clearAllCachedData(): void {
+  try {
+    localStorage.removeItem(OFFLINE_KEYS.PROGRESS_CACHE)
+    localStorage.removeItem(OFFLINE_KEYS.USER_ID)
+    localStorage.removeItem(OFFLINE_KEYS.CACHED_AT)
+    localStorage.removeItem(OFFLINE_KEYS.QUESTION_TOTALS)
+    localStorage.removeItem(OFFLINE_KEYS.PRIORITY_CACHE)
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('interview_qs_')) localStorage.removeItem(key)
+    }
+  } catch {}
+}
+
 // ── Flush pending ops via server actions ──────────────────────────────────────
 // Deduplicates by questionId (last-write-wins on ts).
 // Only clears localStorage AFTER a successful write. The server action derives
