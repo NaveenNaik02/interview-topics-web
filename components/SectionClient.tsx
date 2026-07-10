@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Send } from 'lucide-react'
 import { useProgress } from '@/lib/ProgressContext'
 import type { ParsedQuestion } from '@/lib/parser'
@@ -17,22 +17,34 @@ interface Props {
 }
 
 export default function SectionClient({ section, group, questions: serverQuestions }: Props) {
-  const { isComplete, toggle, setMany, sectionStats, setSectionTotal, mounted, isOnline, offlineModeEnabled, getPriority, setPriority, priorityStats } = useProgress()
+  const { isComplete, toggle, setMany, sectionStats, setSectionTotal, mounted, isOnline, offlineModeEnabled, getPriority, setPriority, priorityStats, defaultSort, rememberFilters, settingsLoaded } = useProgress()
   const [openId, setOpenId] = useState<string | null>(null)
   const [confirm, setConfirm] = useState<'select' | 'unselect' | null>(null)
   const [questions, setQuestions] = useState<ParsedQuestion[]>(serverQuestions)
   const [showOfflineModal, setShowOfflineModal] = useState(false)
 
-  // Filter/sort — resets whenever the section changes, not persisted
+  // Filter/sort state
   const [filterSet, setFilterSet] = useState<Set<PriorityFilterKey>>(() => new Set())
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(null)
   const [sortMode, setSortMode] = useState<SortMode>('manual')
 
+  // Apply defaultSort once DB settings have loaded
+  const sortAppliedRef = useRef(false)
   useEffect(() => {
-    setFilterSet(new Set())
-    setStatusFilter(null)
-    setSortMode('manual')
-  }, [section.topic, section.file])
+    if (settingsLoaded && !sortAppliedRef.current) {
+      sortAppliedRef.current = true
+      setSortMode(defaultSort)
+    }
+  }, [settingsLoaded, defaultSort])
+
+  // When navigating between sections: reset filters unless "remember filters" is on
+  useEffect(() => {
+    if (!rememberFilters) {
+      setFilterSet(new Set())
+      setStatusFilter(null)
+      setSortMode(defaultSort)
+    }
+  }, [section.topic, section.file, rememberFilters, defaultSort])
 
   // When offline and server returned empty questions, load from localStorage cache
   useEffect(() => {

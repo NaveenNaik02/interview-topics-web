@@ -1,5 +1,5 @@
 import 'server-only'
-import { supabase } from './supabase'
+import { supabasePublic as supabase } from './supabase/public'
 import type { SectionMeta } from './topics'
 
 export interface ParsedQuestion {

@@ -3,7 +3,7 @@
 import React, { useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Sun, Moon, Book, Menu, Github, LogOut, Search, X } from 'lucide-react'
+import { Sun, Moon, Book, Menu, Github, LogOut, Search, X, Settings } from 'lucide-react'
 import { useTheme } from '@/lib/ThemeContext'
 import { useUI } from '@/lib/UIContext'
 import { useProgress } from '@/lib/ProgressContext'
@@ -19,13 +19,15 @@ const THEME_ICONS = {
 
 export default function Topbar() {
   const pathname = usePathname()
-  const { theme, toggle } = useTheme()
+  const { theme, toggle, setTheme } = useTheme()
+  const { setThemeSetting } = useProgress()
   const { setDrawerOpen, query, setQuery } = useUI()
   const { user, signInWithGitHub, signOut, mounted } = useProgress()
   const inputRef = useRef<HTMLInputElement>(null)
 
   const ThemeIcon = THEME_ICONS[theme]
   const isHome = pathname === '/'
+  const isSettings = pathname === '/settings'
   const isAnonymous = user?.is_anonymous
   const searching = query.trim().length >= 2
 
@@ -48,6 +50,8 @@ export default function Topbar() {
         </>
       )
     }
+  } else if (isSettings) {
+    breadcrumbs = <span className="crumb">Settings</span>
   } else {
     breadcrumbs = <span className="crumb">Dashboard</span>
   }
@@ -87,11 +91,25 @@ export default function Topbar() {
 
         <button
           className="icon-btn"
-          onClick={toggle}
+          onClick={() => {
+            const CYCLE = ['light', 'sepia', 'dark'] as const
+            const next = CYCLE[(CYCLE.indexOf(theme) + 1) % CYCLE.length]
+            setTheme(next)
+            setThemeSetting(next)
+          }}
           aria-label={`Switch theme (current: ${theme})`}
         >
           <ThemeIcon size={16} />
         </button>
+
+        <Link
+          href="/settings"
+          className={`icon-btn${isSettings ? ' active' : ''}`}
+          aria-label="Settings"
+          title="Settings"
+        >
+          <Settings size={16} />
+        </Link>
 
         <div className="h-4 w-[1px] bg-[var(--border)] mx-1" />
 

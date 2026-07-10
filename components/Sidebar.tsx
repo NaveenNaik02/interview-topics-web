@@ -30,6 +30,12 @@ const Icon = {
       <line x1="12" y1="4" x2="4" y2="12" />
     </svg>
   ),
+  Gear: () => (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M6.6 2.2h2.8l.4 1.7c.45.15.87.36 1.25.62l1.6-.7 1.98 1.98-.7 1.6c.26.38.47.8.62 1.25l1.7.4v2.8l-1.7.4a4.9 4.9 0 0 1-.62 1.25l.7 1.6-1.98 1.98-1.6-.7a4.9 4.9 0 0 1-1.25.62l-.4 1.7H6.6l-.4-1.7a4.9 4.9 0 0 1-1.25-.62l-1.6.7-1.98-1.98.7-1.6a4.9 4.9 0 0 1-.62-1.25l-1.7-.4V6.8l1.7-.4c.15-.45.36-.87.62-1.25l-.7-1.6L4.75 1.57l1.6.7c.38-.26.8-.47 1.25-.62l.4-1.7Z" />
+      <circle cx="8" cy="8" r="2.1" />
+    </svg>
+  ),
 }
 
 export default function Sidebar({ groups, questionIds }: { groups: TopicGroup[]; questionIds: Record<string, string[]> }) {
@@ -92,6 +98,16 @@ export default function Sidebar({ groups, questionIds }: { groups: TopicGroup[];
           >
             <span style={{ display: 'inline-flex', color: 'var(--text-subtle)' }}><Icon.Home /></span>
             <span className="subtopic-name">Dashboard</span>
+          </Link>
+
+          <Link
+            href="/settings"
+            className={`subtopic-row ${pathname === '/settings' ? 'active' : ''}`}
+            onClick={() => setDrawerOpen(false)}
+            style={{ marginBottom: 8 }}
+          >
+            <span style={{ display: 'inline-flex', color: 'var(--text-subtle)' }}><Icon.Gear /></span>
+            <span className="subtopic-name">Settings</span>
           </Link>
 
           {groups.map((group) => {

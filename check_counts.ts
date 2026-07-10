@@ -1,4 +1,4 @@
-import { supabase } from './lib/supabase';
+import { supabasePublic as supabase } from './lib/supabase/public';
 async function run() {
   const { count } = await supabase
     .from('questions')

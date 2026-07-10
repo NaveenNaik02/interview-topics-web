@@ -9,6 +9,7 @@ const CYCLE: Theme[] = ['light', 'sepia', 'dark']
 interface ThemeContextType {
   theme: Theme
   toggle: () => void
+  setTheme: (t: Theme) => void
 }
 
 const ThemeContext = createContext<ThemeContextType | null>(null)
@@ -39,8 +40,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     })
   }, [])
 
+  const setThemeDirectly = useCallback((t: Theme) => {
+    setTheme(t)
+    localStorage.setItem('theme', t)
+    applyTheme(t)
+  }, [])
+
   return (
-    <ThemeContext.Provider value={{ theme, toggle }}>
+    <ThemeContext.Provider value={{ theme, toggle, setTheme: setThemeDirectly }}>
       {children}
     </ThemeContext.Provider>
   )

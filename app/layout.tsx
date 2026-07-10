@@ -12,6 +12,7 @@ import { UIProvider } from '@/lib/UIContext'
 import { fetchAllCounts, fetchAllQuestionIds } from '@/lib/parser'
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration'
 import OfflineToast from '@/components/OfflineToast'
+import ThemeSync from '@/components/ThemeSync'
 
 const ibmSans = IBM_Plex_Sans({
   subsets: ['latin'],
@@ -50,6 +51,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <ThemeProvider>
           <FontSizeProvider>
             <ProgressProvider initialTotals={initialTotals}>
+              <ThemeSync />
               <OfflineToast />
               <UIProvider>
                 <div className="app-container">

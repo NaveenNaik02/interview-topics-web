@@ -1,4 +1,5 @@
-import { supabase } from './supabase'
+import * as progressActions from './actions/progress'
+import * as priorityActions from './actions/priority'
 
 export const OFFLINE_KEYS = {
   PROGRESS_CACHE:  'interview_progress_cache',
@@ -137,11 +138,12 @@ export function setCachedUserId(id: string): void {
   try { localStorage.setItem(OFFLINE_KEYS.USER_ID, id) } catch {}
 }
 
-// ── Flush pending ops to Supabase ─────────────────────────────────────────────
+// ── Flush pending ops via server actions ──────────────────────────────────────
 // Deduplicates by questionId (last-write-wins on ts).
-// Only clears localStorage AFTER a successful Supabase write.
+// Only clears localStorage AFTER a successful write. The server action derives
+// the authenticated user from the session cookie — no userId is passed in.
 // Returns true on success, false on failure (ops remain for next attempt).
-export async function flushPendingOps(userId: string): Promise<boolean> {
+export async function flushPendingOps(): Promise<boolean> {
   const ops = getPendingOps()
   if (ops.length === 0) return true
 
@@ -160,12 +162,8 @@ export async function flushPendingOps(userId: string): Promise<boolean> {
 
   try {
     await Promise.all([
-      adds.length > 0
-        ? supabase.from('progress').upsert(adds.map(id => ({ user_id: userId, question_id: id })))
-        : null,
-      removes.length > 0
-        ? supabase.from('progress').delete().eq('user_id', userId).in('question_id', removes)
-        : null,
+      adds.length > 0 ? progressActions.bulkUpsertProgress(adds) : null,
+      removes.length > 0 ? progressActions.bulkDeleteProgress(removes) : null,
     ])
     clearPendingOps()
     return true
@@ -175,11 +173,12 @@ export async function flushPendingOps(userId: string): Promise<boolean> {
   }
 }
 
-// ── Flush pending priority ops to Supabase ────────────────────────────────────
+// ── Flush pending priority ops via server actions ─────────────────────────────
 // Deduplicates by questionId (last-write-wins on ts).
-// Only clears localStorage AFTER a successful Supabase write.
+// Only clears localStorage AFTER a successful write. The server action derives
+// the authenticated user from the session cookie — no userId is passed in.
 // Returns true on success, false on failure (ops remain for next attempt).
-export async function flushPendingPriorityOps(userId: string): Promise<boolean> {
+export async function flushPendingPriorityOps(): Promise<boolean> {
   const ops = getPendingPriorityOps()
   if (ops.length === 0) return true
 
@@ -189,21 +188,17 @@ export async function flushPendingPriorityOps(userId: string): Promise<boolean> 
     if (!existing || op.ts > existing.ts) latest.set(op.questionId, op)
   }
 
-  const upserts: { user_id: string; question_id: string; level: PriorityLevel }[] = []
+  const upserts: { questionId: string; level: PriorityLevel }[] = []
   const removes: string[] = []
   latest.forEach(op => {
-    if (op.level) upserts.push({ user_id: userId, question_id: op.questionId, level: op.level })
+    if (op.level) upserts.push({ questionId: op.questionId, level: op.level })
     else removes.push(op.questionId)
   })
 
   try {
     await Promise.all([
-      upserts.length > 0
-        ? supabase.from('priority').upsert(upserts)
-        : null,
-      removes.length > 0
-        ? supabase.from('priority').delete().eq('user_id', userId).in('question_id', removes)
-        : null,
+      upserts.length > 0 ? priorityActions.bulkUpsertPriority(upserts) : null,
+      removes.length > 0 ? priorityActions.bulkDeletePriority(removes) : null,
     ])
     clearPendingPriorityOps()
     return true

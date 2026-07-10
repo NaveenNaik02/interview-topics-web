@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
-import { supabase } from './supabase'
+import { supabase } from './supabase/client'
 import type { User } from '@supabase/supabase-js'
 import { TOPIC_GROUPS } from './topics'
 import {
@@ -19,6 +19,14 @@ import {
   flushPendingOps,
 } from './offlineSync'
 import { PAGES_CACHE_NAME, ASSETS_CACHE_NAME } from './swConstants'
+import type { SortMode } from '@/components/FilterSortToolbar'
+import type { Theme } from './ThemeContext'
+import * as progressDb from './db/progress'
+import * as priorityDb from './db/priority'
+import * as settingsDb from './db/settings'
+import * as progressActions from './actions/progress'
+import * as priorityActions from './actions/priority'
+import * as settingsActions from './actions/settings'
 
 type ProgressStore = Record<string, boolean>
 type PriorityStore = Record<string, PriorityLevel>
@@ -46,6 +54,14 @@ interface ProgressContextType {
   user: User | null
   signInWithGitHub: () => Promise<void>
   signOut: () => Promise<void>
+  // Settings
+  settingsLoaded: boolean
+  defaultSort: SortMode
+  rememberFilters: boolean
+  settingsTheme: Theme
+  setDefaultSort: (v: SortMode) => void
+  setRememberFilters: (v: boolean) => void
+  setThemeSetting: (v: Theme) => void
   // Offline mode
   isOnline: boolean
   offlineModeEnabled: boolean
@@ -73,6 +89,12 @@ export function ProgressProvider({
   const [totals, setTotals] = useState<Record<string, number>>(initialTotals)
   const [user, setUser] = useState<User | null>(null)
   const [mounted, setMounted] = useState(false)
+
+  // Settings
+  const [settingsLoaded, setSettingsLoaded] = useState(false)
+  const [defaultSort, setDefaultSortState] = useState<SortMode>('manual')
+  const [rememberFilters, setRememberFiltersState] = useState(true)
+  const [settingsTheme, setSettingsTheme] = useState<Theme>('light')
 
   // Offline state
   const [isOnline, setIsOnline] = useState(true)
@@ -166,28 +188,22 @@ export function ProgressProvider({
 
         // Background refresh from Supabase when online
         if (navigator.onLine) {
-          supabase.from('progress').select('question_id').eq('user_id', uid)
-            .then(({ data: rows }) => {
-              if (!rows) return
-              const freshStore: ProgressStore = {}
-              rows.forEach(r => { freshStore[r.question_id] = true })
-              setStore(freshStore)
-              setCachedProgress(rows.map(r => r.question_id))
-            })
+          progressDb.fetchProgress(uid).then(ids => {
+            const freshStore: ProgressStore = {}
+            ids.forEach(id => { freshStore[id] = true })
+            setStore(freshStore)
+            setCachedProgress(ids)
+          })
         }
         return
       }
     }
 
-    const { data: rows } = await supabase
-      .from('progress')
-      .select('question_id')
-      .eq('user_id', uid)
-
+    const ids = await progressDb.fetchProgress(uid)
     const initialStore: ProgressStore = {}
-    rows?.forEach(r => { initialStore[r.question_id] = true })
+    ids.forEach(id => { initialStore[id] = true })
     setStore(initialStore)
-    if (offlineEnabled) setCachedProgress(rows?.map(r => r.question_id) ?? [])
+    if (offlineEnabled) setCachedProgress(ids)
     setMounted(true)
   }, [])
 
@@ -200,28 +216,70 @@ export function ProgressProvider({
         setPriorityStore(cached)
 
         if (navigator.onLine) {
-          supabase.from('priority').select('question_id, level').eq('user_id', uid)
-            .then(({ data: rows }) => {
-              if (!rows) return
-              const fresh: PriorityStore = {}
-              rows.forEach(r => { fresh[r.question_id] = r.level as PriorityLevel })
-              setPriorityStore(fresh)
-              setCachedPriority(fresh)
-            })
+          priorityDb.fetchPriority(uid).then(fresh => {
+            setPriorityStore(fresh)
+            setCachedPriority(fresh)
+          })
         }
         return
       }
     }
 
-    const { data: rows } = await supabase
-      .from('priority')
-      .select('question_id, level')
-      .eq('user_id', uid)
-
-    const initial: PriorityStore = {}
-    rows?.forEach(r => { initial[r.question_id] = r.level as PriorityLevel })
+    const initial = await priorityDb.fetchPriority(uid)
     setPriorityStore(initial)
     if (offlineEnabled) setCachedPriority(initial)
+  }, [])
+
+  const loadSettings = useCallback(async (uid: string) => {
+    const data = await settingsDb.fetchSettings(uid)
+
+    if (data) {
+      setDefaultSortState(data.default_sort)
+      setRememberFiltersState(data.remember_filters)
+      setSettingsTheme(data.theme)
+    } else {
+      // No row yet — bootstrap from localStorage so existing prefs aren't lost
+      let lsTheme: Theme = 'light'
+      let lsSort: SortMode = 'manual'
+      let lsRemember = true
+      try {
+        const t = localStorage.getItem('theme')
+        if (t === 'dark' || t === 'sepia') lsTheme = t
+        const s = localStorage.getItem('defaultSort')
+        if (s === 'high' || s === 'low') lsSort = s
+        lsRemember = localStorage.getItem('rememberFilters') !== '0'
+      } catch {}
+      setDefaultSortState(lsSort)
+      setRememberFiltersState(lsRemember)
+      setSettingsTheme(lsTheme)
+      settingsActions.insertSettings({ default_sort: lsSort, remember_filters: lsRemember, theme: lsTheme })
+        .catch(err => console.error('[settings] insert failed:', err))
+    }
+    setSettingsLoaded(true)
+  }, [])
+
+  const setDefaultSort = useCallback((v: SortMode) => {
+    setDefaultSortState(v)
+    setUser(u => {
+      if (u) settingsActions.upsertSetting({ default_sort: v }).catch(err => console.error('[settings] update failed:', err))
+      return u
+    })
+  }, [])
+
+  const setRememberFilters = useCallback((v: boolean) => {
+    setRememberFiltersState(v)
+    setUser(u => {
+      if (u) settingsActions.upsertSetting({ remember_filters: v }).catch(err => console.error('[settings] update failed:', err))
+      return u
+    })
+  }, [])
+
+  const setThemeSetting = useCallback((v: Theme) => {
+    setSettingsTheme(v)
+    setUser(u => {
+      if (u) settingsActions.upsertSetting({ theme: v }).catch(err => console.error('[settings] update failed:', err))
+      return u
+    })
   }, [])
 
   useEffect(() => {
@@ -230,12 +288,14 @@ export function ProgressProvider({
         setUser(session.user)
         loadProgress(session.user.id)
         loadPriority(session.user.id)
+        loadSettings(session.user.id)
       } else {
         supabase.auth.signInAnonymously().then(({ data: { session: anonSession } }) => {
           if (anonSession) {
             setUser(anonSession.user)
             loadProgress(anonSession.user.id)
             loadPriority(anonSession.user.id)
+            loadSettings(anonSession.user.id)
           }
         })
       }
@@ -246,6 +306,7 @@ export function ProgressProvider({
         setUser(session.user)
         loadProgress(session.user.id)
         loadPriority(session.user.id)
+        loadSettings(session.user.id)
         if (event === 'SIGNED_IN' && window.location.hash) {
           window.history.replaceState(null, '', window.location.pathname + window.location.search)
         }
@@ -271,47 +332,59 @@ export function ProgressProvider({
     await supabase.auth.signOut()
   }
 
+  // NOTE: side effects (server action calls, localStorage writes) must stay
+  // OUTSIDE the setState updater below — React can invoke updaters during
+  // render, and Server Actions touch the Next.js Router internally, which
+  // throws "Cannot update Router while rendering ProgressProvider" if called
+  // from inside one.
   const toggle = useCallback((id: string) => {
     if (!user) return
-    setStore(prev => {
-      const next = { ...prev, [id]: !prev[id] }
-      const isAdd = next[id]
-      const action = isAdd ? 'add' : 'remove'
+    const isAdd = !store[id]
+    const action = isAdd ? 'add' : 'remove'
+    setStore(prev => ({ ...prev, [id]: isAdd }))
 
-      if (!isOnline && offlineModeEnabled) {
-        appendPendingOp({ questionId: id, action, ts: Date.now() })
-        setPendingOpsCount(getPendingOps().length + getPendingPriorityOps().length)
+    if (!isOnline && offlineModeEnabled) {
+      appendPendingOp({ questionId: id, action, ts: Date.now() })
+      setPendingOpsCount(getPendingOps().length + getPendingPriorityOps().length)
+      const cached = getCachedProgress()
+      setCachedProgress(
+        isAdd ? [...new Set([...cached, id])] : cached.filter(q => q !== id)
+      )
+    } else {
+      const write = isAdd ? progressActions.upsertProgress(id) : progressActions.deleteProgress(id)
+      write.catch(err => console.error('[progress] write failed:', err))
+      if (offlineModeEnabled) {
         const cached = getCachedProgress()
         setCachedProgress(
           isAdd ? [...new Set([...cached, id])] : cached.filter(q => q !== id)
         )
-      } else {
-        if (isAdd) {
-          supabase.from('progress').upsert({ user_id: user.id, question_id: id }).then()
-        } else {
-          supabase.from('progress').delete().eq('user_id', user.id).eq('question_id', id).then()
-        }
-        if (offlineModeEnabled) {
-          const cached = getCachedProgress()
-          setCachedProgress(
-            isAdd ? [...new Set([...cached, id])] : cached.filter(q => q !== id)
-          )
-        }
       }
-      return next
-    })
-  }, [user, isOnline, offlineModeEnabled])
+    }
+  }, [user, isOnline, offlineModeEnabled, store])
 
   const setMany = useCallback((ids: string[], value: boolean) => {
     if (!user) return
     setStore(prev => {
       const next = { ...prev }
       for (const id of ids) next[id] = value
+      return next
+    })
 
-      if (!isOnline && offlineModeEnabled) {
-        const ts = Date.now()
-        ids.forEach(id => appendPendingOp({ questionId: id, action: value ? 'add' : 'remove', ts }))
-        setPendingOpsCount(getPendingOps().length + getPendingPriorityOps().length)
+    if (!isOnline && offlineModeEnabled) {
+      const ts = Date.now()
+      ids.forEach(id => appendPendingOp({ questionId: id, action: value ? 'add' : 'remove', ts }))
+      setPendingOpsCount(getPendingOps().length + getPendingPriorityOps().length)
+      const cached = getCachedProgress()
+      if (value) {
+        setCachedProgress([...new Set([...cached, ...ids])])
+      } else {
+        const removeSet = new Set(ids)
+        setCachedProgress(cached.filter(q => !removeSet.has(q)))
+      }
+    } else {
+      const write = value ? progressActions.bulkUpsertProgress(ids) : progressActions.bulkDeleteProgress(ids)
+      write.catch(err => console.error('[progress] bulk write failed:', err))
+      if (offlineModeEnabled) {
         const cached = getCachedProgress()
         if (value) {
           setCachedProgress([...new Set([...cached, ...ids])])
@@ -319,24 +392,8 @@ export function ProgressProvider({
           const removeSet = new Set(ids)
           setCachedProgress(cached.filter(q => !removeSet.has(q)))
         }
-      } else {
-        if (value) {
-          supabase.from('progress').upsert(ids.map(id => ({ user_id: user.id, question_id: id }))).then()
-        } else {
-          supabase.from('progress').delete().eq('user_id', user.id).in('question_id', ids).then()
-        }
-        if (offlineModeEnabled) {
-          const cached = getCachedProgress()
-          if (value) {
-            setCachedProgress([...new Set([...cached, ...ids])])
-          } else {
-            const removeSet = new Set(ids)
-            setCachedProgress(cached.filter(q => !removeSet.has(q)))
-          }
-        }
       }
-      return next
-    })
+    }
   }, [user, isOnline, offlineModeEnabled])
 
   const resetAll = useCallback(() => {
@@ -348,7 +405,7 @@ export function ProgressProvider({
       setPendingOpsCount(getPendingOps().length + getPendingPriorityOps().length)
       setCachedProgress([])
     } else {
-      supabase.from('progress').delete().eq('user_id', user.id).then()
+      progressActions.deleteAllProgress().catch(err => console.error('[progress] reset failed:', err))
       if (offlineModeEnabled) setCachedProgress([])
     }
     setStore({})
@@ -392,25 +449,20 @@ export function ProgressProvider({
 
   const setPriority = useCallback((id: string, level: PriorityLevel | null) => {
     if (!user) return
-    setPriorityStore(prev => {
-      const next = { ...prev }
-      if (level) next[id] = level; else delete next[id]
+    const next = { ...priorityStore }
+    if (level) next[id] = level; else delete next[id]
+    setPriorityStore(next)
 
-      if (!isOnline && offlineModeEnabled) {
-        appendPendingPriorityOp({ questionId: id, level, ts: Date.now() })
-        setPendingOpsCount(getPendingOps().length + getPendingPriorityOps().length)
-        setCachedPriority(next)
-      } else {
-        if (level) {
-          supabase.from('priority').upsert({ user_id: user.id, question_id: id, level }).then()
-        } else {
-          supabase.from('priority').delete().eq('user_id', user.id).eq('question_id', id).then()
-        }
-        if (offlineModeEnabled) setCachedPriority(next)
-      }
-      return next
-    })
-  }, [user, isOnline, offlineModeEnabled])
+    if (!isOnline && offlineModeEnabled) {
+      appendPendingPriorityOp({ questionId: id, level, ts: Date.now() })
+      setPendingOpsCount(getPendingOps().length + getPendingPriorityOps().length)
+      setCachedPriority(next)
+    } else {
+      const write = level ? priorityActions.upsertPriority(id, level) : priorityActions.deletePriority(id)
+      write.catch(err => console.error('[priority] write failed:', err))
+      if (offlineModeEnabled) setCachedPriority(next)
+    }
+  }, [user, isOnline, offlineModeEnabled, priorityStore])
 
   const priorityStats = useCallback(
     (topic: string, file: string, total: number) => {
@@ -493,7 +545,7 @@ export function ProgressProvider({
     // Flush pending ops if online before disabling
     if (isOnline && user && (getPendingOps().length > 0 || getPendingPriorityOps().length > 0)) {
       setIsSyncing(true)
-      await Promise.all([flushPendingOps(user.id), flushPendingPriorityOps(user.id)])
+      await Promise.all([flushPendingOps(), flushPendingPriorityOps()])
       setPendingOpsCount(0)
       setIsSyncing(false)
     }
@@ -516,8 +568,8 @@ export function ProgressProvider({
     if (!user || isSyncing) return
     setIsSyncing(true)
     const [okProgress, okPriority] = await Promise.all([
-      flushPendingOps(user.id),
-      flushPendingPriorityOps(user.id),
+      flushPendingOps(),
+      flushPendingPriorityOps(),
     ])
     if (okProgress && okPriority) {
       setPendingOpsCount(0)
@@ -537,6 +589,7 @@ export function ProgressProvider({
       user, signInWithGitHub, signOut,
       isOnline, offlineModeEnabled, isCaching, cachingProgress, pendingOpsCount, isSyncing, cachedAt,
       enableOfflineMode, disableOfflineMode, syncNow,
+      settingsLoaded, defaultSort, rememberFilters, settingsTheme, setDefaultSort, setRememberFilters, setThemeSetting,
     }}>
       {children}
     </ProgressContext.Provider>

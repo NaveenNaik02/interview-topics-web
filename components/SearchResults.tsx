@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useProgress } from '@/lib/ProgressContext'
 import { useUI } from '@/lib/UIContext'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase/client'
 import { TOPIC_GROUPS } from '@/lib/topics'
 
 interface SearchQuestion {

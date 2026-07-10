@@ -515,6 +515,7 @@ a:hover { text-decoration: underline; } */
   transition: background 0.15s, color 0.15s;
 }
 .icon-btn:hover { background: var(--bg-hover); color: var(--text); }
+.icon-btn.active { color: var(--accent-text); background: var(--accent-soft); }
 .icon-btn svg { width: 16px; height: 16px; }
 
 .menu-btn { display: none; }
@@ -1736,3 +1737,75 @@ mark {
   transition: color 0.15s;
 }
 .of-toast-close:hover { color: var(--text); }
+
+/* =========================================================
+   Settings page
+   ========================================================= */
+.settings-section { margin-bottom: var(--s-6); }
+.settings-section-title {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;
+  font-weight: 600; color: var(--text-subtle); margin-bottom: var(--s-3);
+}
+.settings-row {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s-5);
+  padding: var(--s-4) 0; border-top: 1px solid var(--border);
+}
+.settings-row-text { flex: 1 1 220px; min-width: 220px; }
+.settings-row-label { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+.settings-row-hint { font-size: 12.5px; color: var(--text-muted); line-height: 1.5; max-width: 46ch; }
+
+.theme-pill-group, .sort-pill-group { display: flex; gap: var(--s-2); flex-shrink: 0; justify-content: flex-end; }
+.theme-pill-group { flex-wrap: wrap; }
+.sort-pill-group { flex-wrap: nowrap; }
+.theme-pill, .sort-pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 34px; padding: 0 13px; border-radius: 99px;
+  font-size: 12.5px; font-weight: 600; color: var(--text-muted);
+  border: 1px solid var(--border-strong); background: var(--bg-soft);
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  white-space: nowrap; cursor: pointer;
+}
+.theme-pill:hover, .sort-pill:hover { color: var(--text); }
+.theme-pill.on, .sort-pill.on {
+  background: var(--accent-soft); color: var(--accent-text);
+  border-color: color-mix(in oklch, var(--accent) 45%, transparent);
+}
+
+.toggle-switch {
+  width: 42px; height: 24px; border-radius: 99px; flex-shrink: 0;
+  background: var(--bg-soft); border: 1px solid var(--border-strong);
+  position: relative; transition: background 0.15s, border-color 0.15s; cursor: pointer;
+}
+.toggle-knob {
+  position: absolute; top: 2px; left: 2px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--bg-card); box-shadow: 0 1px 2px rgba(0,0,0,.2);
+  transition: transform 0.18s ease;
+  display: block;
+}
+.toggle-switch.on { background: var(--accent); border-color: var(--accent); }
+.toggle-switch.on .toggle-knob { transform: translateX(18px); background: #fff; }
+
+.settings-offline-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 36px; padding: 0 var(--s-4); border-radius: 9px; flex-shrink: 0;
+  font-size: 12.5px; font-weight: 600; white-space: nowrap;
+  background: var(--text); color: var(--bg-card); cursor: pointer;
+  transition: opacity 0.15s;
+}
+.settings-offline-btn:hover { opacity: 0.85; }
+.settings-offline-btn:disabled { opacity: 0.4; pointer-events: none; }
+.settings-offline-btn.danger {
+  background: var(--bg-soft); color: var(--pri-high);
+  border: 1px solid color-mix(in oklch, var(--pri-high) 40%, transparent);
+}
+.settings-download-progress {
+  width: 140px; height: 8px; border-radius: 99px;
+  background: var(--bg-soft); overflow: hidden; flex-shrink: 0;
+}
+.settings-download-progress .bar-fill { height: 100%; border-radius: 99px; }
+
+@media (max-width: 640px) {
+  .settings-row { flex-direction: column; align-items: flex-start; gap: var(--s-3); }
+  .theme-pill-group, .sort-pill-group { width: 100%; }
+}
