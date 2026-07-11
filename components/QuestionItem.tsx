@@ -5,6 +5,7 @@ import Link from 'next/link'
 import type { ParsedQuestion } from '@/lib/parser'
 import type { PriorityLevel } from '@/lib/offlineSync'
 import PriorityPicker from './PriorityPicker'
+import RowActions from './RowActions'
 
 function stripHtml(html: string): string {
   return html
@@ -82,10 +83,11 @@ interface Props {
   onToggleDone: () => void
   onSetPriority: (level: PriorityLevel | null) => void
   crumb?: QuestionCrumb
+  onEdit?: () => void
+  onDelete?: () => void
 }
 
-export default function QuestionItem({ q, idx, isDone, isOpen, priority, onToggleOpen, onToggleDone, onSetPriority, crumb }: Props) {
-  const [qCopied, copyQuestion] = useCopy()
+export default function QuestionItem({ q, idx, isDone, isOpen, priority, onToggleOpen, onToggleDone, onSetPriority, crumb, onEdit, onDelete }: Props) {
   const [aCopied, copyAnswer] = useCopy()
 
   return (
@@ -124,14 +126,7 @@ export default function QuestionItem({ q, idx, isDone, isOpen, priority, onToggl
         ) : (
           <span className="q-text" dangerouslySetInnerHTML={{ __html: q.title }} />
         )}
-        <button
-          className={`copy-btn q-copy ${qCopied ? 'copied' : ''}`}
-          onClick={(e) => copyQuestion(stripHtml(q.title), e)}
-          aria-label="Copy question"
-          title="Copy question"
-        >
-          {qCopied ? <Icon.Check /> : <Icon.Copy />}
-        </button>
+        <RowActions getText={() => stripHtml(q.title)} onEdit={onEdit} onDelete={onDelete} />
         <PriorityPicker value={priority} onChange={onSetPriority} />
       </div>
       {isOpen && (

@@ -64,6 +64,7 @@ export async function addQuestion(input: AddQuestionInput): Promise<ParsedQuesti
     number,
     title,
     body_html: bodyHtml,
+    markdown,
     label: section.label,
     group_slug: group.slug,
     created_by: user.id,
@@ -71,4 +72,86 @@ export async function addQuestion(input: AddQuestionInput): Promise<ParsedQuesti
   if (error) throw error
 
   return { id, number, title, bodyHtml }
+}
+
+export async function updateQuestion(id: string, input: AddQuestionInput): Promise<ParsedQuestion> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+  if (user.is_anonymous && !isLocalSupabase()) throw new Error('Sign in to edit your questions')
+
+  const title = DOMPurify.sanitize(input.title.trim(), { ALLOWED_TAGS: [] })
+  const markdown = input.markdown.trim()
+  if (title.length < 4) throw new Error('Question is too short')
+  if (markdown.length < 4) throw new Error('Answer is too short')
+
+  const segments = [...input.topic.split('/'), input.file].filter(Boolean)
+  const section = findSection(segments)
+  if (!section) throw new Error('Unknown topic/section')
+  const group = findGroupForSection(section)
+  if (!group) throw new Error('Unknown topic/section')
+
+  const { data: existing } = await supabase
+    .from('questions')
+    .select('topic, file, number')
+    .eq('id', id)
+    .maybeSingle()
+  if (!existing) throw new Error('Question not found')
+
+  let number = existing.number
+  if (existing.topic !== section.topic || existing.file !== section.file) {
+    const { data: maxRow } = await supabase
+      .from('questions')
+      .select('number')
+      .eq('topic', section.topic)
+      .eq('file', section.file)
+      .order('number', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    number = (maxRow?.number ?? 0) + 1
+  }
+
+  const bodyHtml = renderAnswerHtml(markdown)
+
+  const { data, error } = await supabase
+    .from('questions')
+    .update({
+      topic: section.topic,
+      file: section.file,
+      number,
+      title,
+      body_html: bodyHtml,
+      markdown,
+      label: section.label,
+      group_slug: group.slug,
+    })
+    .eq('id', id)
+    .select('id, number, title, body_html')
+    .single()
+
+  // RLS scopes the update to created_by = auth.uid() — a mismatch surfaces
+  // here as either an error or zero rows, not a thrown permission error.
+  if (error || !data) throw new Error('You can only edit your own questions.')
+
+  return { id: data.id, number: data.number, title: data.title, bodyHtml: data.body_html }
+}
+
+export async function deleteQuestion(id: string): Promise<void> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+  if (user.is_anonymous && !isLocalSupabase()) throw new Error('Sign in to delete your questions')
+
+  const { error, count } = await supabase
+    .from('questions')
+    .delete({ count: 'exact' })
+    .eq('id', id)
+  if (error) throw error
+  if (!count) throw new Error('You can only delete your own questions.')
+
+  // Best-effort cleanup of the current user's own progress/priority rows for
+  // this question. Cross-user orphan cleanup is out of scope — there's no
+  // service-role client in this app, and it's a rare edge case.
+  await supabase.from('progress').delete().eq('user_id', user.id).eq('question_id', id)
+  await supabase.from('priority').delete().eq('user_id', user.id).eq('question_id', id)
 }

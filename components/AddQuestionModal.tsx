@@ -5,7 +5,7 @@ import { marked } from 'marked'
 import DOMPurify from 'isomorphic-dompurify'
 import { X, Github, Loader2, Sparkles, RefreshCw, SlidersHorizontal, ChevronDown } from 'lucide-react'
 import { useProgress } from '@/lib/ProgressContext'
-import { addQuestion } from '@/lib/actions/questions'
+import { addQuestion, updateQuestion } from '@/lib/actions/questions'
 import { generateAnswer } from '@/lib/actions/generateAnswer'
 import { TOPIC_GROUPS, findGroupForSection, type SectionMeta } from '@/lib/topics'
 import { isLocalSupabase } from '@/lib/utils'
@@ -13,10 +13,19 @@ import { AQ_MODELS, type AqModelId } from '@/lib/aiModels'
 import type { ParsedQuestion } from '@/lib/parser'
 import type { PriorityLevel } from '@/lib/offlineSync'
 
+export interface EditingQuestion {
+  id: string
+  title: string
+  markdown: string
+  section: SectionMeta
+  priority: PriorityLevel | null
+}
+
 interface Props {
   defaultSection?: SectionMeta
+  editing?: EditingQuestion
   onClose: () => void
-  onCreated: (question: ParsedQuestion, section: SectionMeta) => void
+  onSaved: (question: ParsedQuestion, section: SectionMeta) => void
 }
 
 function renderPreviewHtml(markdown: string): string {
@@ -193,22 +202,24 @@ function AqInstructionsModal({ value, model, onClose, onSave }: { value: string;
   )
 }
 
-export default function AddQuestionModal({ defaultSection, onClose, onCreated }: Props) {
+export default function AddQuestionModal({ defaultSection, editing, onClose, onSaved }: Props) {
   const { user, mounted, signInWithGitHub, setPriority } = useProgress()
+  const isEdit = !!editing
 
-  const initialGroup = defaultSection ? findGroupForSection(defaultSection) : null
+  const initialSection = editing?.section ?? defaultSection
+  const initialGroup = initialSection ? findGroupForSection(initialSection) : null
   const [groupSlug, setGroupSlug] = useState(initialGroup?.slug ?? TOPIC_GROUPS[0].slug)
   const group = TOPIC_GROUPS.find(g => g.slug === groupSlug) ?? TOPIC_GROUPS[0]
 
   const sectionKey = (s: SectionMeta) => `${s.topic}/${s.file}`
   const [sectionK, setSectionK] = useState(
-    defaultSection ? sectionKey(defaultSection) : sectionKey(group.sections[0])
+    initialSection ? sectionKey(initialSection) : sectionKey(group.sections[0])
   )
   const section = group.sections.find(s => sectionKey(s) === sectionK) ?? group.sections[0]
 
-  const [title, setTitle] = useState('')
-  const [priority, setPriorityLevel] = useState<PriorityLevel | null>('med')
-  const [markdown, setMarkdown] = useState('')
+  const [title, setTitle] = useState(editing?.title ?? '')
+  const [priority, setPriorityLevel] = useState<PriorityLevel | null>(editing?.priority ?? 'med')
+  const [markdown, setMarkdown] = useState(editing?.markdown ?? '')
   const [tab, setTab] = useState<'write' | 'preview'>('write')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -287,9 +298,11 @@ export default function AddQuestionModal({ defaultSection, onClose, onCreated }:
     setSaving(true)
     setError(null)
     try {
-      const q = await addQuestion({ topic: section.topic, file: section.file, title, markdown })
+      const q = isEdit
+        ? await updateQuestion(editing!.id, { topic: section.topic, file: section.file, title, markdown })
+        : await addQuestion({ topic: section.topic, file: section.file, title, markdown })
       if (priority) setPriority(q.id, priority)
-      onCreated(q, section)
+      onSaved(q, section)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save this question — try again.')
       setSaving(false)
@@ -298,9 +311,9 @@ export default function AddQuestionModal({ defaultSection, onClose, onCreated }:
 
   return (
     <div className="modal-scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="aq-modal" role="dialog" aria-modal="true" aria-label="Add question">
+      <div className="aq-modal" role="dialog" aria-modal="true" aria-label={isEdit ? 'Edit question' : 'Add question'}>
         <div className="aq-head">
-          <h2>Add question</h2>
+          <h2>{isEdit ? 'Edit question' : 'Add question'}</h2>
           <button className="aq-close" onClick={onClose} aria-label="Close" title="Close"><X size={15} /></button>
         </div>
 
@@ -435,12 +448,14 @@ export default function AddQuestionModal({ defaultSection, onClose, onCreated }:
             </div>
 
             <div className="aq-foot">
-              <span className="aq-foot-left">Saving writes this question straight to the database — no file editing needed.</span>
+              <span className="aq-foot-left">
+                {isEdit ? 'Saving updates this question in place, everywhere it appears.' : 'Saving writes this question straight to the database — no file editing needed.'}
+              </span>
               <div className="aq-foot-actions">
                 <button className="btn-cancel" onClick={onClose}>Cancel</button>
                 <button className={`btn-primary btn-save ${saving ? 'saving' : ''}`} disabled={!canSave} onClick={handleSave}>
                   {saving ? <Loader2 size={14} className="aq-spin" /> : null}
-                  {saving ? 'Saving…' : 'Save question'}
+                  {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Save question'}
                 </button>
               </div>
             </div>

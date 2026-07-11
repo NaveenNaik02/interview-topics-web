@@ -1,14 +1,17 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { Send } from 'lucide-react'
 import { useProgress } from '@/lib/ProgressContext'
 import type { ParsedQuestion } from '@/lib/parser'
-import type { SectionMeta, TopicGroup } from '@/lib/topics'
+import { sectionUrl, type SectionMeta, type TopicGroup } from '@/lib/topics'
 import { getCachedQuestions } from '@/lib/offlineSync'
+import { deleteQuestion } from '@/lib/actions/questions'
 import QuestionItem from './QuestionItem'
 import ConfirmDialog from './ConfirmDialog'
 import FilterSortToolbar, { type PriorityFilterKey, type StatusFilter, type SortMode } from './FilterSortToolbar'
+import AddQuestionModal, { type EditingQuestion } from './AddQuestionModal'
 
 interface Props {
   section: SectionMeta
@@ -17,11 +20,13 @@ interface Props {
 }
 
 export default function SectionClient({ section, group, questions: serverQuestions }: Props) {
-  const { isComplete, toggle, setMany, sectionStats, setSectionTotal, mounted, isOnline, offlineModeEnabled, getPriority, setPriority, priorityStats, defaultSort, rememberFilters, settingsLoaded } = useProgress()
+  const { isComplete, toggle, setMany, sectionStats, setSectionTotal, mounted, isOnline, offlineModeEnabled, getPriority, setPriority, priorityStats, defaultSort, rememberFilters, settingsLoaded, user } = useProgress()
+  const router = useRouter()
   const [openId, setOpenId] = useState<string | null>(null)
   const [confirm, setConfirm] = useState<'select' | 'unselect' | null>(null)
   const [questions, setQuestions] = useState<ParsedQuestion[]>(serverQuestions)
   const [showOfflineModal, setShowOfflineModal] = useState(false)
+  const [editingQuestion, setEditingQuestion] = useState<EditingQuestion | null>(null)
 
   // Filter/sort state
   const [filterSet, setFilterSet] = useState<Set<PriorityFilterKey>>(() => new Set())
@@ -176,32 +181,61 @@ export default function SectionClient({ section, group, questions: serverQuestio
             No questions match this filter.{' '}
             <button type="button" className="link-btn" onClick={clearFilters}>Clear filter</button>
           </div>
-        ) : processed.map(({ q, origIdx, priority }) => (
-          <QuestionItem
-            key={q.id}
-            q={q}
-            idx={origIdx}
-            isDone={isComplete(q.id)}
-            isOpen={openId === q.id}
-            priority={priority}
-            onToggleOpen={() => {
-              if (!isOnline && !offlineModeEnabled) {
-                setShowOfflineModal(true)
-                return
-              }
-              setOpenId(openId === q.id ? null : q.id)
-            }}
-            onToggleDone={() => {
-              if (!isOnline && !offlineModeEnabled) {
-                setShowOfflineModal(true)
-                return
-              }
-              toggle(q.id)
-            }}
-            onSetPriority={(level) => setPriority(q.id, level)}
-          />
-        ))}
+        ) : processed.map(({ q, origIdx, priority }) => {
+          const canManage = mounted && !!user && q.createdBy === user.id
+          return (
+            <QuestionItem
+              key={q.id}
+              q={q}
+              idx={origIdx}
+              isDone={isComplete(q.id)}
+              isOpen={openId === q.id}
+              priority={priority}
+              onToggleOpen={() => {
+                if (!isOnline && !offlineModeEnabled) {
+                  setShowOfflineModal(true)
+                  return
+                }
+                setOpenId(openId === q.id ? null : q.id)
+              }}
+              onToggleDone={() => {
+                if (!isOnline && !offlineModeEnabled) {
+                  setShowOfflineModal(true)
+                  return
+                }
+                toggle(q.id)
+              }}
+              onSetPriority={(level) => setPriority(q.id, level)}
+              onEdit={canManage ? () => setEditingQuestion({
+                id: q.id,
+                title: q.title,
+                markdown: q.markdown ?? '',
+                section,
+                priority,
+              }) : undefined}
+              onDelete={canManage ? async () => {
+                await deleteQuestion(q.id)
+                router.refresh()
+              } : undefined}
+            />
+          )
+        })}
       </div>
+
+      {editingQuestion && (
+        <AddQuestionModal
+          editing={editingQuestion}
+          onClose={() => setEditingQuestion(null)}
+          onSaved={(_question, newSection) => {
+            setEditingQuestion(null)
+            if (newSection.topic !== section.topic || newSection.file !== section.file) {
+              router.push(sectionUrl(newSection))
+            } else {
+              router.refresh()
+            }
+          }}
+        />
+      )}
 
       <ConfirmDialog
         open={confirm === 'select'}

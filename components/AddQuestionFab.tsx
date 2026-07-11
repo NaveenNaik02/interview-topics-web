@@ -25,7 +25,7 @@ export default function AddQuestionFab() {
         <AddQuestionModal
           defaultSection={currentSection ?? undefined}
           onClose={() => setOpen(false)}
-          onCreated={(_question, section) => {
+          onSaved={(_question, section) => {
             setOpen(false)
             const url = sectionUrl(section)
             if (pathname === url) router.refresh()

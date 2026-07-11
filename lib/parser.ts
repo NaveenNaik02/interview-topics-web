@@ -7,6 +7,8 @@ export interface ParsedQuestion {
   number: number
   title: string
   bodyHtml: string
+  markdown?: string | null
+  createdBy?: string | null
 }
 
 export async function countQuestions(section: SectionMeta): Promise<number> {
@@ -53,7 +55,7 @@ export async function fetchAllQuestionIds(): Promise<Record<string, string[]>> {
 export async function parseSection(section: SectionMeta): Promise<ParsedQuestion[]> {
   const { data } = await supabase
     .from('questions')
-    .select('id, number, title, body_html')
+    .select('id, number, title, body_html, markdown, created_by')
     .eq('topic', section.topic)
     .eq('file', section.file)
     .order('number')
@@ -62,5 +64,7 @@ export async function parseSection(section: SectionMeta): Promise<ParsedQuestion
     number: r.number,
     title: r.title,
     bodyHtml: r.body_html,
+    markdown: r.markdown,
+    createdBy: r.created_by,
   }))
 }

@@ -520,6 +520,62 @@ a:hover { text-decoration: underline; } */
 
 .menu-btn { display: none; }
 
+/* Account menu — consolidates theme/settings/login/offline into one trigger */
+.more-menu-wrap { position: relative; display: inline-flex; }
+.more-menu {
+  position: absolute; top: calc(100% + 8px); right: 0;
+  min-width: 240px; background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; box-shadow: var(--shadow-lg);
+  padding: var(--s-2); z-index: 60;
+}
+.more-menu-item {
+  display: flex; align-items: center; gap: var(--s-3);
+  width: 100%; text-align: left;
+  height: 38px; padding: 0 var(--s-3); border-radius: 8px;
+  font-size: 13px; color: var(--text);
+}
+.more-menu-item svg { width: 15px; height: 15px; color: var(--text-subtle); flex-shrink: 0; }
+.more-menu-item:hover { background: var(--bg-hover); }
+.more-menu-item.is-active { color: var(--accent-text); background: var(--accent-soft); }
+.more-menu-item.is-active svg { color: var(--accent-text); }
+
+.acct-trigger {
+  display: inline-flex; align-items: center; gap: 5px; height: 36px; padding: 0 8px 0 4px;
+  border-radius: 99px; border: 1px solid transparent; background: transparent; color: var(--text-muted);
+}
+.acct-trigger:hover { background: var(--bg-hover); }
+.acct-trigger[aria-expanded="true"] { border-color: var(--border-strong); background: var(--bg-card); }
+.acct-avatar {
+  width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--bg-soft); color: var(--text-muted); position: relative; flex-shrink: 0; overflow: hidden;
+}
+.acct-avatar.is-logged-in { background: var(--accent-soft); color: var(--accent-text); }
+.acct-avatar svg { width: 15px; height: 15px; }
+.acct-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.acct-avatar .login-initials { font-size: 11.5px; }
+.acct-dot {
+  position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border-radius: 50%;
+  border: 2px solid var(--bg); background: var(--border-strong);
+}
+.acct-dot.is-ready { background: var(--success); }
+.acct-dot.is-offline { background: oklch(0.60 0.14 50); }
+.acct-dot.is-busy { background: var(--accent); }
+.acct-chevron { width: 11px; height: 11px; color: var(--text-subtle); flex-shrink: 0; }
+
+.more-menu .op-wrap { display: block; width: 100%; }
+.more-menu .op-pill {
+  width: 100%; justify-content: flex-start; border: none; background: none;
+  height: 38px; padding: 0 var(--s-3); border-radius: 8px; box-shadow: none;
+}
+.more-menu .op-pill:hover { background: var(--bg-hover); }
+.acct-menu-sep { height: 1px; background: var(--border); margin: var(--s-2) 2px; }
+.acct-theme-row { display: flex; align-items: center; justify-content: space-between; padding: 4px var(--s-3) 8px; }
+.acct-theme-row .lbl { font-size: 12.5px; color: var(--text-muted); }
+.acct-theme-opts { display: flex; gap: 3px; background: var(--bg-soft); border-radius: 8px; padding: 2px; }
+.acct-theme-opt { width: 28px; height: 26px; border-radius: 6px; display: grid; place-items: center; color: var(--text-subtle); }
+.acct-theme-opt.on { background: var(--bg-card); color: var(--accent-text); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+.acct-theme-opt svg { width: 13px; height: 13px; }
+
 /* Search */
 .search-box {
   display: flex;
@@ -1431,6 +1487,69 @@ mark {
 .q-copy:hover { background: var(--bg-soft); color: var(--accent-text); }
 @media (hover: none) { .q-copy { opacity: 1; } }
 
+/* Row overflow menu (kebab) — replaces the old separate copy/edit icons */
+.kebab-wrap { position: relative; flex-shrink: 0; }
+.q-kebab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: none;
+  background: none;
+  color: var(--text-subtle);
+  cursor: pointer;
+  opacity: 0;
+  transition: background 0.15s, color 0.15s, opacity 0.15s;
+}
+.q-kebab svg { width: 15px; height: 15px; }
+.q-head:hover .q-kebab,
+.q-kebab:focus-visible,
+.kebab-wrap.open .q-kebab { opacity: 1; }
+.q-kebab:hover { background: var(--bg-soft); color: var(--text); }
+@media (hover: none) { .q-kebab { opacity: 1; } }
+
+.kebab-menu {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+  padding: 5px;
+  min-width: 156px;
+}
+.kebab-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 7px;
+  border: none;
+  background: none;
+  font-size: 13px;
+  font-family: var(--f-sans);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+.kebab-item svg { width: 14px; height: 14px; color: var(--text-subtle); flex-shrink: 0; }
+.kebab-item:hover { background: var(--bg-hover); }
+.kebab-item.danger { color: var(--pri-high); }
+.kebab-item.danger svg { color: var(--pri-high); }
+.kebab-item.danger:hover { background: var(--pri-high-soft); }
+.kebab-sep { height: 1px; background: var(--border); margin: 4px 2px; }
+.kebab-confirm { padding: 10px; width: 190px; }
+.kebab-confirm-msg { font-size: 12.5px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4; }
+.kebab-confirm-row { display: flex; justify-content: flex-end; gap: 6px; }
+.kebab-confirm-cancel, .kebab-confirm-delete {
+  border: none; border-radius: 6px; padding: 6px 10px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--f-sans);
+}
+.kebab-confirm-cancel { background: var(--bg-soft); color: var(--text-muted); }
+.kebab-confirm-cancel:hover { background: var(--bg-hover); }
+.kebab-confirm-delete { background: var(--pri-high); color: white; }
+.kebab-confirm-delete:hover { filter: brightness(0.94); }
+
 /* q-answer-foot + q-copy-answer */
 .q-answer-foot {
   display: flex;
@@ -1801,26 +1920,33 @@ mark {
   }
   .sidebar.open { transform: translateX(0); }
   .scrim.show { display: block; }
-  .menu-btn { display: grid; }
+  .menu-btn { display: grid; flex-shrink: 0; }
   .topbar { padding: var(--s-3) var(--s-4); gap: var(--s-2); }
-  .topbar-left { flex: 1 1 auto; min-width: 0; overflow: hidden; }
-  .topbar-right { flex-shrink: 0; gap: 4px; }
+  /* Hamburger must always have room: floor topbar-left at the button's own
+     width so it can never be squeezed to zero by topbar-right on narrow
+     phones (~360px). The breadcrumb still truncates/disappears first. */
+  .topbar-left { flex: 0 1 auto; min-width: 36px; overflow: hidden; }
+  /* The account trigger keeps its natural size; the search box shrinks
+     first if space is tight. No overflow/scroll needed here — topbar-right
+     only ever has two children now (search + account trigger), and
+     overflow-x:auto here would clip the account dropdown (it computes
+     overflow-y:auto too, trapping position:absolute children). */
+  .topbar-right { flex-shrink: 1; min-width: 0; gap: 4px; }
+  .topbar-right .more-menu-wrap, .topbar-right .icon-btn { flex-shrink: 0; }
   /* On mobile: hide parent breadcrumbs, show only current section label */
   .topbar-left .crumb-parent { display: none; }
   .topbar-left .crumb-current { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px; }
-  .content-wrapper { padding: var(--s-5) var(--s-4) var(--s-7); }
-  .dashboard-view { padding: var(--s-5) var(--s-4) var(--s-7); }
+  .content-wrapper { padding: var(--s-5) var(--s-4) 80px; }
+  .dashboard-view { padding: var(--s-5) var(--s-4) 80px; }
   .dash-hero { grid-template-columns: 1fr; gap: var(--s-5); }
   .dash-title { font-size: 38px; }
   .subtopic-title { font-size: 30px; }
   .subtopic-meta .bar { width: 140px; }
   .q-head { padding: var(--s-4); gap: var(--s-3); }
   .q-text { font-size: 15px; }
-  .search-box { width: 150px; }
+  .search-box { width: 150px; min-width: 0; flex-shrink: 1; }
   .search-box:focus-within { width: 180px; }
-  /* Offline pill — hide text label, show icon only */
-  .op-pill span:last-child { display: none; }
-  .op-pill { gap: 4px; padding: 0 8px; }
+  .search-box .search-input { min-width: 0; }
   /* Offline popover — fixed position, full width */
   .op-popover { position: fixed; top: 60px; left: var(--s-4); right: var(--s-4); width: auto; }
   /* Offline toast — full width */

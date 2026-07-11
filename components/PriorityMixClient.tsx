@@ -1,17 +1,22 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Search, X, Send } from 'lucide-react'
 import { useProgress } from '@/lib/ProgressContext'
 import { TOPIC_GROUPS, sectionUrl, findGroupForSection, type SectionMeta } from '@/lib/topics'
+import { deleteQuestion } from '@/lib/actions/questions'
 import type { PriorityLevel } from '@/lib/offlineSync'
 import QuestionItem from './QuestionItem'
+import AddQuestionModal, { type EditingQuestion } from './AddQuestionModal'
 
 export interface PriorityMixQuestion {
   id: string
   number: number
   title: string
   bodyHtml: string
+  markdown?: string | null
+  createdBy?: string | null
   topic: string
   file: string
   label: string
@@ -149,9 +154,11 @@ function SubtopicPicker({ selected, onToggle }: { selected: Set<string>; onToggl
 }
 
 export default function PriorityMixClient({ questions }: Props) {
-  const { getPriority, isComplete, toggle, setPriority, isOnline, offlineModeEnabled, mounted } = useProgress()
+  const { getPriority, isComplete, toggle, setPriority, isOnline, offlineModeEnabled, mounted, user } = useProgress()
+  const router = useRouter()
   const [openId, setOpenId] = useState<string | null>(null)
   const [showOfflineModal, setShowOfflineModal] = useState(false)
+  const [editingQuestion, setEditingQuestion] = useState<EditingQuestion | null>(null)
 
   const [selPri, setSelPri] = useState<Set<PriorityLevel>>(new Set())
   const [selSubs, setSelSubs] = useState<Set<string>>(new Set())
@@ -264,6 +271,8 @@ export default function PriorityMixClient({ questions }: Props) {
         <div className="questions-list">
           {matched.map((r, i) => {
             const group = findGroupForSection({ topic: r.q.topic, file: r.q.file, label: r.q.label })
+            const section: SectionMeta = { topic: r.q.topic, file: r.q.file, label: r.q.label }
+            const canManage = mounted && !!user && r.q.createdBy === user.id
             return (
               <QuestionItem
                 key={r.q.id}
@@ -282,6 +291,17 @@ export default function PriorityMixClient({ questions }: Props) {
                 }}
                 onSetPriority={(level) => setPriority(r.q.id, level)}
                 crumb={{ topicLabel: group?.groupName ?? r.q.groupSlug, subLabel: r.q.label, href: r.subKey }}
+                onEdit={canManage ? () => setEditingQuestion({
+                  id: r.q.id,
+                  title: r.q.title,
+                  markdown: r.q.markdown ?? '',
+                  section,
+                  priority: r.priority,
+                }) : undefined}
+                onDelete={canManage ? async () => {
+                  await deleteQuestion(r.q.id)
+                  router.refresh()
+                } : undefined}
               />
             )
           })}
@@ -313,6 +333,17 @@ export default function PriorityMixClient({ questions }: Props) {
             </div>
           </div>
         </div>
+      )}
+
+      {editingQuestion && (
+        <AddQuestionModal
+          editing={editingQuestion}
+          onClose={() => setEditingQuestion(null)}
+          onSaved={() => {
+            setEditingQuestion(null)
+            router.refresh()
+          }}
+        />
       )}
     </div>
   )

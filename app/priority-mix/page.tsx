@@ -19,7 +19,7 @@ export default async function PriorityMixPage() {
     if (ids.length > 0) {
       const { data: rows } = await supabase
         .from('questions')
-        .select('id, number, title, body_html, topic, file, label, group_slug')
+        .select('id, number, title, body_html, markdown, created_by, topic, file, label, group_slug')
         .in('id', ids)
 
       const levelById = new Map((priorityRows ?? []).map(r => [r.question_id, r.level as PriorityLevel]))
@@ -28,6 +28,8 @@ export default async function PriorityMixPage() {
         number: r.number,
         title: r.title,
         bodyHtml: r.body_html,
+        markdown: r.markdown,
+        createdBy: r.created_by,
         topic: r.topic,
         file: r.file,
         label: r.label,
