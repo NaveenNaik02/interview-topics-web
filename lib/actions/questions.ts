@@ -1,12 +1,22 @@
 'use server'
 
 import { randomUUID } from 'node:crypto'
+import { revalidatePath } from 'next/cache'
 import { marked } from 'marked'
 import DOMPurify from 'isomorphic-dompurify'
 import { createClient } from '@/lib/supabase/server'
 import { findSection, findGroupForSection } from '@/lib/topics'
 import { isLocalSupabase } from '@/lib/utils'
 import type { ParsedQuestion } from '@/lib/parser'
+
+// Section pages are ISR-cached (`export const revalidate` in
+// app/[...path]/page.tsx) — without this, a successful write is invisible
+// until the cache naturally expires. Revalidates both the section itself and
+// its topic overview (counts shown there would otherwise go stale too).
+function revalidateSection(topic: string, file: string) {
+  revalidatePath(`/${topic}/${file}`)
+  revalidatePath(`/${topic}`)
+}
 
 export interface AddQuestionInput {
   topic: string
@@ -71,6 +81,8 @@ export async function addQuestion(input: AddQuestionInput): Promise<ParsedQuesti
   })
   if (error) throw error
 
+  revalidateSection(section.topic, section.file)
+
   return { id, number, title, bodyHtml }
 }
 
@@ -133,6 +145,11 @@ export async function updateQuestion(id: string, input: AddQuestionInput): Promi
   // here as either an error or zero rows, not a thrown permission error.
   if (error || !data) throw new Error('You can only edit your own questions.')
 
+  revalidateSection(section.topic, section.file)
+  if (existing.topic !== section.topic || existing.file !== section.file) {
+    revalidateSection(existing.topic, existing.file)
+  }
+
   return { id: data.id, number: data.number, title: data.title, bodyHtml: data.body_html }
 }
 
@@ -142,16 +159,19 @@ export async function deleteQuestion(id: string): Promise<void> {
   if (!user) throw new Error('Not authenticated')
   if (user.is_anonymous && !isLocalSupabase()) throw new Error('Sign in to delete your questions')
 
-  const { error, count } = await supabase
+  const { data, error } = await supabase
     .from('questions')
-    .delete({ count: 'exact' })
+    .delete()
     .eq('id', id)
-  if (error) throw error
-  if (!count) throw new Error('You can only delete your own questions.')
+    .select('topic, file')
+    .single()
+  if (error || !data) throw new Error('You can only delete your own questions.')
 
   // Best-effort cleanup of the current user's own progress/priority rows for
   // this question. Cross-user orphan cleanup is out of scope — there's no
   // service-role client in this app, and it's a rare edge case.
   await supabase.from('progress').delete().eq('user_id', user.id).eq('question_id', id)
   await supabase.from('priority').delete().eq('user_id', user.id).eq('question_id', id)
+
+  revalidateSection(data.topic, data.file)
 }
