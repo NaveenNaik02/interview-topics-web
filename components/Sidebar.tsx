@@ -36,6 +36,11 @@ const Icon = {
       <circle cx="8" cy="8" r="2.1" />
     </svg>
   ),
+  Filter: () => (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2 4h12M4 8h8M6 12h4" />
+    </svg>
+  ),
 }
 
 export default function Sidebar({ groups, questionIds }: { groups: TopicGroup[]; questionIds: Record<string, string[]> }) {
@@ -98,6 +103,16 @@ export default function Sidebar({ groups, questionIds }: { groups: TopicGroup[];
           >
             <span style={{ display: 'inline-flex', color: 'var(--text-subtle)' }}><Icon.Home /></span>
             <span className="subtopic-name">Dashboard</span>
+          </Link>
+
+          <Link
+            href="/priority-mix"
+            className={`subtopic-row ${pathname === '/priority-mix' ? 'active' : ''}`}
+            onClick={() => setDrawerOpen(false)}
+            style={{ marginBottom: 8 }}
+          >
+            <span style={{ display: 'inline-flex', color: 'var(--text-subtle)' }}><Icon.Filter /></span>
+            <span className="subtopic-name">Priority Mix</span>
           </Link>
 
           {groups.map((group) => {

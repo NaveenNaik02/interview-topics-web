@@ -28,13 +28,21 @@ export default function Topbar() {
   const ThemeIcon = THEME_ICONS[theme]
   const isHome = pathname === '/'
   const isSettings = pathname === '/settings'
+  const isPriorityMix = pathname === '/priority-mix'
   const isAnonymous = user?.is_anonymous
   const searching = query.trim().length >= 2
 
-  // Breadcrumbs logic
+  // Breadcrumbs logic — isSettings/isPriorityMix must be checked before the
+  // generic section lookup below, since findSection(['settings']) etc.
+  // return null (they're not real topic/section paths) and would otherwise
+  // leave breadcrumbs blank instead of falling through to the Dashboard label.
   let breadcrumbs: React.ReactNode = null
   if (searching) {
     breadcrumbs = <span className="crumb">Search results</span>
+  } else if (isSettings) {
+    breadcrumbs = <span className="crumb">Settings</span>
+  } else if (isPriorityMix) {
+    breadcrumbs = <span className="crumb">Priority Mix</span>
   } else if (!isHome) {
     const segments = pathname.split('/').filter(Boolean)
     const section = findSection(segments)
@@ -50,8 +58,6 @@ export default function Topbar() {
         </>
       )
     }
-  } else if (isSettings) {
-    breadcrumbs = <span className="crumb">Settings</span>
   } else {
     breadcrumbs = <span className="crumb">Dashboard</span>
   }

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useCallback } from 'react'
+import Link from 'next/link'
 import type { ParsedQuestion } from '@/lib/parser'
 import type { PriorityLevel } from '@/lib/offlineSync'
 import PriorityPicker from './PriorityPicker'
@@ -58,6 +59,17 @@ const Icon = {
       <path d="M3.5 10.5h-.5a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v.5" />
     </svg>
   ),
+  ChevronRight: () => (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M6 3l5 5-5 5" />
+    </svg>
+  ),
+}
+
+interface QuestionCrumb {
+  topicLabel: string
+  subLabel: string
+  href: string
 }
 
 interface Props {
@@ -69,9 +81,10 @@ interface Props {
   onToggleOpen: () => void
   onToggleDone: () => void
   onSetPriority: (level: PriorityLevel | null) => void
+  crumb?: QuestionCrumb
 }
 
-export default function QuestionItem({ q, idx, isDone, isOpen, priority, onToggleOpen, onToggleDone, onSetPriority }: Props) {
+export default function QuestionItem({ q, idx, isDone, isOpen, priority, onToggleOpen, onToggleDone, onSetPriority, crumb }: Props) {
   const [qCopied, copyQuestion] = useCopy()
   const [aCopied, copyAnswer] = useCopy()
 
@@ -94,7 +107,23 @@ export default function QuestionItem({ q, idx, isDone, isOpen, priority, onToggl
           <Icon.Check />
         </button>
         <span className="q-num">{String(idx + 1).padStart(2, '0')}</span>
-        <span className="q-text" dangerouslySetInnerHTML={{ __html: q.title }} />
+        {crumb ? (
+          <div className="q-body-col">
+            <span className="q-text" dangerouslySetInnerHTML={{ __html: q.title }} />
+            <Link
+              href={crumb.href}
+              className="q-crumb"
+              onClick={(e) => e.stopPropagation()}
+              title={`Go to ${crumb.topicLabel} › ${crumb.subLabel}`}
+            >
+              <b>{crumb.topicLabel}</b>
+              <Icon.ChevronRight />
+              {crumb.subLabel}
+            </Link>
+          </div>
+        ) : (
+          <span className="q-text" dangerouslySetInnerHTML={{ __html: q.title }} />
+        )}
         <button
           className={`copy-btn q-copy ${qCopied ? 'copied' : ''}`}
           onClick={(e) => copyQuestion(stripHtml(q.title), e)}
