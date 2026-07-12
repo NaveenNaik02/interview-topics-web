@@ -182,7 +182,7 @@ export default function SectionClient({ section, group, questions: serverQuestio
             <button type="button" className="link-btn" onClick={clearFilters}>Clear filter</button>
           </div>
         ) : processed.map(({ q, origIdx, priority }) => {
-          const canManage = mounted && !!user && q.createdBy === user.id
+          const canManage = mounted && !!user && (q.createdBy === user.id || user.app_metadata?.is_admin === true)
           return (
             <QuestionItem
               key={q.id}

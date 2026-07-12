@@ -272,7 +272,7 @@ export default function PriorityMixClient({ questions }: Props) {
           {matched.map((r, i) => {
             const group = findGroupForSection({ topic: r.q.topic, file: r.q.file, label: r.q.label })
             const section: SectionMeta = { topic: r.q.topic, file: r.q.file, label: r.q.label }
-            const canManage = mounted && !!user && r.q.createdBy === user.id
+            const canManage = mounted && !!user && (r.q.createdBy === user.id || user.app_metadata?.is_admin === true)
             return (
               <QuestionItem
                 key={r.q.id}

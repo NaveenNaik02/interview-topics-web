@@ -7,7 +7,8 @@
     "dev:local": "sh -c 'set -a && . ./.env.local.docker && set +a && next dev'",
     "build": "next build",
     "start": "next start",
-    "migrate": "node --env-file=.env.local scripts/migrate.js"
+    "migrate": "node --env-file=.env.local scripts/migrate.js",
+    "set-admin": "node --env-file=.env.local scripts/set-admin.js"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.0",
