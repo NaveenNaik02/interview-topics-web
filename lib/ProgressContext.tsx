@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { supabase } from './supabase/client'
 import type { User } from '@supabase/supabase-js'
 import { TOPIC_GROUPS } from './topics'
@@ -280,6 +280,18 @@ export function ProgressProvider({
     setSettingsLoaded(true)
   }, [])
 
+  // Supabase's onAuthStateChange fires immediately with the current session on
+  // subscribe, and signing in anonymously fires it again — both can reference
+  // the same user id, so guard against loading the same user's data twice.
+  const loadedUserIdRef = useRef<string | null>(null)
+  const loadUserData = useCallback((uid: string) => {
+    if (loadedUserIdRef.current === uid) return
+    loadedUserIdRef.current = uid
+    loadProgress(uid)
+    loadPriority(uid)
+    loadSettings(uid)
+  }, [loadProgress, loadPriority, loadSettings])
+
   const setDefaultSort = useCallback((v: SortMode) => {
     setDefaultSortState(v)
     try { localStorage.setItem('defaultSort', v) } catch {}
@@ -298,34 +310,27 @@ export function ProgressProvider({
   }, [user])
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setUser(session.user)
-        loadProgress(session.user.id)
-        loadPriority(session.user.id)
-        loadSettings(session.user.id)
-      } else {
-        supabase.auth.signInAnonymously().then(({ data: { session: anonSession } }) => {
-          if (anonSession) {
-            setUser(anonSession.user)
-            loadProgress(anonSession.user.id)
-            loadPriority(anonSession.user.id)
-            loadSettings(anonSession.user.id)
-          }
-        })
-      }
-    })
+    // onAuthStateChange fires immediately on subscribe with the current
+    // session (event INITIAL_SESSION), so a separate getSession() call here
+    // would just race it and double every load — this listener alone covers
+    // both the initial state and subsequent sign-in/out transitions.
+    let bootstrapping = false
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         setUser(session.user)
-        loadProgress(session.user.id)
-        loadPriority(session.user.id)
-        loadSettings(session.user.id)
+        loadUserData(session.user.id)
         if (event === 'SIGNED_IN' && window.location.hash) {
           window.history.replaceState(null, '', window.location.pathname + window.location.search)
         }
+      } else if (!bootstrapping) {
+        // No session yet on first load — create an anonymous one. Signing in
+        // triggers this same listener again with the new session, which is
+        // where setUser/loadUserData actually run.
+        bootstrapping = true
+        supabase.auth.signInAnonymously()
       } else {
+        loadedUserIdRef.current = null
         setUser(null)
         setStore({})
         setPriorityStore({})
@@ -333,7 +338,7 @@ export function ProgressProvider({
     })
 
     return () => subscription.unsubscribe()
-  }, [loadProgress, loadPriority])
+  }, [loadUserData])
 
   const signInWithGitHub = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
