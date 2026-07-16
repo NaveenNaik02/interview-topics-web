@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import type { ParsedQuestion } from '@/lib/parser'
 import type { PriorityLevel } from '@/lib/offlineSync'
@@ -73,6 +73,74 @@ interface QuestionCrumb {
   href: string
 }
 
+// Plain answer, or a Problem → Solution rail for implementation questions
+// (q.problem set) — the code language badge is read off the rendered
+// <code class="language-xxx"> the answer's fenced code block produces.
+function QuestionAnswerBody({ q }: { q: ParsedQuestion }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [aCopied, copyAnswer] = useCopy()
+  const [codeLang, setCodeLang] = useState('')
+
+  useEffect(() => {
+    if (!ref.current) return
+    const codeEl = ref.current.querySelector('pre code[class*="language-"]')
+    const m = codeEl?.className.match(/language-(\S+)/)
+    setCodeLang(m ? m[1] : (q.lang && q.lang !== 'none' ? q.lang : ''))
+  }, [q.id, q.bodyHtml, q.lang])
+
+  if (!q.problem) {
+    return (
+      <div className="q-body prose prose-slate dark:prose-invert max-w-none" ref={ref}>
+        <div dangerouslySetInnerHTML={{ __html: q.bodyHtml }} />
+        <div className="q-answer-foot">
+          <button
+            className={`copy-btn q-copy-answer ${aCopied ? 'copied' : ''}`}
+            onClick={(e) => copyAnswer(stripHtml(q.bodyHtml), e)}
+            aria-label="Copy answer"
+            title="Copy answer"
+          >
+            {aCopied ? <Icon.Check /> : <Icon.Copy />}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="q-body" ref={ref}>
+      <div className="q-rail">
+        <div className="q-rail-item">
+          <div className="q-rail-track"><span className="q-rail-dot" /><span className="q-rail-line" /></div>
+          <div className="q-rail-content">
+            <div className="q-rail-label">Problem</div>
+            <p className="q-rail-problem-text">{q.problem}</p>
+          </div>
+        </div>
+        <div className="q-rail-item">
+          <div className="q-rail-track"><span className="q-rail-dot solid" /></div>
+          <div className="q-rail-content">
+            <div className="q-rail-label">Solution</div>
+            <div className="q-code-card">
+              <div className="q-code-head">
+                <span className="q-code-lang">{codeLang || 'code'}</span>
+                <button
+                  className={`copy-btn q-code-copy ${aCopied ? 'copied' : ''}`}
+                  onClick={(e) => copyAnswer(stripHtml(q.bodyHtml), e)}
+                  aria-label="Copy solution"
+                  title="Copy solution"
+                >
+                  {aCopied ? <Icon.Check /> : <Icon.Copy />}Copy
+                </button>
+              </div>
+              <div className="q-body prose prose-slate dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: q.bodyHtml }} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 interface Props {
   q: ParsedQuestion
   idx: number
@@ -88,8 +156,6 @@ interface Props {
 }
 
 export default function QuestionItem({ q, idx, isDone, isOpen, priority, onToggleOpen, onToggleDone, onSetPriority, crumb, onEdit, onDelete }: Props) {
-  const [aCopied, copyAnswer] = useCopy()
-
   return (
     <div className={`q-item ${isDone ? 'done' : ''} ${isOpen ? 'open' : ''} ${priority ? `pri-${priority}` : ''}`}>
       <div
@@ -129,21 +195,7 @@ export default function QuestionItem({ q, idx, isDone, isOpen, priority, onToggl
         <RowActions getText={() => stripHtml(q.title)} onEdit={onEdit} onDelete={onDelete} />
         <PriorityPicker value={priority} onChange={onSetPriority} />
       </div>
-      {isOpen && (
-        <div className="q-body prose prose-slate dark:prose-invert max-w-none">
-          <div dangerouslySetInnerHTML={{ __html: q.bodyHtml }} />
-          <div className="q-answer-foot">
-            <button
-              className={`copy-btn q-copy-answer ${aCopied ? 'copied' : ''}`}
-              onClick={(e) => copyAnswer(stripHtml(q.bodyHtml), e)}
-              aria-label="Copy answer"
-              title="Copy answer"
-            >
-              {aCopied ? <Icon.Check /> : <Icon.Copy />}
-            </button>
-          </div>
-        </div>
-      )}
+      {isOpen && <QuestionAnswerBody q={q} />}
     </div>
   )
 }

@@ -1,8 +1,8 @@
-import { TOPIC_GROUPS } from '@/lib/topics'
+import { getAllGroups } from '@/lib/topicsData'
 import { fetchAllQuestionIds } from '@/lib/parser'
 import DashboardClient from '@/components/DashboardClient'
 
 export default async function Home() {
-  const questionIds = await fetchAllQuestionIds()
-  return <DashboardClient groups={TOPIC_GROUPS} questionIds={questionIds} />
+  const [groups, questionIds] = await Promise.all([getAllGroups(), fetchAllQuestionIds()])
+  return <DashboardClient groups={groups} questionIds={questionIds} />
 }

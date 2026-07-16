@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import { findGroup, findSection, findGroupForSection, findPrevNextSections, sectionUrl, TOPIC_GROUPS } from '@/lib/topics'
+import { findGroup, findSection, findGroupForSection, findPrevNextSections, sectionUrl } from '@/lib/topics'
+import { getAllGroups } from '@/lib/topicsData'
 import { parseSection, countQuestions } from '@/lib/parser'
 import SectionClient from '@/components/SectionClient'
 
@@ -12,29 +13,32 @@ interface Props {
 
 export default async function Page({ params }: Props) {
   const { path: segments } = await params
+  const groups = await getAllGroups()
 
   // Single segment → topic overview
   if (segments.length === 1) {
-    const group = findGroup(segments[0])
+    const group = findGroup(groups, segments[0])
     if (!group) notFound()
 
-    // Redirect straight to the first section
+    // Redirect straight to the first section — a just-created topic with no
+    // subtopics yet (see AddTopicModal) has nowhere to redirect to.
     const s = group.sections[0]
+    if (!s) notFound()
     redirect(`/${s.topic}/${s.file}`)
   }
 
   // Multi-segment → section view
-  const section = findSection(segments)
+  const section = findSection(groups, segments)
   if (!section) notFound()
 
   const [questions, group] = await Promise.all([
     parseSection(section),
-    Promise.resolve(findGroupForSection(section)),
+    Promise.resolve(findGroupForSection(groups, section)),
   ])
 
   if (!group) notFound()
 
-  const { prev, next } = findPrevNextSections(section)
+  const { prev, next } = findPrevNextSections(groups, section)
 
   return (
     <div className="space-y-12">
@@ -79,10 +83,11 @@ export default async function Page({ params }: Props) {
 }
 
 export async function generateStaticParams() {
+  const groups = await getAllGroups()
   const paths: { path: string[] }[] = []
 
-  for (const group of TOPIC_GROUPS) {
-    paths.push({ path: [group.slug] })
+  for (const group of groups) {
+    if (group.sections.length > 0) paths.push({ path: [group.slug] })
     for (const section of group.sections) {
       paths.push({ path: [...section.topic.split('/'), section.file] })
     }

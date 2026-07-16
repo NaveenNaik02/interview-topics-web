@@ -7,7 +7,8 @@ import MainContent from '@/components/MainContent'
 import { ProgressProvider } from '@/lib/ProgressContext'
 import { ThemeProvider } from '@/lib/ThemeContext'
 import { FontSizeProvider } from '@/lib/FontSizeContext'
-import { TOPIC_GROUPS } from '@/lib/topics'
+import { TopicsProvider } from '@/lib/TopicsContext'
+import { getAllGroups } from '@/lib/topicsData'
 import { UIProvider } from '@/lib/UIContext'
 import { fetchAllCounts, fetchAllQuestionIds } from '@/lib/parser'
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration'
@@ -43,7 +44,7 @@ export const metadata: Metadata = {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const [initialTotals, questionIds] = await Promise.all([fetchAllCounts(), fetchAllQuestionIds()])
+  const [initialTotals, questionIds, groups] = await Promise.all([fetchAllCounts(), fetchAllQuestionIds(), getAllGroups()])
 
   return (
     <html lang="en" suppressHydrationWarning data-density="cozy" className={`${ibmSans.variable} ${ibmSerif.variable} ${ibmMono.variable}`}>
@@ -51,20 +52,22 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <ServiceWorkerRegistration />
         <ThemeProvider>
           <FontSizeProvider>
-            <ProgressProvider initialTotals={initialTotals}>
-              <ThemeSync />
-              <OfflineToast />
-              <AddQuestionFab />
-              <UIProvider>
-                <div className="app-container">
-                  <Sidebar groups={TOPIC_GROUPS} questionIds={questionIds} />
-                  <main className="main-content">
-                    <Topbar />
-                    <MainContent>{children}</MainContent>
-                  </main>
-                </div>
-              </UIProvider>
-            </ProgressProvider>
+            <TopicsProvider groups={groups}>
+              <ProgressProvider initialTotals={initialTotals}>
+                <ThemeSync />
+                <OfflineToast />
+                <AddQuestionFab />
+                <UIProvider>
+                  <div className="app-container">
+                    <Sidebar groups={groups} questionIds={questionIds} />
+                    <main className="main-content">
+                      <Topbar />
+                      <MainContent>{children}</MainContent>
+                    </main>
+                  </div>
+                </UIProvider>
+              </ProgressProvider>
+            </TopicsProvider>
           </FontSizeProvider>
         </ThemeProvider>
       </body>

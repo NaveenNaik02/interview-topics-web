@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:local": "sh -c 'set -a && . ./.env.local.docker && set +a && next dev'",
+    "dev:local": "sh -c 'set -a && DEV_LOCAL=1 && . ./.env.local.docker && set +a && next dev -p 3010'",
     "build": "next build",
     "start": "next start",
     "migrate": "node --env-file=.env.local scripts/migrate.js",
@@ -28,7 +28,8 @@
     "server-only": "^0.0.1",
     "serwist": "^9.5.11",
     "tailwind-merge": "^2.3.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.13",

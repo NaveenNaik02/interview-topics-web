@@ -88,17 +88,16 @@ export default function DashboardClient({ groups, questionIds }: Props) {
           const allDone = mounted && groupTotal > 0 && groupDone === groupTotal
           const noneDone = !mounted || groupDone === 0
 
-          return (
-            <div key={group.slug} className="topic-card">
-              <button
-                className="tc-main"
-                onClick={() => router.push(sectionUrl(firstSection))}
-              >
-                <div className="tc-head">
-                  <span className="tc-name">{group.groupName}</span>
-                  <span className="tc-count">{groupTotal} Q</span>
-                </div>
-                <p className="tc-blurb">{group.blurb}</p>
+          // A just-created topic (see AddTopicModal) has no subtopics yet —
+          // nothing to navigate to, so render it as a static, non-clickable card.
+          const tcMain = (
+            <>
+              <div className="tc-head">
+                <span className="tc-name">{group.groupName}</span>
+                <span className="tc-count">{groupTotal} Q</span>
+              </div>
+              <p className="tc-blurb">{group.blurb}</p>
+              {firstSection ? (
                 <div className="tc-progress">
                   <div className="bar">
                     <div
@@ -108,7 +107,26 @@ export default function DashboardClient({ groups, questionIds }: Props) {
                   </div>
                   <span>{mounted ? groupDone : 0}/{groupTotal}</span>
                 </div>
-              </button>
+              ) : (
+                <p className="tc-blurb" style={{ opacity: 0.7 }}>No subtopics yet</p>
+              )}
+            </>
+          )
+
+          return (
+            <div key={group.slug} className="topic-card">
+              {firstSection ? (
+                <button
+                  className="tc-main"
+                  onClick={() => router.push(sectionUrl(firstSection))}
+                >
+                  {tcMain}
+                </button>
+              ) : (
+                <div className="tc-main" style={{ cursor: 'default' }}>
+                  {tcMain}
+                </div>
+              )}
               <div className="tc-tools">
                 <button
                   className="tc-tool"

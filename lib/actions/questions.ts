@@ -6,6 +6,7 @@ import { marked } from 'marked'
 import DOMPurify from 'isomorphic-dompurify'
 import { createClient } from '@/lib/supabase/server'
 import { findSection, findGroupForSection } from '@/lib/topics'
+import { getAllGroups } from '@/lib/topicsData'
 import { isLocalSupabase } from '@/lib/utils'
 import type { ParsedQuestion } from '@/lib/parser'
 
@@ -23,6 +24,9 @@ export interface AddQuestionInput {
   file: string
   title: string
   markdown: string
+  lang?: string
+  tags?: string
+  problem?: string
 }
 
 // .q-body only defines heading styles for <h4> — remap every markdown
@@ -47,10 +51,11 @@ export async function addQuestion(input: AddQuestionInput): Promise<ParsedQuesti
   if (title.length < 4) throw new Error('Question is too short')
   if (markdown.length < 4) throw new Error('Answer is too short')
 
+  const groups = await getAllGroups()
   const segments = [...input.topic.split('/'), input.file].filter(Boolean)
-  const section = findSection(segments)
+  const section = findSection(groups, segments)
   if (!section) throw new Error('Unknown topic/section')
-  const group = findGroupForSection(section)
+  const group = findGroupForSection(groups, section)
   if (!group) throw new Error('Unknown topic/section')
 
   const bodyHtml = renderAnswerHtml(markdown)
@@ -78,6 +83,9 @@ export async function addQuestion(input: AddQuestionInput): Promise<ParsedQuesti
     label: section.label,
     group_slug: group.slug,
     created_by: user.id,
+    lang: input.lang?.trim() || null,
+    tags: input.tags?.trim() || null,
+    problem: input.problem?.trim() || null,
   })
   if (error) throw error
 
@@ -97,10 +105,11 @@ export async function updateQuestion(id: string, input: AddQuestionInput): Promi
   if (title.length < 4) throw new Error('Question is too short')
   if (markdown.length < 4) throw new Error('Answer is too short')
 
+  const groups = await getAllGroups()
   const segments = [...input.topic.split('/'), input.file].filter(Boolean)
-  const section = findSection(segments)
+  const section = findSection(groups, segments)
   if (!section) throw new Error('Unknown topic/section')
-  const group = findGroupForSection(section)
+  const group = findGroupForSection(groups, section)
   if (!group) throw new Error('Unknown topic/section')
 
   const { data: existing } = await supabase
@@ -136,6 +145,9 @@ export async function updateQuestion(id: string, input: AddQuestionInput): Promi
       markdown,
       label: section.label,
       group_slug: group.slug,
+      lang: input.lang?.trim() || null,
+      tags: input.tags?.trim() || null,
+      problem: input.problem?.trim() || null,
     })
     .eq('id', id)
     .select('id, number, title, body_html')

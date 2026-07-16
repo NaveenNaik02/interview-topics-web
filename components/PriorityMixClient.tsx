@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search, X, Send } from 'lucide-react'
 import { useProgress } from '@/lib/ProgressContext'
-import { TOPIC_GROUPS, sectionUrl, findGroupForSection, type SectionMeta } from '@/lib/topics'
+import { useTopicGroups } from '@/lib/TopicsContext'
+import { sectionUrl, findGroupForSection, type SectionMeta } from '@/lib/topics'
 import { deleteQuestion } from '@/lib/actions/questions'
 import type { PriorityLevel } from '@/lib/offlineSync'
 import QuestionItem from './QuestionItem'
@@ -21,6 +22,9 @@ export interface PriorityMixQuestion {
   file: string
   label: string
   groupSlug: string
+  lang?: string | null
+  tags?: string | null
+  problem?: string | null
   priority: PriorityLevel
 }
 
@@ -41,16 +45,12 @@ interface FlatSub {
   topicName: string
 }
 
-const FLAT_SUBS: FlatSub[] = TOPIC_GROUPS.flatMap(g =>
-  g.sections.map((s: SectionMeta) => ({ key: sectionUrl(s), label: s.label, topicName: g.groupName }))
-)
-
 const MAX_SUB_CHIPS = 3
 
 // Cmd-K-style multi-select: chips + search trigger + keyboard-navigable
 // overlay, so picking subtopics across many topics doesn't need a giant
 // checkbox tree.
-function SubtopicCommandPalette({ selected, onToggle, onClose }: { selected: Set<string>; onToggle: (key: string) => void; onClose: () => void }) {
+function SubtopicCommandPalette({ flatSubs, selected, onToggle, onClose }: { flatSubs: FlatSub[]; selected: Set<string>; onToggle: (key: string) => void; onClose: () => void }) {
   const [query, setQuery] = useState('')
   const [activeIdx, setActiveIdx] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -64,8 +64,8 @@ function SubtopicCommandPalette({ selected, onToggle, onClose }: { selected: Set
   useEffect(() => { setActiveIdx(0) }, [query])
 
   const q = query.toLowerCase()
-  const filtered = FLAT_SUBS.filter(s => !q || s.label.toLowerCase().includes(q) || s.topicName.toLowerCase().includes(q))
-  const chosen = FLAT_SUBS.filter(s => selected.has(s.key))
+  const filtered = flatSubs.filter(s => !q || s.label.toLowerCase().includes(q) || s.topicName.toLowerCase().includes(q))
+  const chosen = flatSubs.filter(s => selected.has(s.key))
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') { onClose(); return }
@@ -123,9 +123,9 @@ function SubtopicCommandPalette({ selected, onToggle, onClose }: { selected: Set
   )
 }
 
-function SubtopicPicker({ selected, onToggle }: { selected: Set<string>; onToggle: (key: string) => void }) {
+function SubtopicPicker({ flatSubs, selected, onToggle }: { flatSubs: FlatSub[]; selected: Set<string>; onToggle: (key: string) => void }) {
   const [paletteOpen, setPaletteOpen] = useState(false)
-  const chosen = FLAT_SUBS.filter(s => selected.has(s.key))
+  const chosen = flatSubs.filter(s => selected.has(s.key))
   const shown = chosen.slice(0, MAX_SUB_CHIPS)
   const rest = chosen.slice(MAX_SUB_CHIPS)
 
@@ -147,7 +147,7 @@ function SubtopicPicker({ selected, onToggle }: { selected: Set<string>; onToggl
         <span>{chosen.length ? 'Add or edit subtopics…' : 'Search subtopics…'}</span>
       </button>
       {paletteOpen && (
-        <SubtopicCommandPalette selected={selected} onToggle={onToggle} onClose={() => setPaletteOpen(false)} />
+        <SubtopicCommandPalette flatSubs={flatSubs} selected={selected} onToggle={onToggle} onClose={() => setPaletteOpen(false)} />
       )}
     </div>
   )
@@ -155,6 +155,10 @@ function SubtopicPicker({ selected, onToggle }: { selected: Set<string>; onToggl
 
 export default function PriorityMixClient({ questions }: Props) {
   const { getPriority, isComplete, toggle, setPriority, isOnline, offlineModeEnabled, mounted, user } = useProgress()
+  const groups = useTopicGroups()
+  const flatSubs = useMemo(() => groups.flatMap(g =>
+    g.sections.map((s: SectionMeta) => ({ key: sectionUrl(s), label: s.label, topicName: g.groupName }))
+  ), [groups])
   const router = useRouter()
   const [openId, setOpenId] = useState<string | null>(null)
   const [showOfflineModal, setShowOfflineModal] = useState(false)
@@ -201,7 +205,7 @@ export default function PriorityMixClient({ questions }: Props) {
       .sort((a, b) => PRI_RANK[b.priority] - PRI_RANK[a.priority])
   }, [flagged, selPri, selSubs, status, hasBoth, isComplete])
 
-  const selectedSubLabels = FLAT_SUBS.filter(s => selSubs.has(s.key)).map(s => s.label)
+  const selectedSubLabels = flatSubs.filter(s => selSubs.has(s.key)).map(s => s.label)
   const priTxt = selPri.size ? PRI_OPTIONS.filter(p => selPri.has(p.k)).map(p => p.label).join(' + ') : 'any priority'
   const subTxt = selectedSubLabels.length
     ? (selectedSubLabels.length <= 2 ? selectedSubLabels.join(', ') : `${selectedSubLabels.length} subtopics`)
@@ -237,7 +241,7 @@ export default function PriorityMixClient({ questions }: Props) {
         </div>
         <div className="bd-row">
           <span className="bd-lab">Subtopics</span>
-          <SubtopicPicker selected={selSubs} onToggle={toggleSub} />
+          <SubtopicPicker flatSubs={flatSubs} selected={selSubs} onToggle={toggleSub} />
         </div>
         <div className="bd-row">
           <span className="bd-lab">Status</span>
@@ -270,13 +274,13 @@ export default function PriorityMixClient({ questions }: Props) {
       ) : (
         <div className="questions-list">
           {matched.map((r, i) => {
-            const group = findGroupForSection({ topic: r.q.topic, file: r.q.file, label: r.q.label })
+            const group = findGroupForSection(groups, { topic: r.q.topic, file: r.q.file, label: r.q.label })
             const section: SectionMeta = { topic: r.q.topic, file: r.q.file, label: r.q.label }
             const canManage = mounted && !!user && (r.q.createdBy === user.id || user.app_metadata?.is_admin === true)
             return (
               <QuestionItem
                 key={r.q.id}
-                q={{ id: r.q.id, number: r.q.number, title: r.q.title, bodyHtml: r.q.bodyHtml }}
+                q={{ id: r.q.id, number: r.q.number, title: r.q.title, bodyHtml: r.q.bodyHtml, problem: r.q.problem }}
                 idx={i}
                 isDone={isComplete(r.q.id)}
                 isOpen={openId === r.q.id}
@@ -297,6 +301,9 @@ export default function PriorityMixClient({ questions }: Props) {
                   markdown: r.q.markdown ?? '',
                   section,
                   priority: r.priority,
+                  lang: r.q.lang,
+                  tags: r.q.tags,
+                  problem: r.q.problem,
                 }) : undefined}
                 onDelete={canManage ? async () => {
                   await deleteQuestion(r.q.id)

@@ -69,7 +69,7 @@ export default function Sidebar({ groups, questionIds }: { groups: TopicGroup[];
       <div className={`scrim ${drawerOpen ? 'show' : ''}`} onClick={() => setDrawerOpen(false)} />
       <aside className={`sidebar ${drawerOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
-          <Link href="/" className="brand" onClick={() => setDrawerOpen(false)}>
+          <Link href="/" className="brand" onClick={() => setDrawerOpen(false)} prefetch={false}>
             <div className="brand-mark">P</div>
             <div>
               <div className="brand-title">Prep Tracker</div>
@@ -100,6 +100,7 @@ export default function Sidebar({ groups, questionIds }: { groups: TopicGroup[];
             className={`subtopic-row ${pathname === '/' ? 'active' : ''}`}
             onClick={() => setDrawerOpen(false)}
             style={{ marginBottom: 8 }}
+            prefetch={false}
           >
             <span style={{ display: 'inline-flex', color: 'var(--text-subtle)' }}><Icon.Home /></span>
             <span className="subtopic-name">Dashboard</span>
@@ -110,6 +111,7 @@ export default function Sidebar({ groups, questionIds }: { groups: TopicGroup[];
             className={`subtopic-row ${pathname === '/priority-mix' ? 'active' : ''}`}
             onClick={() => setDrawerOpen(false)}
             style={{ marginBottom: 8 }}
+            prefetch={false}
           >
             <span style={{ display: 'inline-flex', color: 'var(--text-subtle)' }}><Icon.Filter /></span>
             <span className="subtopic-name">Priority Mix</span>
@@ -184,6 +186,7 @@ export default function Sidebar({ groups, questionIds }: { groups: TopicGroup[];
                             href={url}
                             className={`subtopic-row ${isActive ? 'active' : ''}`}
                             onClick={() => setDrawerOpen(false)}
+                            prefetch={false}
                           >
                             <span
                               className={`progress-ring ${complete ? 'complete' : ''}`}

@@ -212,6 +212,9 @@ export default function SectionClient({ section, group, questions: serverQuestio
                 markdown: q.markdown ?? '',
                 section,
                 priority,
+                lang: q.lang,
+                tags: q.tags,
+                problem: q.problem,
               }) : undefined}
               onDelete={canManage ? async () => {
                 await deleteQuestion(q.id)

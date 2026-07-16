@@ -1,8 +1,9 @@
 'use client'
 
-import { Sun, Moon, BookOpen, Download, X } from 'lucide-react'
+import { Sun, Moon, BookOpen, Download, X, Plus, Trash2 } from 'lucide-react'
 import { useTheme, Theme } from '@/lib/ThemeContext'
 import { useProgress } from '@/lib/ProgressContext'
+import { useInstructionPresets } from '@/lib/instructionPresets'
 import type { SortMode } from './FilterSortToolbar'
 
 const THEME_ORDER: Theme[] = ['light', 'sepia', 'dark']
@@ -29,6 +30,57 @@ function ToggleSwitch({ on, onChange, id }: { on: boolean; onChange: (v: boolean
     >
       <span className="toggle-knob" />
     </button>
+  )
+}
+
+function InstructionPresetsEditor() {
+  const { presets, activeId, setActiveId, addPreset, updatePreset, deletePreset } = useInstructionPresets()
+
+  return (
+    <div className="preset-list">
+      {presets.map(p => (
+        <div key={p.id} className={`preset-card ${p.id === activeId ? 'active' : ''}`}>
+          <div className="preset-card-head">
+            <button
+              type="button"
+              className={`preset-active-radio ${p.id === activeId ? 'on' : ''}`}
+              aria-label={p.id === activeId ? `${p.name} is the active preset` : `Make ${p.name} the active preset`}
+              aria-pressed={p.id === activeId}
+              onClick={() => setActiveId(p.id)}
+            />
+            <input
+              className="preset-name-input"
+              value={p.name}
+              onChange={(e) => updatePreset(p.id, { name: e.target.value, text: p.text })}
+            />
+            {presets.length > 1 && (
+              <button
+                type="button"
+                className="preset-delete-btn"
+                onClick={() => deletePreset(p.id)}
+                aria-label={`Delete ${p.name}`}
+                title="Delete preset"
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
+          </div>
+          <textarea
+            className="preset-text-input"
+            value={p.text}
+            onChange={(e) => updatePreset(p.id, { name: p.name, text: e.target.value })}
+            placeholder={'e.g.\n- Keep answers to 3 short bullets max\n- Always include one runnable code example\n- Bold the key term being defined'}
+          />
+        </div>
+      ))}
+      <button
+        type="button"
+        className="preset-add-btn"
+        onClick={() => { const p = addPreset({ name: 'New preset', text: '' }); setActiveId(p.id) }}
+      >
+        <Plus size={13} /> New preset
+      </button>
+    </div>
   )
 }
 
@@ -120,6 +172,19 @@ export default function SettingsClient() {
           </div>
           <ToggleSwitch id="remember-filters-toggle" on={rememberFilters} onChange={setRememberFilters} />
         </div>
+      </section>
+
+      <section className="settings-section">
+        <h2 className="settings-section-title">Answer generation</h2>
+        <div className="settings-row" style={{ alignItems: 'flex-start' }}>
+          <div className="settings-row-text">
+            <div className="settings-row-label">Instruction presets</div>
+            <div className="settings-row-hint">
+              Named formatting instructions the AI follows when generating or reformatting answers in Add Question. The active one is what new questions start with — you can still override it per-question there.
+            </div>
+          </div>
+        </div>
+        <InstructionPresetsEditor />
       </section>
 
       <section className="settings-section">

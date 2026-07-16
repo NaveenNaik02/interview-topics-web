@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { supabase } from './supabase/client'
 import type { User } from '@supabase/supabase-js'
-import { TOPIC_GROUPS } from './topics'
+import { useTopicGroups } from './TopicsContext'
 import {
   getOfflineEnabled, setOfflineEnabled,
   getCachedProgress, setCachedProgress,
@@ -85,6 +85,7 @@ export function ProgressProvider({
   children: React.ReactNode
   initialTotals?: Record<string, number>
 }) {
+  const groups = useTopicGroups()
   const [store, setStore] = useState<ProgressStore>({})
   const [priorityStore, setPriorityStore] = useState<PriorityStore>({})
   const [totals, setTotals] = useState<Record<string, number>>(initialTotals)
@@ -111,7 +112,7 @@ export function ProgressProvider({
     let totalCompleted = 0
     let totalQuestions = 0
 
-    TOPIC_GROUPS.forEach(group => {
+    groups.forEach(group => {
       group.sections.forEach(section => {
         const url = `/${section.topic}/${section.file}`
         const prefix = `${section.topic}/${section.file}/`
@@ -129,7 +130,7 @@ export function ProgressProvider({
       total: totalQuestions,
       bySection
     }
-  }, [store, totals])
+  }, [store, totals, groups])
 
   const setSectionTotal = useCallback((url: string, total: number) => {
     setTotals(prev => {
@@ -513,7 +514,7 @@ export function ProgressProvider({
     setCachedPriority(priorityStore)
     setCachedTotals(totals)
 
-    const allSections = TOPIC_GROUPS.flatMap(g => g.sections)
+    const allSections = groups.flatMap(g => g.sections)
     const urls = ['/', ...allSections.map(s => `/${s.topic}/${s.file}`)]
 
     // Fetch and cache question content for each section using browser Supabase client
@@ -559,7 +560,7 @@ export function ProgressProvider({
     setCachedAtState(now)
     setCachingProgress(null)
     setIsCaching(false)
-  }, [user, store, priorityStore])
+  }, [user, store, priorityStore, groups])
 
   const disableOfflineMode = useCallback(async () => {
     // Flush pending ops if online before disabling

@@ -7,6 +7,7 @@ import { Sun, Moon, Book, Menu, Github, LogOut, Search, X, Settings, User, Chevr
 import { useTheme, type Theme } from '@/lib/ThemeContext'
 import { useUI } from '@/lib/UIContext'
 import { useProgress } from '@/lib/ProgressContext'
+import { useTopicGroups } from '@/lib/TopicsContext'
 import { findSection, findGroupForSection } from '@/lib/topics'
 import OfflineStatusPill from './OfflineStatusPill'
 
@@ -25,6 +26,7 @@ export default function Topbar() {
     isOnline, offlineModeEnabled, isSyncing, isCaching, pendingOpsCount,
   } = useProgress()
   const { setDrawerOpen, query, setQuery } = useUI()
+  const groups = useTopicGroups()
   const inputRef = useRef<HTMLInputElement>(null)
 
   const [moreOpen, setMoreOpen] = useState(false)
@@ -82,9 +84,9 @@ export default function Topbar() {
     breadcrumbs = <span className="crumb">Priority Mix</span>
   } else if (!isHome) {
     const segments = pathname.split('/').filter(Boolean)
-    const section = findSection(segments)
+    const section = findSection(groups, segments)
     if (section) {
-      const group = findGroupForSection(section)
+      const group = findGroupForSection(groups, section)
       breadcrumbs = (
         <>
           <Link href="/" className="crumb crumb-parent hover:text-[var(--text)] transition-colors">

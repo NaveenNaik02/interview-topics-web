@@ -4,8 +4,8 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useProgress } from '@/lib/ProgressContext'
 import { useUI } from '@/lib/UIContext'
+import { useTopicGroups } from '@/lib/TopicsContext'
 import { supabase } from '@/lib/supabase/client'
-import { TOPIC_GROUPS } from '@/lib/topics'
 
 interface SearchQuestion {
   id: string
@@ -57,13 +57,6 @@ function snippet(text: string, query: string, len = 160): string {
   return (start > 0 ? '…' : '') + text.slice(start, end) + (end < text.length ? '…' : '')
 }
 
-const SECTION_MAP: Record<string, { groupName: string; label: string }> = {}
-for (const group of TOPIC_GROUPS) {
-  for (const s of group.sections) {
-    SECTION_MAP[`${s.topic}/${s.file}`] = { groupName: group.groupName, label: s.label }
-  }
-}
-
 const ChevronDown = () => (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="4 6 8 10 12 6" />
@@ -79,6 +72,7 @@ const Check = () => (
 export default function SearchResults() {
   const { query, setQuery } = useUI()
   const { isComplete, toggle } = useProgress()
+  const groups = useTopicGroups()
   const router = useRouter()
   const [questions, setQuestions] = useState<SearchQuestion[]>([])
   const [loaded, setLoaded] = useState(false)
@@ -105,6 +99,16 @@ export default function SearchResults() {
 
   const trimmedQuery = query.trim()
 
+  const sectionMap = useMemo(() => {
+    const map: Record<string, { groupName: string; label: string }> = {}
+    for (const group of groups) {
+      for (const s of group.sections) {
+        map[`${s.topic}/${s.file}`] = { groupName: group.groupName, label: s.label }
+      }
+    }
+    return map
+  }, [groups])
+
   const results = useMemo<ResultItem[]>(() => {
     if (trimmedQuery.length < 2 || questions.length === 0) return []
     const ql = trimmedQuery.toLowerCase()
@@ -116,7 +120,7 @@ export default function SearchResults() {
       const inBody = bodyText.toLowerCase().includes(ql)
       if (!inTitle && !inBody) continue
       const key = `${q.topic}/${q.file}`
-      const meta = SECTION_MAP[key] || { groupName: q.topic, label: q.file }
+      const meta = sectionMap[key] || { groupName: q.topic, label: q.file }
       scored.push({
         item: { q, groupName: meta.groupName, sectionLabel: meta.label, sectionUrl: `/${q.topic}/${q.file}`, titleText, bodyText },
         score: inTitle ? 0 : 1,
@@ -124,7 +128,7 @@ export default function SearchResults() {
     }
     scored.sort((a, b) => a.score - b.score)
     return scored.map(s => s.item)
-  }, [trimmedQuery, questions])
+  }, [trimmedQuery, questions, sectionMap])
 
   const goto = (url: string) => {
     setQuery('')

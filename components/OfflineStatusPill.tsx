@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Wifi, Send, RefreshCw, Loader2, Download, CloudDownload } from 'lucide-react'
 import { useProgress } from '@/lib/ProgressContext'
-import { TOPIC_GROUPS } from '@/lib/topics'
+import { useTopicGroups } from '@/lib/TopicsContext'
 
 function relativeTime(isoStr: string | null): string {
   if (!isoStr) return 'a while ago'
@@ -13,15 +13,15 @@ function relativeTime(isoStr: string | null): string {
   return `${Math.floor(diff / 3_600_000)}h ago`
 }
 
-const TOTAL_URLS = 1 + TOPIC_GROUPS.flatMap(g => g.sections).length // dashboard + all sections
-const EST_MB = Math.round(TOTAL_URLS * 80 / 1024 * 10) / 10
-
 export default function OfflineStatusPill() {
   const {
     isOnline, offlineModeEnabled, isCaching, cachingProgress,
     pendingOpsCount, isSyncing, cachedAt, stats,
     enableOfflineMode, disableOfflineMode, syncNow,
   } = useProgress()
+  const groups = useTopicGroups()
+  const totalUrls = useMemo(() => 1 + groups.flatMap(g => g.sections).length, [groups]) // dashboard + all sections
+  const estMb = Math.round(totalUrls * 80 / 1024 * 10) / 10
 
   const [open, setOpen] = useState(false)
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -109,6 +109,8 @@ export default function OfflineStatusPill() {
             isSyncing={isSyncing}
             cachedAt={cachedAt}
             totalQuestions={stats.total}
+            totalUrls={totalUrls}
+            estMb={estMb}
             onDownload={() => { enableOfflineMode() }}
             onCheckUpdates={() => { enableOfflineMode() }}
             onSyncNow={() => { syncNow() }}
@@ -129,6 +131,8 @@ interface PopoverContentProps {
   isSyncing: boolean
   cachedAt: string | null
   totalQuestions: number
+  totalUrls: number
+  estMb: number
   onDownload: () => void
   onCheckUpdates: () => void
   onSyncNow: () => void
@@ -137,11 +141,11 @@ interface PopoverContentProps {
 
 function PopoverContent({
   pillState, offlineModeEnabled, pct, cachingProgress, pendingOpsCount, isSyncing,
-  cachedAt, totalQuestions, onDownload, onCheckUpdates, onSyncNow, onRemove,
+  cachedAt, totalQuestions, totalUrls, estMb, onDownload, onCheckUpdates, onSyncNow, onRemove,
 }: PopoverContentProps) {
   // Only "downloaded" if the user actually opted in — not just because network is offline
   const isDownloaded = offlineModeEnabled && (pillState === 'ready' || pillState === 'sync' || pillState === 'offline')
-  const displayQ = totalQuestions || TOTAL_URLS * 10
+  const displayQ = totalQuestions || totalUrls * 10
 
   return (
     <>
@@ -166,7 +170,7 @@ function PopoverContent({
           </p>
           <div className="op-popover-meta">
             <span>📚 {displayQ} questions</span>
-            <span>⬇ ≈ {EST_MB} MB</span>
+            <span>⬇ ≈ {estMb} MB</span>
           </div>
           <button className="op-btn-primary" disabled style={{ opacity: 0.5, cursor: 'not-allowed' }}>
             <Download size={14} />
@@ -187,7 +191,7 @@ function PopoverContent({
           </p>
           <div className="op-popover-meta">
             <span>📚 {displayQ} questions</span>
-            <span>⬇ ≈ {EST_MB} MB</span>
+            <span>⬇ ≈ {estMb} MB</span>
           </div>
           <button className="op-btn-primary" onClick={onDownload}>
             <Download size={14} />

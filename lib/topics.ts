@@ -127,22 +127,26 @@ export const TOPIC_GROUPS: TopicGroup[] = [
   },
 ]
 
-export function findGroup(slug: string): TopicGroup | null {
-  return TOPIC_GROUPS.find(g => g.slug === slug) ?? null
+// These all take `groups` explicitly (rather than closing over TOPIC_GROUPS)
+// so callers can pass the merged static + DB-backed list from
+// lib/topicsData.ts's getAllGroups() — user-added topics/subtopics need to
+// resolve here too, not just the static curriculum.
+export function findGroup(groups: TopicGroup[], slug: string): TopicGroup | null {
+  return groups.find(g => g.slug === slug) ?? null
 }
 
-export function findSection(segments: string[]): SectionMeta | null {
+export function findSection(groups: TopicGroup[], segments: string[]): SectionMeta | null {
   const topic = segments.slice(0, -1).join('/')
   const file = segments[segments.length - 1]
-  for (const group of TOPIC_GROUPS) {
+  for (const group of groups) {
     const section = group.sections.find(s => s.topic === topic && s.file === file)
     if (section) return section
   }
   return null
 }
 
-export function findGroupForSection(section: SectionMeta): TopicGroup | null {
-  return TOPIC_GROUPS.find(g =>
+export function findGroupForSection(groups: TopicGroup[], section: SectionMeta): TopicGroup | null {
+  return groups.find(g =>
     g.sections.some(s => s.topic === section.topic && s.file === section.file)
   ) ?? null
 }
@@ -151,14 +155,29 @@ export function sectionUrl(section: SectionMeta): string {
   return `/${section.topic}/${section.file}`
 }
 
-export function findPrevNextSections(section: SectionMeta): {
+export function findPrevNextSections(groups: TopicGroup[], section: SectionMeta): {
   prev: SectionMeta | null
   next: SectionMeta | null
 } {
-  const all = TOPIC_GROUPS.flatMap(g => g.sections)
+  const all = groups.flatMap(g => g.sections)
   const idx = all.findIndex(s => s.topic === section.topic && s.file === section.file)
   return {
     prev: idx > 0 ? all[idx - 1] : null,
     next: idx < all.length - 1 ? all[idx + 1] : null,
   }
+}
+
+// Turns a user-typed topic/subtopic name into a URL-safe slug, e.g.
+// "System Design!" -> "system-design". Falls back to "topic" if nothing
+// alphanumeric survives (e.g. an all-emoji name).
+export function slugify(text: string): string {
+  return text.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'topic'
+}
+
+// Appends "-2", "-3", ... until `base` no longer collides with `taken`.
+export function uniqueSlug(base: string, taken: Set<string>): string {
+  if (!taken.has(base)) return base
+  let n = 2
+  while (taken.has(`${base}-${n}`)) n++
+  return `${base}-${n}`
 }
