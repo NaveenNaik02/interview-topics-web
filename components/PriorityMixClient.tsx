@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search, X, Send } from 'lucide-react'
 import { useProgress } from '@/lib/ProgressContext'
@@ -205,6 +205,25 @@ export default function PriorityMixClient({ questions }: Props) {
       .sort((a, b) => PRI_RANK[b.priority] - PRI_RANK[a.priority])
   }, [flagged, selPri, selSubs, status, hasBoth, isComplete])
 
+  // Changing a question's priority can move it elsewhere in this sorted/
+  // filtered list — that's expected. What shouldn't happen is the viewport
+  // following it there: the user is reading wherever they currently are and
+  // wants to keep reading from that same spot, not get dragged to the
+  // question's new slot. So pin the raw window scroll offset across the
+  // reorder instead of trying to keep any particular row in view.
+  const savedScrollYRef = useRef<number | null>(null)
+
+  const handleSetPriority = (id: string, level: PriorityLevel | null) => {
+    savedScrollYRef.current = window.scrollY
+    setPriority(id, level)
+  }
+
+  useLayoutEffect(() => {
+    if (savedScrollYRef.current === null) return
+    window.scrollTo(0, savedScrollYRef.current)
+    savedScrollYRef.current = null
+  }, [matched])
+
   const selectedSubLabels = flatSubs.filter(s => selSubs.has(s.key)).map(s => s.label)
   const priTxt = selPri.size ? PRI_OPTIONS.filter(p => selPri.has(p.k)).map(p => p.label).join(' + ') : 'any priority'
   const subTxt = selectedSubLabels.length
@@ -293,7 +312,7 @@ export default function PriorityMixClient({ questions }: Props) {
                   if (requireOnline()) return
                   toggle(r.q.id)
                 }}
-                onSetPriority={(level) => setPriority(r.q.id, level)}
+                onSetPriority={(level) => handleSetPriority(r.q.id, level)}
                 crumb={{ topicLabel: group?.groupName ?? r.q.groupSlug, subLabel: r.q.label, href: r.subKey }}
                 onEdit={canManage ? () => setEditingQuestion({
                   id: r.q.id,

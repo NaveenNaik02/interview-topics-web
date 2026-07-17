@@ -18,16 +18,18 @@ export type AddTopicSaved =
   | { kind: 'subtopic'; section: SectionMeta; group: TopicGroup }
 
 interface Props {
+  initialMode?: Mode
+  initialGroupSlug?: string
   onClose: () => void
   onSaved: (result: AddTopicSaved) => void
 }
 
-export default function AddTopicModal({ onClose, onSaved }: Props) {
+export default function AddTopicModal({ initialMode = 'topic', initialGroupSlug, onClose, onSaved }: Props) {
   const { user, mounted, signInWithGitHub } = useProgress()
   const groups = useTopicGroups()
 
-  const [mode, setMode] = useState<Mode>('topic')
-  const [groupSlug, setGroupSlug] = useState(groups[0]?.slug ?? '')
+  const [mode, setMode] = useState<Mode>(initialMode)
+  const [groupSlug, setGroupSlug] = useState(initialGroupSlug ?? groups[0]?.slug ?? '')
   const [topicName, setTopicName] = useState('')
   const [blurb, setBlurb] = useState('')
   const [subLabel, setSubLabel] = useState('')

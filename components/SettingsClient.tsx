@@ -1,9 +1,9 @@
 'use client'
 
-import { Sun, Moon, BookOpen, Download, X, Plus, Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Sun, Moon, BookOpen, Download, X, Plus, Pencil, Trash2 } from 'lucide-react'
 import { useTheme, Theme } from '@/lib/ThemeContext'
 import { useProgress } from '@/lib/ProgressContext'
-import { useInstructionPresets } from '@/lib/instructionPresets'
 import type { SortMode } from './FilterSortToolbar'
 
 const THEME_ORDER: Theme[] = ['light', 'sepia', 'dark']
@@ -33,53 +33,130 @@ function ToggleSwitch({ on, onChange, id }: { on: boolean; onChange: (v: boolean
   )
 }
 
+type PresetDraft = { id?: string; name: string; text: string }
+
+function PresetEditorModal({ initial, onClose, onSave }: { initial: PresetDraft; onClose: () => void; onSave: (name: string, text: string) => void }) {
+  const [name, setName] = useState(initial.name)
+  const [text, setText] = useState(initial.text)
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const canSave = name.trim().length > 0
+
+  return (
+    <div className="aq-instr-scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="aq-instr-modal" role="dialog" aria-modal="true" aria-label="Instruction preset">
+        <div className="aq-head">
+          <h2>{initial.id ? 'Edit preset' : 'New preset'}</h2>
+          <button className="aq-close" onClick={onClose} aria-label="Close" title="Close"><X size={15} /></button>
+        </div>
+        <div className="aq-body">
+          <div className="aq-field">
+            <label htmlFor="preset-name">Name</label>
+            <input
+              id="preset-name"
+              className="aq-input"
+              autoFocus
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Concise, Interview prep, Verbose"
+            />
+          </div>
+          <div className="aq-field">
+            <label>Formatting instructions <span className="aq-customize-sub">(optional)</span></label>
+            <div className="aq-md-wrap">
+              <div className="aq-md-panes single show-editor">
+                <div className="aq-md-editor-pane aq-instr-editor-pane">
+                  <textarea
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder={'e.g.\n- Keep answers to 3 short bullets max\n- Always include one runnable code example\n- Bold the key term being defined'}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="aq-foot">
+          <span className="aq-foot-left">This becomes the starting point for every new question until you switch or edit it again.</span>
+          <div className="aq-foot-actions">
+            <button className="btn-cancel" onClick={onClose}>Cancel</button>
+            <button className="btn-primary btn-save" disabled={!canSave} onClick={() => onSave(name, text)}>Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function InstructionPresetsEditor() {
-  const { presets, activeId, setActiveId, addPreset, updatePreset, deletePreset } = useInstructionPresets()
+  const {
+    instructionPresets: presets, activeInstructionPresetId: activeId, setActiveInstructionPresetId: setActiveId,
+    addInstructionPreset: addPreset, updateInstructionPreset: updatePreset, deleteInstructionPreset: deletePreset,
+  } = useProgress()
+  const [editor, setEditor] = useState<PresetDraft | null>(null)
 
   return (
     <div className="preset-list">
       {presets.map(p => (
-        <div key={p.id} className={`preset-card ${p.id === activeId ? 'active' : ''}`}>
-          <div className="preset-card-head">
+        <label key={p.id} className={`preset-row ${p.id === activeId ? 'active' : ''}`}>
+          <input
+            type="radio"
+            name="instruction-preset"
+            checked={p.id === activeId}
+            onChange={() => setActiveId(p.id)}
+          />
+          <div className="preset-row-text">
+            <div className="preset-row-name">
+              {p.name}
+              {p.id === activeId && <span className="preset-row-tag">Default</span>}
+            </div>
+            <div className="preset-row-preview">
+              {p.text.trim() ? p.text.trim() : 'No formatting preferences — uses the base prompt only.'}
+            </div>
+          </div>
+          <div className="preset-row-actions">
             <button
               type="button"
-              className={`preset-active-radio ${p.id === activeId ? 'on' : ''}`}
-              aria-label={p.id === activeId ? `${p.name} is the active preset` : `Make ${p.name} the active preset`}
-              aria-pressed={p.id === activeId}
-              onClick={() => setActiveId(p.id)}
-            />
-            <input
-              className="preset-name-input"
-              value={p.name}
-              onChange={(e) => updatePreset(p.id, { name: e.target.value, text: p.text })}
-            />
-            {presets.length > 1 && (
-              <button
-                type="button"
-                className="preset-delete-btn"
-                onClick={() => deletePreset(p.id)}
-                aria-label={`Delete ${p.name}`}
-                title="Delete preset"
-              >
-                <Trash2 size={14} />
-              </button>
-            )}
+              className="preset-row-btn"
+              title="Edit"
+              aria-label={`Edit ${p.name}`}
+              onClick={(e) => { e.preventDefault(); setEditor({ id: p.id, name: p.name, text: p.text }) }}
+            >
+              <Pencil size={13} />
+            </button>
+            <button
+              type="button"
+              className="preset-row-btn danger"
+              title={p.id === 'default' ? 'The default preset can\'t be deleted' : 'Delete'}
+              aria-label={`Delete ${p.name}`}
+              disabled={p.id === 'default'}
+              onClick={(e) => { e.preventDefault(); deletePreset(p.id) }}
+            >
+              <Trash2 size={13} />
+            </button>
           </div>
-          <textarea
-            className="preset-text-input"
-            value={p.text}
-            onChange={(e) => updatePreset(p.id, { name: p.name, text: e.target.value })}
-            placeholder={'e.g.\n- Keep answers to 3 short bullets max\n- Always include one runnable code example\n- Bold the key term being defined'}
-          />
-        </div>
+        </label>
       ))}
-      <button
-        type="button"
-        className="preset-add-btn"
-        onClick={() => { const p = addPreset({ name: 'New preset', text: '' }); setActiveId(p.id) }}
-      >
+      <button type="button" className="preset-add-btn" onClick={() => setEditor({ name: '', text: '' })}>
         <Plus size={13} /> New preset
       </button>
+
+      {editor && (
+        <PresetEditorModal
+          initial={editor}
+          onClose={() => setEditor(null)}
+          onSave={(name, text) => {
+            if (editor.id) updatePreset(editor.id, { name, text })
+            else addPreset({ name, text })
+            setEditor(null)
+          }}
+        />
+      )}
     </div>
   )
 }

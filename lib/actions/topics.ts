@@ -84,3 +84,55 @@ export async function addSection(input: AddSectionInput): Promise<{ section: Sec
   const section: SectionMeta = { topic, file, label }
   return { section, group: { ...group, sections: [...group.sections, section] } }
 }
+
+// Deletes a user-added subtopic. Refuses if it still has questions filed
+// under it — never silently orphans content. RLS (see
+// 20260716120000_topic_delete.sql) scopes the actual delete to the creator
+// or an admin, same as deleteQuestion in questions.ts.
+export async function deleteSection(topic: string, file: string): Promise<void> {
+  const { supabase } = await requireAuthor('delete a subtopic')
+
+  const { count } = await supabase
+    .from('questions')
+    .select('*', { count: 'exact', head: true })
+    .eq('topic', topic)
+    .eq('file', file)
+  if (count) throw new Error(`Delete or move its ${count} question${count === 1 ? '' : 's'} first`)
+
+  const { data, error } = await supabase
+    .from('sections')
+    .delete()
+    .eq('topic', topic)
+    .eq('file', file)
+    .select('group_slug')
+    .single()
+  if (error || !data) throw new Error('You can only delete subtopics you created')
+
+  revalidatePath('/')
+  revalidatePath(`/${data.group_slug}`)
+  revalidatePath(`/${topic}/${file}`)
+}
+
+// Deletes a user-added topic. Refuses if any of its subtopics still have
+// questions — for custom groups `topic` is always the group's own slug (see
+// addSection above), so a single count covers every subtopic underneath it.
+// Deleting the topic_groups row cascades to its `sections` rows via the FK.
+export async function deleteTopicGroup(slug: string): Promise<void> {
+  const { supabase } = await requireAuthor('delete a topic')
+
+  const { count } = await supabase
+    .from('questions')
+    .select('*', { count: 'exact', head: true })
+    .eq('topic', slug)
+  if (count) throw new Error(`Delete or move its ${count} question${count === 1 ? '' : 's'} first`)
+
+  const { data, error } = await supabase
+    .from('topic_groups')
+    .delete()
+    .eq('slug', slug)
+    .select('slug')
+    .single()
+  if (error || !data) throw new Error('You can only delete topics you created')
+
+  revalidatePath('/')
+}

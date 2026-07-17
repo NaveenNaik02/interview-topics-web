@@ -1,12 +1,13 @@
-'use client'
-
-import { useState } from 'react'
-
-// Settings owns the list of named presets and which one is "active" (the
-// default new questions start from). Per-question edits in the Add Question
-// modal's Instructions dialog only change that question's local draft — they
-// never write back here. The only way to change what NEW questions start
-// with is to edit/select a preset from Settings.
+// Instruction presets are owned by ProgressContext (via user_settings in
+// Supabase) alongside the rest of Settings — see setActiveInstructionPresetId
+// / addInstructionPreset / updateInstructionPreset / deleteInstructionPreset
+// there. This file only holds the shared type, the default content, and a
+// localStorage mirror so getActiveInstructionText() can be read synchronously
+// (needed to seed a fresh Add Question modal's instructions before the
+// Supabase round-trip resolves). Per-question edits in that modal's
+// Instructions dialog only change that question's local draft — they never
+// write back here. The only way to change what NEW questions start with is
+// to edit/select a preset from Settings.
 export interface InstructionPreset {
   id: string
   name: string
@@ -16,7 +17,17 @@ export interface InstructionPreset {
 const PRESETS_KEY = 'prep-tracker:ai-instruction-presets'
 const ACTIVE_PRESET_KEY = 'prep-tracker:ai-active-instruction-preset'
 
-function presetUid(): string {
+const DEFAULT_INSTRUCTIONS = [
+  'Lead with a bold key term or topic name and a one-line definition in the same sentence, then expand with bullet points written as complete narrative sentences (not fragments). This is the default format.',
+  "Keep it natural and concise, not padded — use only as many bullets as the topic genuinely needs. If the opening sentence alone fully answers it, that's enough.",
+  'Bold key technical terms inline within the sentence as they come up — never as a static label like "**Caching:** ...".',
+  'Use an em dash (—) within a bullet to add contrast or elaboration where it reads naturally.',
+  'Switch to a Markdown table only when the content is inherently comparative (e.g. "X vs Y"). Use code blocks only when a code example is genuinely needed.',
+].map(line => `- ${line}`).join('\n')
+
+export const DEFAULT_PRESETS: InstructionPreset[] = [{ id: 'default', name: 'Default', text: DEFAULT_INSTRUCTIONS }]
+
+export function presetUid(): string {
   return `preset_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`
 }
 
@@ -25,10 +36,10 @@ export function loadPresets(): InstructionPreset[] {
     const raw = JSON.parse(localStorage.getItem(PRESETS_KEY) || 'null')
     if (Array.isArray(raw) && raw.length) return raw
   } catch {}
-  return [{ id: 'default', name: 'Default', text: '' }]
+  return DEFAULT_PRESETS
 }
 
-function savePresets(list: InstructionPreset[]) {
+export function savePresets(list: InstructionPreset[]) {
   try { localStorage.setItem(PRESETS_KEY, JSON.stringify(list)) } catch {}
 }
 
@@ -39,7 +50,7 @@ export function loadActivePresetId(presets: InstructionPreset[]): string {
   return presets[0].id
 }
 
-function saveActivePresetId(id: string) {
+export function saveActivePresetId(id: string) {
   try { localStorage.setItem(ACTIVE_PRESET_KEY, id) } catch {}
 }
 
@@ -49,38 +60,4 @@ export function getActiveInstructionText(): string {
   const activeId = loadActivePresetId(presets)
   const active = presets.find(p => p.id === activeId)
   return active?.text || ''
-}
-
-// Settings-facing hook: manage the list of presets and which is active.
-export function useInstructionPresets() {
-  const [presets, setPresets] = useState<InstructionPreset[]>(loadPresets)
-  const [activeId, setActiveIdState] = useState<string>(() => loadActivePresetId(presets))
-
-  const setActiveId = (id: string) => { setActiveIdState(id); saveActivePresetId(id) }
-
-  const addPreset = ({ name, text }: { name: string; text: string }): InstructionPreset => {
-    const record = { id: presetUid(), name: (name || 'Untitled').trim() || 'Untitled', text: (text || '').trim() }
-    setPresets(prev => { const next = [...prev, record]; savePresets(next); return next })
-    return record
-  }
-
-  const updatePreset = (id: string, { name, text }: { name: string; text: string }) => {
-    setPresets(prev => {
-      const next = prev.map(p => p.id === id ? { ...p, name: name.trim() || p.name, text: text.trim() } : p)
-      savePresets(next)
-      return next
-    })
-  }
-
-  const deletePreset = (id: string) => {
-    setPresets(prev => {
-      if (prev.length <= 1) return prev
-      const next = prev.filter(p => p.id !== id)
-      savePresets(next)
-      if (activeId === id) setActiveId(next[0].id)
-      return next
-    })
-  }
-
-  return { presets, activeId, setActiveId, addPreset, updatePreset, deletePreset }
 }

@@ -10,7 +10,7 @@ import { FontSizeProvider } from '@/lib/FontSizeContext'
 import { TopicsProvider } from '@/lib/TopicsContext'
 import { getAllGroups } from '@/lib/topicsData'
 import { UIProvider } from '@/lib/UIContext'
-import { fetchAllCounts, fetchAllQuestionIds } from '@/lib/parser'
+import { fetchAllCounts } from '@/lib/parser'
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration'
 import OfflineToast from '@/components/OfflineToast'
 import ThemeSync from '@/components/ThemeSync'
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const [initialTotals, questionIds, groups] = await Promise.all([fetchAllCounts(), fetchAllQuestionIds(), getAllGroups()])
+  const [initialTotals, groups] = await Promise.all([fetchAllCounts(), getAllGroups()])
 
   return (
     <html lang="en" suppressHydrationWarning data-density="cozy" className={`${ibmSans.variable} ${ibmSerif.variable} ${ibmMono.variable}`}>
@@ -59,7 +59,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <AddQuestionFab />
                 <UIProvider>
                   <div className="app-container">
-                    <Sidebar groups={groups} questionIds={questionIds} />
+                    <Sidebar groups={groups} />
                     <main className="main-content">
                       <Topbar />
                       <MainContent>{children}</MainContent>

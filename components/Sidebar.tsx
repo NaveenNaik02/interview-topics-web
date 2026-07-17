@@ -2,11 +2,13 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { TopicGroup, sectionUrl } from '@/lib/topics'
 import { useProgress } from '@/lib/ProgressContext'
 import { useUI } from '@/lib/UIContext'
+import { deleteSection, deleteTopicGroup } from '@/lib/actions/topics'
 import ConfirmDialog from './ConfirmDialog'
+import AddTopicModal from './AddTopicModal'
 
 const Icon = {
   Chevron: () => (
@@ -17,17 +19,6 @@ const Icon = {
   Home: () => (
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M2 7l6-5 6 5v6.5a1 1 0 0 1-1 1h-2.5v-4h-5v4H3a1 1 0 0 1-1-1V7z" />
-    </svg>
-  ),
-  Check: () => (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polyline points="3.5 8.5 6.5 11.5 12.5 5" />
-    </svg>
-  ),
-  Close: () => (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <line x1="4" y1="4" x2="12" y2="12" />
-      <line x1="12" y1="4" x2="4" y2="12" />
     </svg>
   ),
   Gear: () => (
@@ -41,15 +32,54 @@ const Icon = {
       <path d="M2 4h12M4 8h8M6 12h4" />
     </svg>
   ),
+  Plus: () => (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+      <line x1="8" y1="3" x2="8" y2="13" />
+      <line x1="3" y1="8" x2="13" y2="8" />
+    </svg>
+  ),
+  Trash: () => (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 4.5h10M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M6.5 7.5v4M9.5 7.5v4M4 4.5l.6 8.1a1 1 0 0 0 1 .9h4.8a1 1 0 0 0 1-.9l.6-8.1" />
+    </svg>
+  ),
 }
 
-export default function Sidebar({ groups, questionIds }: { groups: TopicGroup[]; questionIds: Record<string, string[]> }) {
+type DeleteTarget =
+  | { kind: 'group'; slug: string; label: string }
+  | { kind: 'section'; topic: string; file: string; label: string }
+
+export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
   const pathname = usePathname()
-  const { stats, resetAll, setMany } = useProgress()
+  const router = useRouter()
+  const { stats, resetAll } = useProgress()
   const { drawerOpen, setDrawerOpen } = useUI()
   const [expanded, setExpanded] = useState<Set<string>>(new Set(['javascript', 'react']))
   const [confirmReset, setConfirmReset] = useState(false)
-  const [confirm, setConfirm] = useState<{ slug: string; action: 'select' | 'unselect' } | null>(null)
+  const [addTarget, setAddTarget] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  const requestDelete = (target: DeleteTarget) => {
+    setDeleteError(null)
+    setDeleteTarget(target)
+  }
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      if (deleteTarget.kind === 'group') await deleteTopicGroup(deleteTarget.slug)
+      else await deleteSection(deleteTarget.topic, deleteTarget.file)
+      setDeleteTarget(null)
+      router.refresh()
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Could not delete — try again.')
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   const doneCount = stats.completed
   const totalCount = stats.total
@@ -130,9 +160,6 @@ export default function Sidebar({ groups, questionIds }: { groups: TopicGroup[];
               }
             })
 
-            const allDone = groupTotal > 0 && groupDone === groupTotal
-            const noneDone = groupDone === 0
-
             return (
               <div className="topic-group" key={group.slug}>
                 <div className="topic-row-wrap">
@@ -145,28 +172,26 @@ export default function Sidebar({ groups, questionIds }: { groups: TopicGroup[];
                     <span className="topic-name">{group.groupName}</span>
                     <span className="topic-progress">{groupDone}/{groupTotal}</span>
                   </button>
-                  {groupTotal > 0 && (
-                    <div className="topic-row-tools">
+                  <div className="topic-row-tools">
+                    <button
+                      className="tr-tool"
+                      title={`Add subtopic to ${group.groupName}`}
+                      aria-label={`Add subtopic to ${group.groupName}`}
+                      onClick={() => setAddTarget(group.slug)}
+                    >
+                      <Icon.Plus />
+                    </button>
+                    {group.custom && (
                       <button
                         className="tr-tool"
-                        title={`Mark all of ${group.groupName} done`}
-                        aria-label={`Mark all of ${group.groupName} done`}
-                        disabled={allDone}
-                        onClick={() => setConfirm({ slug: group.slug, action: 'select' })}
+                        title={`Delete ${group.groupName}`}
+                        aria-label={`Delete ${group.groupName}`}
+                        onClick={() => requestDelete({ kind: 'group', slug: group.slug, label: group.groupName })}
                       >
-                        <Icon.Check />
+                        <Icon.Trash />
                       </button>
-                      <button
-                        className="tr-tool"
-                        title={`Clear all progress in ${group.groupName}`}
-                        aria-label={`Clear all progress in ${group.groupName}`}
-                        disabled={noneDone}
-                        onClick={() => setConfirm({ slug: group.slug, action: 'unselect' })}
-                      >
-                        <Icon.Close />
-                      </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
                 {isExp && (
                   <ul className="subtopic-list">
@@ -182,23 +207,38 @@ export default function Sidebar({ groups, questionIds }: { groups: TopicGroup[];
 
                       return (
                         <li key={url}>
-                          <Link
-                            href={url}
-                            className={`subtopic-row ${isActive ? 'active' : ''}`}
-                            onClick={() => setDrawerOpen(false)}
-                            prefetch={false}
-                          >
-                            <span
-                              className={`progress-ring ${complete ? 'complete' : ''}`}
-                              style={{ '--p': pct } as React.CSSProperties}
-                            />
-                            <span className="subtopic-name">{s.label}</span>
-                            {!hasQuestions ? (
-                              <span className="placeholder-tag">soon</span>
-                            ) : (
-                              <span className="topic-progress">{done}/{total}</span>
+                          <div className="subtopic-row-wrap">
+                            <Link
+                              href={url}
+                              className={`subtopic-row ${isActive ? 'active' : ''}`}
+                              onClick={() => setDrawerOpen(false)}
+                              prefetch={false}
+                            >
+                              <span
+                                className={`progress-ring ${complete ? 'complete' : ''}`}
+                                style={{ '--p': pct } as React.CSSProperties}
+                              />
+                              <span className="subtopic-name">{s.label}</span>
+                              {!hasQuestions ? (
+                                <span className="placeholder-tag">soon</span>
+                              ) : (
+                                <span className="topic-progress">{done}/{total}</span>
+                              )}
+                            </Link>
+                            {s.custom && (
+                              <div className="subtopic-tools">
+                                <button
+                                  type="button"
+                                  className="tr-tool"
+                                  title={`Delete ${s.label}`}
+                                  aria-label={`Delete ${s.label}`}
+                                  onClick={() => requestDelete({ kind: 'section', topic: s.topic, file: s.file, label: s.label })}
+                                >
+                                  <Icon.Trash />
+                                </button>
+                              </div>
                             )}
-                          </Link>
+                          </div>
                         </li>
                       )
                     })}
@@ -221,21 +261,28 @@ export default function Sidebar({ groups, questionIds }: { groups: TopicGroup[];
         onCancel={() => setConfirmReset(false)}
       />
       <ConfirmDialog
-        open={!!confirm && confirm.action === 'select'}
-        title="Mark all as done?"
-        message={confirm ? `This will mark all questions in "${groups.find(g => g.slug === confirm.slug)?.groupName}" as complete.` : ''}
-        confirmLabel="Select all"
-        onConfirm={() => { if (confirm) { setMany(questionIds[confirm.slug] ?? [], true) } setConfirm(null) }}
-        onCancel={() => setConfirm(null)}
+        open={!!deleteTarget}
+        danger
+        title={deleteTarget ? `Delete "${deleteTarget.label}"?` : ''}
+        message={
+          deleteTarget
+            ? `This permanently removes the "${deleteTarget.label}" ${deleteTarget.kind === 'group' ? 'topic' : 'subtopic'}. ${deleteTarget.kind === 'group' ? 'Topics' : 'Subtopics'} with questions can't be deleted — remove its questions first.`
+            : ''
+        }
+        confirmLabel={deleting ? 'Deleting…' : 'Delete'}
+        error={deleteError}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
       />
-      <ConfirmDialog
-        open={!!confirm && confirm.action === 'unselect'}
-        title="Unselect all?"
-        message={confirm ? `This will clear all progress in "${groups.find(g => g.slug === confirm.slug)?.groupName}". This can't be undone.` : ''}
-        confirmLabel="Unselect all"
-        onConfirm={() => { if (confirm) { setMany(questionIds[confirm.slug] ?? [], false) } setConfirm(null) }}
-        onCancel={() => setConfirm(null)}
-      />
+
+      {addTarget && (
+        <AddTopicModal
+          initialMode="subtopic"
+          initialGroupSlug={addTarget}
+          onClose={() => setAddTarget(null)}
+          onSaved={() => { setAddTarget(null); router.refresh() }}
+        />
+      )}
     </>
   )
 }

@@ -14,7 +14,7 @@ import { formatAnswer } from '@/lib/actions/formatAnswer'
 import { findGroupForSection, type SectionMeta } from '@/lib/topics'
 import { isLocalSupabase } from '@/lib/utils'
 import { AQ_MODELS, type AqModelId } from '@/lib/aiModels'
-import { loadPresets, getActiveInstructionText } from '@/lib/instructionPresets'
+import { loadPresets, loadActivePresetId, getActiveInstructionText } from '@/lib/instructionPresets'
 import type { ParsedQuestion } from '@/lib/parser'
 import type { PriorityLevel } from '@/lib/offlineSync'
 import { useTypewriter } from '@/lib/useTypewriter'
@@ -59,8 +59,8 @@ function AqInstructionsModal({ value, model, onClose, onSave }: { value: string;
   const [draft, setDraft] = useState(value)
   const [draftModel, setDraftModel] = useState<AqModelId>(model)
   const [tab, setTab] = useState<'write' | 'preview'>('write')
-  const [presetPick, setPresetPick] = useState('')
   const presets = useMemo(loadPresets, [])
+  const [presetPick, setPresetPick] = useState(() => loadActivePresetId(presets))
   const html = useMemo(() => renderPreviewHtml(draft), [draft])
 
   const handleLoadPreset = (id: string) => {
@@ -177,14 +177,10 @@ export default function AddQuestionModal({ defaultSection, editing, onClose, onS
   const [genError, setGenError] = useState<string | null>(null)
   const [questionGen, setQuestionGen] = useState<'idle' | 'loading' | 'error'>('idle')
   const [showInstructions, setShowInstructions] = useState(false)
-  const [instructions, setInstructions] = useState(() => {
-    // null (never saved) falls back to the active preset; '' (explicitly
-    // cleared and saved) is respected as "no instructions" rather than reverting.
-    try {
-      const saved = localStorage.getItem('prep-tracker:ai-answer-instructions')
-      return saved ?? getActiveInstructionText()
-    } catch { return getActiveInstructionText() }
-  })
+  // Always seeded from whatever preset is active in Settings — per-question
+  // edits below are this question's local draft only and must never persist
+  // as a global override, or the Settings-selected default would get stuck.
+  const [instructions, setInstructions] = useState(() => getActiveInstructionText())
   const [model, setModel] = useState<AqModelId>(() => {
     try {
       const saved = localStorage.getItem(AQ_MODEL_KEY)
@@ -224,7 +220,6 @@ export default function AddQuestionModal({ defaultSection, editing, onClose, onS
 
   const handleSaveInstructions = (v: string, m: AqModelId) => {
     setInstructions(v)
-    try { localStorage.setItem('prep-tracker:ai-answer-instructions', v) } catch {}
     handleModelChange(m)
     setShowInstructions(false)
   }

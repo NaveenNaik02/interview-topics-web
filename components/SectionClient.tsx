@@ -1,10 +1,11 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import React, { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Send } from 'lucide-react'
 import { useProgress } from '@/lib/ProgressContext'
 import type { ParsedQuestion } from '@/lib/parser'
+import type { PriorityLevel } from '@/lib/offlineSync'
 import { sectionUrl, type SectionMeta, type TopicGroup } from '@/lib/topics'
 import { getCachedQuestions } from '@/lib/offlineSync'
 import { deleteQuestion } from '@/lib/actions/questions'
@@ -93,6 +94,25 @@ export default function SectionClient({ section, group, questions: serverQuestio
     }
     return list
   }, [questions, filterSet, statusFilter, sortMode, isComplete, getPriority])
+
+  // Changing a question's priority can move it elsewhere in the sorted/filtered
+  // list — that's expected. What shouldn't happen is the viewport following it
+  // there: the user is reading wherever they currently are and wants to keep
+  // reading from that same spot, not get dragged to the question's new slot.
+  // So pin the raw window scroll offset across the reorder instead of trying
+  // to keep any particular row in view.
+  const savedScrollYRef = useRef<number | null>(null)
+
+  const handleSetPriority = useCallback((id: string, level: PriorityLevel | null) => {
+    savedScrollYRef.current = window.scrollY
+    setPriority(id, level)
+  }, [setPriority])
+
+  useLayoutEffect(() => {
+    if (savedScrollYRef.current === null) return
+    window.scrollTo(0, savedScrollYRef.current)
+    savedScrollYRef.current = null
+  }, [processed])
 
   const togglePriorityFilter = useCallback((key: PriorityFilterKey) => {
     setFilterSet(prev => {
@@ -205,7 +225,7 @@ export default function SectionClient({ section, group, questions: serverQuestio
                 }
                 toggle(q.id)
               }}
-              onSetPriority={(level) => setPriority(q.id, level)}
+              onSetPriority={(level) => handleSetPriority(q.id, level)}
               onEdit={canManage ? () => setEditingQuestion({
                 id: q.id,
                 title: q.title,

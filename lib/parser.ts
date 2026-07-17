@@ -1,5 +1,4 @@
 import 'server-only'
-import { cache } from 'react'
 import { supabasePublic as supabase } from './supabase/public'
 import type { SectionMeta } from './topics'
 
@@ -40,23 +39,6 @@ export async function fetchAllCounts(): Promise<Record<string, number>> {
   })
   return counts
 }
-
-// Cached per-request: layout.tsx (Sidebar) and page.tsx (DashboardClient) both
-// need this on every "/" request, and it's otherwise fetched twice.
-export const fetchAllQuestionIds = cache(async (): Promise<Record<string, string[]>> => {
-  const { data } = await supabase
-    .from('questions')
-    .select('id, group_slug')
-
-  const grouped: Record<string, string[]> = {}
-  if (data) {
-    for (const row of data) {
-      if (!grouped[row.group_slug]) grouped[row.group_slug] = []
-      grouped[row.group_slug].push(row.id)
-    }
-  }
-  return grouped
-})
 
 export async function parseSection(section: SectionMeta): Promise<ParsedQuestion[]> {
   const { data } = await supabase

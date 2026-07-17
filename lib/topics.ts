@@ -2,6 +2,7 @@ export interface SectionMeta {
   topic: string  // folder path relative to repo root, e.g. "javascript", "react/ecosystem"
   file: string   // filename without .md, e.g. "foundations", "redux"
   label: string  // display name
+  custom?: boolean  // true if this row lives in the `sections` table (user-added), not the static curriculum below — only custom sections can be deleted
 }
 
 export interface TopicGroup {
@@ -9,6 +10,7 @@ export interface TopicGroup {
   slug: string  // single URL segment, e.g. "javascript"
   sections: SectionMeta[]
   blurb?: string
+  custom?: boolean  // true if this row lives in the `topic_groups` table (user-added), not the static curriculum below — only custom groups can be deleted
 }
 
 export const TOPIC_GROUPS: TopicGroup[] = [

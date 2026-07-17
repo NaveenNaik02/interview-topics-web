@@ -11,9 +11,10 @@ interface Props {
   onCancel: () => void
   requireText?: string
   danger?: boolean
+  error?: string | null
 }
 
-export default function ConfirmDialog({ open, title, message, confirmLabel, onConfirm, onCancel, requireText, danger }: Props) {
+export default function ConfirmDialog({ open, title, message, confirmLabel, onConfirm, onCancel, requireText, danger, error }: Props) {
   const [typed, setTyped] = useState('')
 
   useEffect(() => {
@@ -54,6 +55,7 @@ export default function ConfirmDialog({ open, title, message, confirmLabel, onCo
             />
           </div>
         )}
+        {error && <p className="confirm-error">{error}</p>}
         <div className="confirm-actions">
           <button className="btn btn-ghost" onClick={onCancel}>Cancel</button>
           <button

@@ -3,6 +3,7 @@ import type { SortMode } from '@/components/FilterSortToolbar'
 import type { Theme } from '@/lib/ThemeContext'
 import * as settingsDb from '@/lib/db/settings'
 import * as settingsActions from '@/lib/actions/settings'
+import { DEFAULT_PRESETS } from '@/lib/instructionPresets'
 import type { AppState, SettingsSlice } from '../types'
 
 export const createSettingsSlice: StateCreator<AppState, [], [], SettingsSlice> = (set, get) => ({
@@ -50,8 +51,13 @@ export const createSettingsSlice: StateCreator<AppState, [], [], SettingsSlice> 
         lsRemember = localStorage.getItem('rememberFilters') !== '0'
       } catch {}
       set({ defaultSort: lsSort, rememberFilters: lsRemember, settingsTheme: lsTheme })
-      settingsActions.insertSettings({ default_sort: lsSort, remember_filters: lsRemember, theme: lsTheme })
-        .catch(err => console.error('[settings] insert failed:', err))
+      // This slice doesn't manage instruction presets yet (see ProgressContext's
+      // instructionPresets/activeInstructionPresetId) — bootstrap the row with
+      // the same code-level default so the insert satisfies the full schema.
+      settingsActions.insertSettings({
+        default_sort: lsSort, remember_filters: lsRemember, theme: lsTheme,
+        instruction_presets: DEFAULT_PRESETS, active_instruction_preset_id: DEFAULT_PRESETS[0].id,
+      }).catch(err => console.error('[settings] insert failed:', err))
     }
     set({ settingsLoaded: true })
   },

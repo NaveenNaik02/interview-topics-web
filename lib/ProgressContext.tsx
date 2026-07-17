@@ -28,6 +28,15 @@ import * as settingsDb from './db/settings'
 import * as progressActions from './actions/progress'
 import * as priorityActions from './actions/priority'
 import * as settingsActions from './actions/settings'
+import {
+  type InstructionPreset,
+  DEFAULT_PRESETS,
+  presetUid,
+  loadPresets,
+  savePresets,
+  loadActivePresetId,
+  saveActivePresetId,
+} from './instructionPresets'
 
 type ProgressStore = Record<string, boolean>
 type PriorityStore = Record<string, PriorityLevel>
@@ -63,6 +72,13 @@ interface ProgressContextType {
   setDefaultSort: (v: SortMode) => void
   setRememberFilters: (v: boolean) => void
   setThemeSetting: (v: Theme) => void
+  // Instruction presets
+  instructionPresets: InstructionPreset[]
+  activeInstructionPresetId: string
+  setActiveInstructionPresetId: (id: string) => void
+  addInstructionPreset: (v: { name: string; text: string }) => InstructionPreset
+  updateInstructionPreset: (id: string, v: { name: string; text: string }) => void
+  deleteInstructionPreset: (id: string) => void
   // Offline mode
   isOnline: boolean
   offlineModeEnabled: boolean
@@ -97,6 +113,8 @@ export function ProgressProvider({
   const [defaultSort, setDefaultSortState] = useState<SortMode>('manual')
   const [rememberFilters, setRememberFiltersState] = useState(true)
   const [settingsTheme, setSettingsTheme] = useState<Theme>('light')
+  const [instructionPresets, setInstructionPresets] = useState<InstructionPreset[]>(DEFAULT_PRESETS)
+  const [activeInstructionPresetId, setActiveInstructionPresetIdState] = useState<string>(DEFAULT_PRESETS[0].id)
 
   // Offline state
   const [isOnline, setIsOnline] = useState(true)
@@ -152,6 +170,9 @@ export function ProgressProvider({
       if (r !== null) setRememberFiltersState(r !== '0')
       const t = localStorage.getItem('theme')
       if (t === 'dark' || t === 'sepia' || t === 'light') setSettingsTheme(t)
+      const presets = loadPresets()
+      setInstructionPresets(presets)
+      setActiveInstructionPresetIdState(loadActivePresetId(presets))
       setSettingsLoaded(true)
     } catch {}
   }, [])
@@ -256,10 +277,17 @@ export function ProgressProvider({
       setDefaultSortState(data.default_sort)
       setRememberFiltersState(data.remember_filters)
       setSettingsTheme(data.theme)
+      const presets = data.instruction_presets?.length ? data.instruction_presets : DEFAULT_PRESETS
+      setInstructionPresets(presets)
+      setActiveInstructionPresetIdState(
+        presets.some(p => p.id === data.active_instruction_preset_id) ? data.active_instruction_preset_id : presets[0].id
+      )
       try {
         localStorage.setItem('defaultSort', data.default_sort)
         localStorage.setItem('rememberFilters', data.remember_filters ? '1' : '0')
       } catch {}
+      savePresets(presets)
+      saveActivePresetId(data.active_instruction_preset_id)
     } else {
       // No row yet — bootstrap from localStorage so existing prefs aren't lost
       let lsTheme: Theme = 'light'
@@ -272,11 +300,17 @@ export function ProgressProvider({
         if (s === 'high' || s === 'low') lsSort = s
         lsRemember = localStorage.getItem('rememberFilters') !== '0'
       } catch {}
+      const lsPresets = loadPresets()
+      const lsActiveId = loadActivePresetId(lsPresets)
       setDefaultSortState(lsSort)
       setRememberFiltersState(lsRemember)
       setSettingsTheme(lsTheme)
-      settingsActions.insertSettings({ default_sort: lsSort, remember_filters: lsRemember, theme: lsTheme })
-        .catch(err => console.error('[settings] insert failed:', err))
+      setInstructionPresets(lsPresets)
+      setActiveInstructionPresetIdState(lsActiveId)
+      settingsActions.insertSettings({
+        default_sort: lsSort, remember_filters: lsRemember, theme: lsTheme,
+        instruction_presets: lsPresets, active_instruction_preset_id: lsActiveId,
+      }).catch(err => console.error('[settings] insert failed:', err))
     }
     setSettingsLoaded(true)
   }, [])
@@ -309,6 +343,46 @@ export function ProgressProvider({
     setSettingsTheme(v)
     if (user) settingsActions.upsertSetting({ theme: v }).catch(err => console.error('[settings] update failed:', err))
   }, [user])
+
+  const setActiveInstructionPresetId = useCallback((id: string) => {
+    setActiveInstructionPresetIdState(id)
+    saveActivePresetId(id)
+    if (user) settingsActions.upsertSetting({ active_instruction_preset_id: id }).catch(err => console.error('[settings] update failed:', err))
+  }, [user])
+
+  const addInstructionPreset = useCallback(({ name, text }: { name: string; text: string }): InstructionPreset => {
+    const record: InstructionPreset = { id: presetUid(), name: (name || 'Untitled').trim() || 'Untitled', text: (text || '').trim() }
+    const next = [...instructionPresets, record]
+    setInstructionPresets(next)
+    savePresets(next)
+    if (user) settingsActions.upsertSetting({ instruction_presets: next }).catch(err => console.error('[settings] update failed:', err))
+    return record
+  }, [user, instructionPresets])
+
+  const updateInstructionPreset = useCallback((id: string, { name, text }: { name: string; text: string }) => {
+    const next = instructionPresets.map(p => p.id === id ? { ...p, name: name.trim() || p.name, text: text.trim() } : p)
+    setInstructionPresets(next)
+    savePresets(next)
+    if (user) settingsActions.upsertSetting({ instruction_presets: next }).catch(err => console.error('[settings] update failed:', err))
+  }, [user, instructionPresets])
+
+  const deleteInstructionPreset = useCallback((id: string) => {
+    if (id === 'default' || instructionPresets.length <= 1) return
+    const next = instructionPresets.filter(p => p.id !== id)
+    setInstructionPresets(next)
+    savePresets(next)
+    const nextActiveId = activeInstructionPresetId === id ? next[0].id : activeInstructionPresetId
+    if (nextActiveId !== activeInstructionPresetId) {
+      setActiveInstructionPresetIdState(nextActiveId)
+      saveActivePresetId(nextActiveId)
+    }
+    if (user) {
+      settingsActions.upsertSetting({
+        instruction_presets: next,
+        ...(nextActiveId !== activeInstructionPresetId ? { active_instruction_preset_id: nextActiveId } : {}),
+      }).catch(err => console.error('[settings] update failed:', err))
+    }
+  }, [user, instructionPresets, activeInstructionPresetId])
 
   useEffect(() => {
     // onAuthStateChange fires immediately on subscribe with the current
@@ -612,6 +686,8 @@ export function ProgressProvider({
       isOnline, offlineModeEnabled, isCaching, cachingProgress, pendingOpsCount, isSyncing, cachedAt,
       enableOfflineMode, disableOfflineMode, syncNow,
       settingsLoaded, defaultSort, rememberFilters, settingsTheme, setDefaultSort, setRememberFilters, setThemeSetting,
+      instructionPresets, activeInstructionPresetId, setActiveInstructionPresetId,
+      addInstructionPreset, updateInstructionPreset, deleteInstructionPreset,
     }}>
       {children}
     </ProgressContext.Provider>

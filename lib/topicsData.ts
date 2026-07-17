@@ -15,19 +15,27 @@ export const getAllGroups = cache(async (): Promise<TopicGroup[]> => {
     supabase.from('sections').select('topic, file, label, group_slug'),
   ])
 
+  // Clone the static groups (and their section arrays) so merging DB-backed
+  // sections below doesn't mutate the shared TOPIC_GROUPS array.
+  const merged: TopicGroup[] = TOPIC_GROUPS.map(g => ({ ...g, sections: [...g.sections] }))
   const dynamicGroups: TopicGroup[] = (groupRows ?? []).map(g => ({
     groupName: g.group_name,
     slug: g.slug,
     blurb: g.blurb ?? undefined,
     sections: [],
+    custom: true,
   }))
+  merged.push(...dynamicGroups)
 
-  const bySlug = new Map(dynamicGroups.map(g => [g.slug, g]))
+  // Indexed over ALL groups (static + dynamic) — a user-added subtopic can
+  // belong to an existing static group (e.g. a new subtopic under
+  // "javascript"), not just a freshly-created one.
+  const bySlug = new Map(merged.map(g => [g.slug, g]))
   for (const s of sectionRows ?? []) {
     const group = bySlug.get(s.group_slug)
     if (!group) continue
-    group.sections.push({ topic: s.topic, file: s.file, label: s.label })
+    group.sections.push({ topic: s.topic, file: s.file, label: s.label, custom: true })
   }
 
-  return [...TOPIC_GROUPS, ...dynamicGroups]
+  return merged
 })

@@ -4,31 +4,35 @@ import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useProgress } from '@/lib/ProgressContext'
 import { TopicGroup, sectionUrl } from '@/lib/topics'
+import { deleteTopicGroup } from '@/lib/actions/topics'
 import ConfirmDialog from './ConfirmDialog'
+import AddTopicModal from './AddTopicModal'
 
 const Icon = {
-  Check: () => (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polyline points="3.5 8.5 6.5 11.5 12.5 5" />
+  Plus: () => (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+      <line x1="8" y1="3" x2="8" y2="13" />
+      <line x1="3" y1="8" x2="13" y2="8" />
     </svg>
   ),
-  Close: () => (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <line x1="4" y1="4" x2="12" y2="12" />
-      <line x1="12" y1="4" x2="4" y2="12" />
+  Trash: () => (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 4.5h10M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M6.5 7.5v4M9.5 7.5v4M4 4.5l.6 8.1a1 1 0 0 0 1 .9h4.8a1 1 0 0 0 1-.9l.6-8.1" />
     </svg>
   ),
 }
 
 interface Props {
   groups: TopicGroup[]
-  questionIds: Record<string, string[]>
 }
 
-export default function DashboardClient({ groups, questionIds }: Props) {
+export default function DashboardClient({ groups }: Props) {
   const router = useRouter()
-  const { stats, mounted, setMany } = useProgress()
-  const [confirm, setConfirm] = useState<{ slug: string; action: 'select' | 'unselect' } | null>(null)
+  const { stats, mounted } = useProgress()
+  const [addTarget, setAddTarget] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ slug: string; label: string } | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const doneCount = stats.completed
   const totalCount = stats.total
@@ -40,11 +44,18 @@ export default function DashboardClient({ groups, questionIds }: Props) {
     year: 'numeric'
   })
 
-  const handleConfirm = () => {
-    if (!confirm) return
-    const ids = questionIds[confirm.slug] ?? []
-    setMany(ids, confirm.action === 'select')
-    setConfirm(null)
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      await deleteTopicGroup(deleteTarget.slug)
+      setDeleteTarget(null)
+      router.refresh()
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Could not delete — try again.')
+    } finally {
+      setDeleting(false)
+    }
   }
 
   return (
@@ -85,8 +96,6 @@ export default function DashboardClient({ groups, questionIds }: Props) {
 
           const pct = groupTotal ? Math.round((groupDone / groupTotal) * 100) : 0
           const firstSection = group.sections[0]
-          const allDone = mounted && groupTotal > 0 && groupDone === groupTotal
-          const noneDone = !mounted || groupDone === 0
 
           // A just-created topic (see AddTopicModal) has no subtopics yet —
           // nothing to navigate to, so render it as a static, non-clickable card.
@@ -130,18 +139,18 @@ export default function DashboardClient({ groups, questionIds }: Props) {
               <div className="tc-tools">
                 <button
                   className="tc-tool"
-                  disabled={allDone}
-                  onClick={() => setConfirm({ slug: group.slug, action: 'select' })}
+                  onClick={() => setAddTarget(group.slug)}
                 >
-                  <Icon.Check /><span>Select all</span>
+                  <Icon.Plus /><span>Add subtopic</span>
                 </button>
-                <button
-                  className="tc-tool"
-                  disabled={noneDone}
-                  onClick={() => setConfirm({ slug: group.slug, action: 'unselect' })}
-                >
-                  <Icon.Close /><span>Unselect all</span>
-                </button>
+                {group.custom && (
+                  <button
+                    className="tc-tool"
+                    onClick={() => { setDeleteError(null); setDeleteTarget({ slug: group.slug, label: group.groupName }) }}
+                  >
+                    <Icon.Trash /><span>Delete topic</span>
+                  </button>
+                )}
               </div>
             </div>
           )
@@ -149,21 +158,24 @@ export default function DashboardClient({ groups, questionIds }: Props) {
       </div>
 
       <ConfirmDialog
-        open={!!confirm && confirm.action === 'select'}
-        title="Mark all as done?"
-        message={confirm ? `This will mark all questions in "${groups.find(g => g.slug === confirm.slug)?.groupName}" as complete.` : ''}
-        confirmLabel="Select all"
-        onConfirm={handleConfirm}
-        onCancel={() => setConfirm(null)}
+        open={!!deleteTarget}
+        danger
+        title={deleteTarget ? `Delete "${deleteTarget.label}"?` : ''}
+        message={deleteTarget ? `This permanently removes the "${deleteTarget.label}" topic. Topics with questions can't be deleted — remove its questions first.` : ''}
+        confirmLabel={deleting ? 'Deleting…' : 'Delete'}
+        error={deleteError}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
       />
-      <ConfirmDialog
-        open={!!confirm && confirm.action === 'unselect'}
-        title="Unselect all?"
-        message={confirm ? `This will clear all progress in "${groups.find(g => g.slug === confirm.slug)?.groupName}". This can't be undone.` : ''}
-        confirmLabel="Unselect all"
-        onConfirm={handleConfirm}
-        onCancel={() => setConfirm(null)}
-      />
+
+      {addTarget && (
+        <AddTopicModal
+          initialMode="subtopic"
+          initialGroupSlug={addTarget}
+          onClose={() => setAddTarget(null)}
+          onSaved={() => { setAddTarget(null); router.refresh() }}
+        />
+      )}
     </div>
   )
 }
