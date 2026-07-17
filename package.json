@@ -3,8 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "dev:local": "sh -c 'set -a && DEV_LOCAL=1 && . ./.env.local.docker && set +a && next dev -p 3010'",
+    "dev": "sh -c 'set -a && . ./.env.local.docker && set +a && next dev'",
+    "dev:remote": "DEV_REMOTE=1 next dev -p 3010",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
     "build": "next build",
     "start": "next start",
     "migrate": "node --env-file=.env.local scripts/migrate.js",

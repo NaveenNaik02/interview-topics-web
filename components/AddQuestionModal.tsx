@@ -12,7 +12,6 @@ import { generateQuestion } from '@/lib/actions/generateQuestion'
 import { generateProblem } from '@/lib/actions/generateProblem'
 import { formatAnswer } from '@/lib/actions/formatAnswer'
 import { findGroupForSection, type SectionMeta } from '@/lib/topics'
-import { isLocalSupabase } from '@/lib/utils'
 import { AQ_MODELS, type AqModelId } from '@/lib/aiModels'
 import { loadPresets, loadActivePresetId, getActiveInstructionText } from '@/lib/instructionPresets'
 import type { ParsedQuestion } from '@/lib/parser'
@@ -211,7 +210,7 @@ export default function AddQuestionModal({ defaultSection, editing, onClose, onS
   const canGenerateQuestion = questionGen !== 'loading'
   const canGenerateProblem = title.trim().length > 3 && problemGen !== 'loading'
 
-  const isAnonymous = mounted && !!user?.is_anonymous && !isLocalSupabase()
+  const isAnonymous = mounted && !!user?.is_anonymous
 
   const handleModelChange = (id: AqModelId) => {
     setModel(id)

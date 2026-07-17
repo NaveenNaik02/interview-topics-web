@@ -7,7 +7,6 @@ import DOMPurify from 'isomorphic-dompurify'
 import { createClient } from '@/lib/supabase/server'
 import { findSection, findGroupForSection } from '@/lib/topics'
 import { getAllGroups } from '@/lib/topicsData'
-import { isLocalSupabase } from '@/lib/utils'
 import type { ParsedQuestion } from '@/lib/parser'
 
 // Section pages are ISR-cached (`export const revalidate` in
@@ -41,7 +40,7 @@ export async function addQuestion(input: AddQuestionInput): Promise<ParsedQuesti
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
-  if (user.is_anonymous && !isLocalSupabase()) throw new Error('Sign in to add your own questions')
+  if (user.is_anonymous) throw new Error('Sign in to add your own questions')
 
   // QuestionItem renders q.title via dangerouslySetInnerHTML (existing ETL
   // titles are plain text authored by the developer) — strip all tags so a
@@ -98,7 +97,7 @@ export async function updateQuestion(id: string, input: AddQuestionInput): Promi
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
-  if (user.is_anonymous && !isLocalSupabase()) throw new Error('Sign in to edit your questions')
+  if (user.is_anonymous) throw new Error('Sign in to edit your questions')
 
   const title = DOMPurify.sanitize(input.title.trim(), { ALLOWED_TAGS: [] })
   const markdown = input.markdown.trim()
@@ -169,7 +168,7 @@ export async function deleteQuestion(id: string): Promise<void> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
-  if (user.is_anonymous && !isLocalSupabase()) throw new Error('Sign in to delete your questions')
+  if (user.is_anonymous) throw new Error('Sign in to delete your questions')
 
   const { data, error } = await supabase
     .from('questions')

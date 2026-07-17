@@ -1,7 +1,6 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { isLocalSupabase } from '@/lib/utils'
 import { AQ_MODELS, type AqModelId } from '@/lib/aiModels'
 
 const DEFAULT_MODEL: AqModelId = AQ_MODELS[0].id
@@ -17,7 +16,7 @@ export async function generateProblem(input: GenerateProblemInput): Promise<stri
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
-  if (user.is_anonymous && !isLocalSupabase()) throw new Error('Sign in to generate a problem statement')
+  if (user.is_anonymous) throw new Error('Sign in to generate a problem statement')
 
   const apiKey = process.env.FREE_GEM_API_KEY
   if (!apiKey) throw new Error('AI generation is not configured')

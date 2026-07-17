@@ -18,13 +18,21 @@ export const getAllGroups = cache(async (): Promise<TopicGroup[]> => {
   // Clone the static groups (and their section arrays) so merging DB-backed
   // sections below doesn't mutate the shared TOPIC_GROUPS array.
   const merged: TopicGroup[] = TOPIC_GROUPS.map(g => ({ ...g, sections: [...g.sections] }))
-  const dynamicGroups: TopicGroup[] = (groupRows ?? []).map(g => ({
-    groupName: g.group_name,
-    slug: g.slug,
-    blurb: g.blurb ?? undefined,
-    sections: [],
-    custom: true,
-  }))
+  const staticSlugs = new Set(TOPIC_GROUPS.map(g => g.slug))
+  // Rows whose slug matches a static group are placeholders backfilled only
+  // so sections.group_slug's FK is satisfiable (see
+  // 20260717120000_seed_static_topic_groups.sql) — the static entry above
+  // already represents that group, so skip them here instead of rendering
+  // a duplicate.
+  const dynamicGroups: TopicGroup[] = (groupRows ?? [])
+    .filter(g => !staticSlugs.has(g.slug))
+    .map(g => ({
+      groupName: g.group_name,
+      slug: g.slug,
+      blurb: g.blurb ?? undefined,
+      sections: [],
+      custom: true,
+    }))
   merged.push(...dynamicGroups)
 
   // Indexed over ALL groups (static + dynamic) — a user-added subtopic can

@@ -6,7 +6,6 @@ import { useProgress } from '@/lib/ProgressContext'
 import { useTopicGroups } from '@/lib/TopicsContext'
 import { addTopicGroup, addSection } from '@/lib/actions/topics'
 import { generateTopicBlurb } from '@/lib/actions/generateBlurb'
-import { isLocalSupabase } from '@/lib/utils'
 import type { TopicGroup, SectionMeta } from '@/lib/topics'
 import { useTypewriter } from '@/lib/useTypewriter'
 import AqSelect from './AqSelect'
@@ -44,7 +43,7 @@ export default function AddTopicModal({ initialMode = 'topic', initialGroupSlug,
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const isAnonymous = mounted && !!user?.is_anonymous && !isLocalSupabase()
+  const isAnonymous = mounted && !!user?.is_anonymous
 
   const canGenerateBlurb = topicName.trim().length > 1 && blurbGen !== 'loading'
   const handleGenerateBlurb = async () => {

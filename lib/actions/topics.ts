@@ -2,7 +2,6 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { isLocalSupabase } from '@/lib/utils'
 import { getAllGroups } from '@/lib/topicsData'
 import { slugify, uniqueSlug, type TopicGroup, type SectionMeta } from '@/lib/topics'
 
@@ -10,7 +9,7 @@ async function requireAuthor(action: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
-  if (user.is_anonymous && !isLocalSupabase()) throw new Error(`Sign in to ${action}`)
+  if (user.is_anonymous) throw new Error(`Sign in to ${action}`)
   return { supabase, user }
 }
 

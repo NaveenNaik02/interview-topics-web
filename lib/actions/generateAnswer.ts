@@ -1,7 +1,6 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { isLocalSupabase } from '@/lib/utils'
 import { AQ_MODELS, type AqModelId } from '@/lib/aiModels'
 
 const DEFAULT_MODEL: AqModelId = AQ_MODELS[0].id
@@ -18,7 +17,7 @@ export async function generateAnswer(input: GenerateAnswerInput): Promise<string
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
-  if (user.is_anonymous && !isLocalSupabase()) throw new Error('Sign in to generate answers')
+  if (user.is_anonymous) throw new Error('Sign in to generate answers')
 
   // Free-tier key from a project with no billing account attached — keep
   // separate from GEMINI_API_KEY (Prep Tracker, now on paid Tier 1).
