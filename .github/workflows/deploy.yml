@@ -1,5 +1,8 @@
 name: Deploy to Vercel
 
+on:
+  workflow_dispatch: {}
+
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
@@ -7,11 +10,6 @@ env:
   NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
   NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
-
-on:
-  push:
-    branches:
-      - main
 
 jobs:
   Deploy-Production:
@@ -24,6 +22,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Applies any pending supabase/migrations/*.sql to the linked project
+      # before the new build goes out, so it never runs against a schema
+      # that's missing columns/tables the new code expects.
+      - name: Run database migrations
+        run: node scripts/migrate.js
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest

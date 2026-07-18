@@ -1,0 +1,38 @@
+// eslint-config-next ships native flat configs directly (no FlatCompat shim
+// needed — that's only for pre-flat-config shareable configs, and using it
+// here throws a circular-JSON error against this version).
+import nextCoreWebVitals from 'eslint-config-next/core-web-vitals'
+import nextTypescript from 'eslint-config-next/typescript'
+
+const eslintConfig = [
+  ...nextCoreWebVitals,
+  ...nextTypescript,
+  {
+    ignores: ['design/**', 'supabase/**', '.next-local/**'],
+  },
+  {
+    // Plain CommonJS files (run directly via `node`, or consumed by tools
+    // that only understand require()) — not part of the Next.js bundle.
+    files: ['scripts/**/*.js', 'tailwind.config.ts'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+  {
+    // These three rules come from eslint-config-next's React-Compiler-era
+    // purity/component-structure checks, introduced when lint was first
+    // wired into CI here — the existing codebase predates them and has many
+    // legitimate one-time mount effects (reading localStorage/matchMedia
+    // before first paint) and inline helper components that trip them.
+    // Downgraded to warnings for now rather than rewriting ~10 files'
+    // hydration-sensitive effects as a side effect of enabling CI lint;
+    // revisit and tighten once those are addressed deliberately.
+    rules: {
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/purity': 'warn',
+      'react-hooks/static-components': 'warn',
+    },
+  },
+]
+
+export default eslintConfig

@@ -82,14 +82,14 @@ export default function OfflineToast() {
         <div className="of-toast-body">
           {toast === 'offline' && (
             <>
-              <div className="of-toast-title">You're offline</div>
-              <div className="of-toast-desc">Your progress is safe — it's saved on this device.</div>
+              <div className="of-toast-title">You&apos;re offline</div>
+              <div className="of-toast-desc">Your progress is safe — it&apos;s saved on this device.</div>
             </>
           )}
           {toast === 'offline-nodl' && (
             <>
-              <div className="of-toast-title">You're offline — content unavailable</div>
-              <div className="of-toast-desc">You haven't downloaded this content, so questions can't be opened until you reconnect.</div>
+              <div className="of-toast-title">You&apos;re offline — content unavailable</div>
+              <div className="of-toast-desc">You haven&apos;t downloaded this content, so questions can&apos;t be opened until you reconnect.</div>
             </>
           )}
           {toast === 'synced' && (
@@ -100,7 +100,7 @@ export default function OfflineToast() {
           )}
           {toast === 'back-online' && (
             <>
-              <div className="of-toast-title">You're back online</div>
+              <div className="of-toast-title">You&apos;re back online</div>
               <div className="of-toast-desc">Sync your progress with your saved offline copy?</div>
               <div className="of-toast-actions">
                 <button

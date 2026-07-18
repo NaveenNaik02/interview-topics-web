@@ -78,7 +78,7 @@ function AqInstructionsModal({ value, model, isImpl, onClose, onSave }: { value:
   const [draft, setDraft] = useState(value)
   const [draftModel, setDraftModel] = useState<AqModelId>(model)
   const [tab, setTab] = useState<'write' | 'preview'>('write')
-  const presets = useMemo(loadPresets, [])
+  const presets = useMemo(() => loadPresets(), [])
   const [presetPick, setPresetPick] = useState(() => presets.find(p => p.kind === (isImpl ? 'code' : 'text'))?.id ?? presets[0]?.id ?? '')
   const html = useMemo(() => renderPreviewHtml(draft), [draft])
 

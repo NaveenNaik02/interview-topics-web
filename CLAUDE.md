@@ -19,9 +19,18 @@ npm run etl      # Parse all .md files and upsert questions into Supabase
 
 Requires `.env.local` in `web/` with `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`.
 
-There are no tests or linting scripts configured.
+```bash
+npm run lint     # ESLint (eslint-config-next flat config, eslint.config.mjs)
+npm test         # Vitest, run once (vitest.config.ts)
+```
 
-Database schema changes: see "Database Migrations" in the root `CLAUDE.md` — add a `.sql` file to `../supabase/migrations/`, then `npm run migrate` from here to apply it.
+Database schema changes: see "Database Migrations" in the root `CLAUDE.md` — add a `.sql` file to `supabase/migrations/`, then `npm run migrate` from here to apply it.
+
+## CI/CD
+
+`.github/workflows/ci.yml` runs `lint` and `test` as separate jobs on every push to `main`.
+
+`.github/workflows/deploy.yml` is manual only (`workflow_dispatch`, run from the Actions tab) — it never fires on push. It runs `node scripts/migrate.js` (applying any pending `supabase/migrations/*.sql` to the linked project) before building and deploying to Vercel production, so the new build never runs against a schema it doesn't expect. Needs the `SUPABASE_ACCESS_TOKEN` and `NEXT_PUBLIC_SUPABASE_URL` repo secrets in addition to the existing Vercel ones.
 
 ## Architecture
 

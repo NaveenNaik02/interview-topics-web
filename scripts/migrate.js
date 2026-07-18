@@ -1,19 +1,19 @@
 'use strict'
 
-// Applies pending SQL migrations from supabase/migrations/ (repo root, shared
-// with the Supabase CLI) to the linked project via the Management API over
-// HTTPS. Some environments block direct Postgres (port 5432) egress, which is
-// what `supabase db push` needs — this works around that while writing to the
-// same supabase_migrations.schema_migrations table the CLI itself uses, so
-// `supabase migration list` / `db push` stay accurate from a machine that can
-// reach 5432.
+// Applies pending SQL migrations from web/supabase/migrations/ (the Supabase
+// CLI project directory, tracked in this repo) to the linked project via the
+// Management API over HTTPS. Some environments block direct Postgres (port
+// 5432) egress, which is what `supabase db push` needs — this works around
+// that while writing to the same supabase_migrations.schema_migrations table
+// the CLI itself uses, so `supabase migration list` / `db push` stay accurate
+// from a machine that can reach 5432.
 //
 // Usage (from web/): node --env-file=.env.local scripts/migrate.js
 
 const fs = require('fs')
 const path = require('path')
 
-const MIGRATIONS_DIR = path.resolve(__dirname, '../../supabase/migrations')
+const MIGRATIONS_DIR = path.resolve(__dirname, '../supabase/migrations')
 const API_BASE = 'https://api.supabase.com/v1/projects'
 
 function projectRefFromUrl(url) {

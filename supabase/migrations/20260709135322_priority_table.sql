@@ -2,9 +2,6 @@
 -- mirroring the `progress` table's row-presence-as-state pattern, but priority
 -- needs a value column so it's kept separate from `progress` (which only tracks
 -- completion via row presence/absence).
---
--- No supabase/ CLI project is linked in this repo yet, so run this manually via
--- the Supabase dashboard SQL editor (or `supabase db execute -f` once linked).
 
 create table if not exists public.priority (
   user_id     uuid not null references auth.users(id) on delete cascade,
@@ -13,6 +10,8 @@ create table if not exists public.priority (
   updated_at  timestamptz not null default now(),
   primary key (user_id, question_id)
 );
+
+create index if not exists priority_user_id on public.priority (user_id);
 
 alter table public.priority enable row level security;
 
@@ -27,3 +26,5 @@ create policy "priority_update_own" on public.priority
 
 create policy "priority_delete_own" on public.priority
   for delete using (auth.uid() = user_id);
+
+grant all on public.priority to authenticated;

@@ -165,7 +165,7 @@ function PopoverContent({
       {pillState === 'offline' && !isDownloaded && (
         <>
           <p className="op-popover-desc">
-            You're offline and haven't downloaded any content. Connect to the internet to download
+            You&apos;re offline and haven&apos;t downloaded any content. Connect to the internet to download
             all questions for offline study.
           </p>
           <div className="op-popover-meta">

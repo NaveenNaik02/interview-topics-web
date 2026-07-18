@@ -101,7 +101,7 @@ export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
             <div className="brand-mark">P</div>
             <div>
               <div className="brand-title">Prep Tracker</div>
-              <div className="brand-sub">Interview Prep · {totalCount} Q's</div>
+              <div className="brand-sub">Interview Prep · {totalCount} Q&apos;s</div>
             </div>
           </Link>
         </div>

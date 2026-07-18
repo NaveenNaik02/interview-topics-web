@@ -111,6 +111,7 @@ export function useProgress() {
   // Omit the store's raw (unmerged) `totals` from the public return value —
   // `stats` above is the merged, render-safe aggregate every consumer wants;
   // nothing has ever read `totals` directly off this hook.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { totals: _rawTotals, ...rest } = state
   return { ...rest, stats, isComplete, sectionStats, allStats, getPriority, priorityStats }
 }
