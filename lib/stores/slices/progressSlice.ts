@@ -10,17 +10,19 @@ import { computeStats } from '../progressSelectors'
 import type { AppState, ProgressSlice } from '../types'
 
 export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> = (set, get) => {
-  // Recomputes the aggregate `stats` object after any mutation to `store` or
-  // `totals` — the store equivalent of the old `useMemo(() => ..., [store, totals])`.
+  // Recomputes the aggregate `stats` object after any mutation to `store`,
+  // `totals`, or `groups` — the store equivalent of the old
+  // `useMemo(() => ..., [store, totals, groups])`.
   const recomputeStats = () => {
-    const { store, totals } = get()
-    set({ stats: computeStats(store, totals) })
+    const { store, totals, groups } = get()
+    set({ stats: computeStats(store, totals, groups) })
   }
 
   return {
     store: {},
     totals: {},
-    stats: computeStats({}, {}),
+    groups: [],
+    stats: computeStats({}, {}, []),
     mounted: false,
 
     setInitialTotals: (totals: Record<string, number>) => {
@@ -32,6 +34,11 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
       const prev = get().totals
       if (prev[url] === total) return
       set({ totals: { ...prev, [url]: total } })
+      recomputeStats()
+    },
+
+    setGroups: (groups) => {
+      set({ groups })
       recomputeStats()
     },
 

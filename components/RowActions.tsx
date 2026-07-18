@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Copy, Pencil, Trash2, MoreVertical } from 'lucide-react'
+import { Copy, Pencil, FolderInput, Trash2, MoreVertical } from 'lucide-react'
 
 interface Props {
   getText: () => string
   onEdit?: () => void
+  onMove?: () => void
   onDelete?: () => void
 }
 
@@ -26,7 +27,7 @@ function fallbackCopy(text: string) {
 // Row overflow menu (kebab) — Copy / Edit / Delete. Portal-rendered so the
 // dropdown isn't clipped by the row's own layout, positioned from the
 // trigger button's rect the same way AqSelect/OfflineStatusPill anchor theirs.
-export default function RowActions({ getText, onEdit, onDelete }: Props) {
+export default function RowActions({ getText, onEdit, onMove, onDelete }: Props) {
   const [open, setOpen] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null)
@@ -108,6 +109,11 @@ export default function RowActions({ getText, onEdit, onDelete }: Props) {
               {onEdit && (
                 <button type="button" className="kebab-item" onClick={() => { onEdit(); close() }}>
                   <Pencil /> Edit
+                </button>
+              )}
+              {onMove && (
+                <button type="button" className="kebab-item" onClick={() => { onMove(); close() }}>
+                  <FolderInput /> Move to…
                 </button>
               )}
               {onDelete && (

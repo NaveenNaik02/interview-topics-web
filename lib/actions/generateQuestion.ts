@@ -13,6 +13,7 @@ export interface GenerateQuestionInput {
   lang?: string
   tags?: string
   model?: string
+  instructions?: string
 }
 
 export async function generateQuestion(input: GenerateQuestionInput): Promise<string> {
@@ -32,7 +33,8 @@ export async function generateQuestion(input: GenerateQuestionInput): Promise<st
       ? 'It must describe a concrete coding task to implement (e.g. "Implement a function that …").'
       : 'It should be answerable in a focused written explanation.',
     'Respond with ONLY the question itself — one sentence, no quotes, no preamble, no numbering.',
-  ].join(' ')
+    input.instructions?.trim() ? input.instructions.trim() : '',
+  ].filter(Boolean).join(' ')
 
   const contextBits = [
     input.subName ? `Topic: ${input.topicName} → ${input.subName}` : `Topic: ${input.topicName}`,
@@ -40,7 +42,7 @@ export async function generateQuestion(input: GenerateQuestionInput): Promise<st
     input.tags?.trim() ? `Tags: ${input.tags.trim()}` : '',
   ].filter(Boolean).join('\n')
 
-  const seed = input.seed?.trim() ? `\n\nRefine or riff on this rough idea rather than ignoring it: "${input.seed.trim()}"` : ''
+  const seed = input.seed?.trim() ? `\n\nDraft question to work from — apply the instructions above to it rather than ignoring it: "${input.seed.trim()}"` : ''
   const prompt = `${contextBits}${seed}`
 
   const res = await fetch(

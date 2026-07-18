@@ -1,4 +1,4 @@
-import { TOPIC_GROUPS } from '@/lib/topics'
+import type { TopicGroup } from '@/lib/topics'
 import type { PriorityLevel } from '@/lib/offlineSync'
 
 export interface ProgressStats {
@@ -8,13 +8,16 @@ export interface ProgressStats {
 }
 
 // Same aggregation ProgressContext's `stats` useMemo did — pulled out so the
-// store can call it directly instead of a hooks-based memo.
-export function computeStats(store: Record<string, boolean>, totals: Record<string, number>): ProgressStats {
+// store can call it directly instead of a hooks-based memo. Takes `groups`
+// (the merged static + DB-backed topic tree) rather than importing the
+// static TOPIC_GROUPS constant, so dynamically added topics/subtopics are
+// reflected too.
+export function computeStats(store: Record<string, boolean>, totals: Record<string, number>, groups: TopicGroup[]): ProgressStats {
   const bySection: Record<string, { completed: number; total: number }> = {}
   let totalCompleted = 0
   let totalQuestions = 0
 
-  TOPIC_GROUPS.forEach(group => {
+  groups.forEach(group => {
     group.sections.forEach(section => {
       const url = `/${section.topic}/${section.file}`
       const prefix = `${section.topic}/${section.file}/`

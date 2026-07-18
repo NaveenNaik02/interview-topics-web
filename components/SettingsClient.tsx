@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Sun, Moon, BookOpen, Download, X, Plus, Pencil, Trash2 } from 'lucide-react'
+import { Sun, Moon, BookOpen, Download, X, Pencil, Trash2, Lock } from 'lucide-react'
 import { useTheme, Theme } from '@/lib/ThemeContext'
 import { useProgress } from '@/lib/ProgressContext'
+import ConfirmDialog from './ConfirmDialog'
 import type { SortMode } from './FilterSortToolbar'
 
 const THEME_ORDER: Theme[] = ['light', 'sepia', 'dark']
@@ -49,9 +50,9 @@ function PresetEditorModal({ initial, onClose, onSave }: { initial: PresetDraft;
 
   return (
     <div className="aq-instr-scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="aq-instr-modal" role="dialog" aria-modal="true" aria-label="Instruction preset">
+      <div className="aq-instr-modal" role="dialog" aria-modal="true" aria-label="Instruction version">
         <div className="aq-head">
-          <h2>{initial.id ? 'Edit preset' : 'New preset'}</h2>
+          <h2>{initial.id ? 'Edit version' : 'New version'}</h2>
           <button className="aq-close" onClick={onClose} aria-label="Close" title="Close"><X size={15} /></button>
         </div>
         <div className="aq-body">
@@ -95,55 +96,53 @@ function PresetEditorModal({ initial, onClose, onSave }: { initial: PresetDraft;
 
 function InstructionPresetsEditor() {
   const {
-    instructionPresets: presets, activeInstructionPresetId: activeId, setActiveInstructionPresetId: setActiveId,
+    instructionPresets: presets,
     addInstructionPreset: addPreset, updateInstructionPreset: updatePreset, deleteInstructionPreset: deletePreset,
   } = useProgress()
   const [editor, setEditor] = useState<PresetDraft | null>(null)
 
   return (
-    <div className="preset-list">
+    <div className="instr-preset-list">
       {presets.map(p => (
-        <label key={p.id} className={`preset-row ${p.id === activeId ? 'active' : ''}`}>
-          <input
-            type="radio"
-            name="instruction-preset"
-            checked={p.id === activeId}
-            onChange={() => setActiveId(p.id)}
-          />
-          <div className="preset-row-text">
-            <div className="preset-row-name">
+        <div key={p.id} className="instr-preset-row">
+          <div className="instr-preset-text">
+            <div className="instr-preset-name">
+              {p.protected && <Lock size={12} aria-label="Can't be deleted" />}
               {p.name}
-              {p.id === activeId && <span className="preset-row-tag">Default</span>}
+              {p.kind === 'text' && <span className="instr-preset-tag">Text default</span>}
+              {p.kind === 'code' && <span className="instr-preset-tag">Code default</span>}
+              {p.kind === 'suggestion' && <span className="instr-preset-tag">Question suggestion</span>}
+              {p.kind === 'problem' && <span className="instr-preset-tag">Problem statement</span>}
             </div>
-            <div className="preset-row-preview">
+            <div className="instr-preset-preview">
               {p.text.trim() ? p.text.trim() : 'No formatting preferences — uses the base prompt only.'}
             </div>
           </div>
-          <div className="preset-row-actions">
+          <div className="instr-preset-actions">
             <button
               type="button"
-              className="preset-row-btn"
+              className="instr-preset-btn"
               title="Edit"
               aria-label={`Edit ${p.name}`}
-              onClick={(e) => { e.preventDefault(); setEditor({ id: p.id, name: p.name, text: p.text }) }}
+              onClick={() => setEditor({ id: p.id, name: p.name, text: p.text })}
             >
               <Pencil size={13} />
             </button>
             <button
               type="button"
-              className="preset-row-btn danger"
-              title={p.id === 'default' ? 'The default preset can\'t be deleted' : 'Delete'}
+              className="instr-preset-btn danger"
+              title={p.protected ? "This default can't be deleted" : 'Delete'}
               aria-label={`Delete ${p.name}`}
-              disabled={p.id === 'default'}
-              onClick={(e) => { e.preventDefault(); deletePreset(p.id) }}
+              disabled={p.protected || presets.length <= 1}
+              onClick={() => deletePreset(p.id)}
             >
               <Trash2 size={13} />
             </button>
           </div>
-        </label>
+        </div>
       ))}
-      <button type="button" className="preset-add-btn" onClick={() => setEditor({ name: '', text: '' })}>
-        <Plus size={13} /> New preset
+      <button type="button" className="instr-preset-add" onClick={() => setEditor({ name: '', text: '' })}>
+        <span className="instr-plus">+</span> New version
       </button>
 
       {editor && (
@@ -164,11 +163,13 @@ function InstructionPresetsEditor() {
 export default function SettingsClient() {
   const { theme, setTheme } = useTheme()
   const {
-    defaultSort, rememberFilters,
-    setDefaultSort, setRememberFilters, setThemeSetting,
+    defaultSort, rememberFilters, navigateAfterMove,
+    setDefaultSort, setRememberFilters, setThemeSetting, setNavigateAfterMove,
     isOnline, offlineModeEnabled, isCaching, cachingProgress,
     cachedAt, stats, enableOfflineMode, disableOfflineMode,
+    resetSettingsToDefaults,
   } = useProgress()
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false)
 
   const pct = cachingProgress
     ? Math.round((cachingProgress.done / cachingProgress.total) * 100)
@@ -249,18 +250,26 @@ export default function SettingsClient() {
           </div>
           <ToggleSwitch id="remember-filters-toggle" on={rememberFilters} onChange={setRememberFilters} />
         </div>
+        <div className="settings-row">
+          <div className="settings-row-text">
+            <label className="settings-row-label" htmlFor="navigate-after-move-toggle">
+              Jump to a question&apos;s new section after moving it
+            </label>
+            <div className="settings-row-hint">
+              Off by default — you stay right where you are and just see a confirmation toast. Turn on to be taken to the destination subtopic instead.
+            </div>
+          </div>
+          <ToggleSwitch id="navigate-after-move-toggle" on={navigateAfterMove} onChange={setNavigateAfterMove} />
+        </div>
       </section>
 
       <section className="settings-section">
-        <h2 className="settings-section-title">Answer generation</h2>
-        <div className="settings-row" style={{ alignItems: 'flex-start' }}>
-          <div className="settings-row-text">
-            <div className="settings-row-label">Instruction presets</div>
-            <div className="settings-row-hint">
-              Named formatting instructions the AI follows when generating or reformatting answers in Add Question. The active one is what new questions start with — you can still override it per-question there.
-            </div>
-          </div>
-        </div>
+        <h2 className="settings-section-title">AI answer instructions</h2>
+        <p className="settings-row-hint" style={{ margin: '-6px 0 var(--s-3)' }}>
+          Every new question starts from one of two built-in defaults — one for regular (text) answers, one for
+          implementation questions that expect just a code snippet. Add more versions to keep other formatting
+          preferences on hand; you can pull any of them into a single question via &quot;Start from a saved version.&quot;
+        </p>
         <InstructionPresetsEditor />
       </section>
 
@@ -294,6 +303,28 @@ export default function SettingsClient() {
           )}
         </div>
       </section>
+
+      <section className="settings-section">
+        <h2 className="settings-section-title">Reset</h2>
+        <div className="settings-row">
+          <div className="settings-row-text">
+            <div className="settings-row-label">Reset settings to default</div>
+            <div className="settings-row-hint">
+              Restores study defaults and AI instruction presets to what a brand-new account starts with. Doesn&apos;t touch your questions, progress, or topics.
+            </div>
+          </div>
+          <button className="reset-all" onClick={() => setResetConfirmOpen(true)}>Reset settings</button>
+        </div>
+      </section>
+
+      <ConfirmDialog
+        open={resetConfirmOpen}
+        title="Reset settings to default?"
+        message="This restores study defaults (sort order, remembered filters, move-navigation) and the four built-in AI instruction presets to their original values. Any custom instruction versions you added will be removed. Your questions, topics, and progress are unaffected."
+        confirmLabel="Reset settings"
+        onConfirm={() => { resetSettingsToDefaults(); setResetConfirmOpen(false) }}
+        onCancel={() => setResetConfirmOpen(false)}
+      />
     </div>
   )
 }

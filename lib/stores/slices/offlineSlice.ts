@@ -1,6 +1,5 @@
 import type { StateCreator } from 'zustand'
 import { supabase } from '@/lib/supabase/client'
-import { TOPIC_GROUPS } from '@/lib/topics'
 import { PAGES_CACHE_NAME, ASSETS_CACHE_NAME } from '@/lib/swConstants'
 import {
   getOfflineEnabled, setOfflineEnabled,
@@ -28,7 +27,7 @@ export const createOfflineSlice: StateCreator<AppState, [], [], OfflineSlice> = 
   cachedAt: null,
 
   enableOfflineMode: async () => {
-    const { user, store, priorityStore, totals } = get()
+    const { user, store, priorityStore, totals, groups } = get()
     if (!user) return
     set({ isCaching: true })
     setOfflineEnabled(true)
@@ -41,7 +40,7 @@ export const createOfflineSlice: StateCreator<AppState, [], [], OfflineSlice> = 
     setCachedPriority(priorityStore)
     setCachedTotals(totals)
 
-    const allSections = TOPIC_GROUPS.flatMap(g => g.sections)
+    const allSections = groups.flatMap(g => g.sections)
     const urls = ['/', ...allSections.map(s => `/${s.topic}/${s.file}`)]
 
     // Fetch and cache question content for each section using browser Supabase client

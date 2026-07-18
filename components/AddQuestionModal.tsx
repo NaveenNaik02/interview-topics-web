@@ -7,13 +7,15 @@ import { X, Github, Loader2, Sparkles, RefreshCw, SlidersHorizontal, AlignLeft }
 import { useProgress } from '@/lib/ProgressContext'
 import { useTopicGroups } from '@/lib/TopicsContext'
 import { addQuestion, updateQuestion } from '@/lib/actions/questions'
+import { addTopicGroup, addSection } from '@/lib/actions/topics'
 import { generateAnswer } from '@/lib/actions/generateAnswer'
 import { generateQuestion } from '@/lib/actions/generateQuestion'
 import { generateProblem } from '@/lib/actions/generateProblem'
 import { formatAnswer } from '@/lib/actions/formatAnswer'
+import { suggestPlacement, type PlacementSuggestion } from '@/lib/actions/suggestPlacement'
 import { findGroupForSection, type SectionMeta } from '@/lib/topics'
 import { AQ_MODELS, type AqModelId } from '@/lib/aiModels'
-import { loadPresets, loadActivePresetId, getActiveInstructionText } from '@/lib/instructionPresets'
+import { loadPresets, getActiveInstructionText, getSuggestionInstructionText, getProblemInstructionText } from '@/lib/instructionPresets'
 import type { ParsedQuestion } from '@/lib/parser'
 import type { PriorityLevel } from '@/lib/offlineSync'
 import { useTypewriter } from '@/lib/useTypewriter'
@@ -33,6 +35,14 @@ export interface EditingQuestion {
 interface Props {
   defaultSection?: SectionMeta
   editing?: EditingQuestion
+  // Seeds the title field for a fresh (non-edit) add — used when assigning
+  // a captured Inbox item, so the raw pasted text lands in Question instead
+  // of starting blank.
+  prefillTitle?: string
+  // Marks this Add flow as assigning the given Inbox item. On a successful
+  // save, that item is deleted (it's become a real question) and the
+  // header/footer copy calls this out instead of the generic add/edit text.
+  fromInboxId?: string
   onClose: () => void
   onSaved: (question: ParsedQuestion, section: SectionMeta) => void
 }
@@ -54,12 +64,22 @@ const LANG_OPTIONS = ['js', 'jsx', 'ts', 'html', 'css', 'bash', 'none']
 
 const AQ_MODEL_KEY = 'prep-tracker:ai-model'
 
-function AqInstructionsModal({ value, model, onClose, onSave }: { value: string; model: AqModelId; onClose: () => void; onSave: (v: string, m: AqModelId) => void }) {
+// Sentinel select values for a suggested topic/subtopic that doesn't exist
+// yet — nothing is created in the database until Save, so these stand in
+// for a real slug/sectionKey until then.
+const PENDING_GROUP_SLUG = '__pending-topic__'
+const PENDING_SECTION_KEY = '__pending-section__'
+
+type PendingPlacement =
+  | { kind: 'new-subtopic'; groupSlug: string; label: string }
+  | { kind: 'new-topic'; topicName: string; blurb: string; label: string }
+
+function AqInstructionsModal({ value, model, isImpl, onClose, onSave }: { value: string; model: AqModelId; isImpl: boolean; onClose: () => void; onSave: (v: string, m: AqModelId) => void }) {
   const [draft, setDraft] = useState(value)
   const [draftModel, setDraftModel] = useState<AqModelId>(model)
   const [tab, setTab] = useState<'write' | 'preview'>('write')
   const presets = useMemo(loadPresets, [])
-  const [presetPick, setPresetPick] = useState(() => loadActivePresetId(presets))
+  const [presetPick, setPresetPick] = useState(() => presets.find(p => p.kind === (isImpl ? 'code' : 'text'))?.id ?? presets[0]?.id ?? '')
   const html = useMemo(() => renderPreviewHtml(draft), [draft])
 
   const handleLoadPreset = (id: string) => {
@@ -140,8 +160,8 @@ function AqInstructionsModal({ value, model, onClose, onSave }: { value: string;
   )
 }
 
-export default function AddQuestionModal({ defaultSection, editing, onClose, onSaved }: Props) {
-  const { user, mounted, signInWithGitHub, setPriority } = useProgress()
+export default function AddQuestionModal({ defaultSection, editing, prefillTitle, fromInboxId, onClose, onSaved }: Props) {
+  const { user, mounted, signInWithGitHub, setPriority, removeInboxItem } = useProgress()
   const isEdit = !!editing
 
   // A freshly-added topic with no subtopics yet has nowhere to attach a
@@ -151,15 +171,44 @@ export default function AddQuestionModal({ defaultSection, editing, onClose, onS
   const initialSection = editing?.section ?? defaultSection
   const initialGroup = initialSection ? findGroupForSection(groups, initialSection) : null
   const [groupSlug, setGroupSlug] = useState(initialGroup?.slug ?? groups[0].slug)
-  const group = groups.find(g => g.slug === groupSlug) ?? groups[0]
+  const isPendingGroup = groupSlug === PENDING_GROUP_SLUG
+  const group = isPendingGroup ? null : (groups.find(g => g.slug === groupSlug) ?? groups[0])
 
   const sectionKey = (s: SectionMeta) => `${s.topic}/${s.file}`
-  const [sectionK, setSectionK] = useState(
-    initialSection ? sectionKey(initialSection) : sectionKey(group.sections[0])
-  )
-  const section = group.sections.find(s => sectionKey(s) === sectionK) ?? group.sections[0]
+  // Lazy initializer: evaluated once at mount, when groupSlug can't yet be
+  // the pending-topic sentinel — safe to assume a real group here.
+  const [sectionK, setSectionK] = useState(() => {
+    if (initialSection) return sectionKey(initialSection)
+    const mountGroup = groups.find(g => g.slug === groupSlug) ?? groups[0]
+    return sectionKey(mountGroup.sections[0])
+  })
+  const section = group?.sections.find(s => sectionKey(s) === sectionK) ?? group?.sections[0]
 
-  const [title, setTitle] = useState(editing?.title ?? '')
+  // A suggestion staged via "Use this placement" for a topic/subtopic that
+  // doesn't exist yet — surfaced as a synthetic option (below) and only
+  // created for real in handleSave, so cancelling the modal leaves no
+  // orphaned topic/subtopic behind.
+  const [pendingPlacement, setPendingPlacement] = useState<PendingPlacement | null>(null)
+  const [placement, setPlacement] = useState<PlacementSuggestion | null>(null)
+  const [placeState, setPlaceState] = useState<'idle' | 'loading' | 'error'>('idle')
+
+  const pendingTopic = pendingPlacement?.kind === 'new-topic' ? pendingPlacement : null
+  const pendingSubtopicForGroup = pendingPlacement?.kind === 'new-subtopic' && pendingPlacement.groupSlug === groupSlug ? pendingPlacement : null
+
+  const topicOptions = [
+    ...groups.map(g => ({ value: g.slug, label: g.groupName })),
+    ...(pendingTopic ? [{ value: PENDING_GROUP_SLUG, label: pendingTopic.topicName, sub: 'new' }] : []),
+  ]
+  const sectionOptions = pendingTopic && isPendingGroup
+    ? [{ value: PENDING_SECTION_KEY, label: pendingTopic.label, sub: 'new' }]
+    : [
+        ...(group?.sections ?? []).map(s => ({ value: sectionKey(s), label: s.label })),
+        ...(pendingSubtopicForGroup ? [{ value: PENDING_SECTION_KEY, label: pendingSubtopicForGroup.label, sub: 'new' }] : []),
+      ]
+  const activeTopicName = isPendingGroup && pendingTopic ? pendingTopic.topicName : (group?.groupName ?? '')
+  const activeSectionLabel = sectionK === PENDING_SECTION_KEY && pendingPlacement ? pendingPlacement.label : (section?.label ?? '')
+
+  const [title, setTitle] = useState(editing?.title ?? prefillTitle ?? '')
   const [priority, setPriorityLevel] = useState<PriorityLevel | null>(editing?.priority ?? 'med')
   const [lang, setLang] = useState(editing?.lang || 'js')
   const [tags, setTags] = useState(editing?.tags ?? '')
@@ -176,10 +225,10 @@ export default function AddQuestionModal({ defaultSection, editing, onClose, onS
   const [genError, setGenError] = useState<string | null>(null)
   const [questionGen, setQuestionGen] = useState<'idle' | 'loading' | 'error'>('idle')
   const [showInstructions, setShowInstructions] = useState(false)
-  // Always seeded from whatever preset is active in Settings — per-question
-  // edits below are this question's local draft only and must never persist
-  // as a global override, or the Settings-selected default would get stuck.
-  const [instructions, setInstructions] = useState(() => getActiveInstructionText())
+  // Seeded from the built-in default matching isImpl (text vs. code-only) —
+  // per-question edits below are this question's local draft only and must
+  // never persist as a global override.
+  const [instructions, setInstructions] = useState(() => getActiveInstructionText(isImpl))
   const [model, setModel] = useState<AqModelId>(() => {
     try {
       const saved = localStorage.getItem(AQ_MODEL_KEY)
@@ -197,11 +246,22 @@ export default function AddQuestionModal({ defaultSection, editing, onClose, onS
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
   useEffect(() => {
-    if (!group.sections.some(s => sectionKey(s) === sectionK)) {
-      setSectionK(sectionKey(group.sections[0]))
-    }
+    if (sectionOptions.some(o => o.value === sectionK)) return
+    if (sectionOptions[0]) setSectionK(sectionOptions[0].value)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupSlug])
+  // Follows the Implementation toggle for a still-untouched instructions
+  // draft (still exactly one of the two built-in defaults) — never
+  // overwrites instructions the author has actually customized.
+  useEffect(() => {
+    const presets = loadPresets()
+    const textDefault = presets.find(p => p.kind === 'text')?.text ?? ''
+    const codeDefault = presets.find(p => p.kind === 'code')?.text ?? ''
+    if (instructions === textDefault || instructions === codeDefault) {
+      setInstructions(isImpl ? codeDefault : textDefault)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isImpl])
 
   const previewHtml = useMemo(() => renderPreviewHtml(markdown), [markdown])
   const canSave = title.trim().length > 3 && markdown.trim().length > 3 && !saving && (!isImpl || problem.trim().length > 3)
@@ -209,6 +269,7 @@ export default function AddQuestionModal({ defaultSection, editing, onClose, onS
   const canFormat = markdown.trim().length > 3 && genState !== 'loading'
   const canGenerateQuestion = questionGen !== 'loading'
   const canGenerateProblem = title.trim().length > 3 && problemGen !== 'loading'
+  const canSuggestPlacement = title.trim().length > 3 && placeState !== 'loading'
 
   const isAnonymous = mounted && !!user?.is_anonymous
 
@@ -228,13 +289,14 @@ export default function AddQuestionModal({ defaultSection, editing, onClose, onS
     setQuestionGen('loading')
     try {
       const text = await generateQuestion({
-        topicName: group.groupName,
-        subName: section.label,
+        topicName: activeTopicName,
+        subName: activeSectionLabel,
         seed: title,
         isImpl,
         lang,
         tags,
         model,
+        instructions: getSuggestionInstructionText(),
       })
       typewriteQuestion(text, () => setQuestionGen('idle'))
     } catch (err) {
@@ -247,7 +309,7 @@ export default function AddQuestionModal({ defaultSection, editing, onClose, onS
     if (!canGenerateProblem) return
     setProblemGen('loading')
     try {
-      const text = await generateProblem({ question: title, lang, tags, model })
+      const text = await generateProblem({ question: title, lang, tags, model, instructions: getProblemInstructionText() })
       typewriteProblem(text, () => setProblemGen('idle'))
     } catch {
       setProblemGen('error')
@@ -262,8 +324,8 @@ export default function AddQuestionModal({ defaultSection, editing, onClose, onS
     try {
       const text = await generateAnswer({
         question: title,
-        topicName: group.groupName,
-        subName: section.label,
+        topicName: activeTopicName,
+        subName: activeSectionLabel,
         instructions,
         model,
       })
@@ -290,14 +352,67 @@ export default function AddQuestionModal({ defaultSection, editing, onClose, onS
     }
   }
 
+  const handleSuggestPlacement = async () => {
+    if (!canSuggestPlacement) return
+    setPlaceState('loading')
+    setPlacement(null)
+    try {
+      const result = await suggestPlacement({
+        title,
+        tags,
+        groups: groups.map(g => ({
+          groupSlug: g.slug,
+          groupName: g.groupName,
+          sections: g.sections.map(s => ({ topic: s.topic, file: s.file, label: s.label })),
+        })),
+        model,
+      })
+      setPlacement(result)
+      setPlaceState('idle')
+    } catch {
+      setPlaceState('error')
+    }
+  }
+
+  const handleApplyPlacement = () => {
+    if (!placement) return
+    if (placement.mode === 'existing') {
+      setPendingPlacement(null)
+      setGroupSlug(placement.groupSlug)
+      setSectionK(`${placement.topic}/${placement.file}`)
+    } else if (placement.mode === 'new-subtopic') {
+      setPendingPlacement({ kind: 'new-subtopic', groupSlug: placement.groupSlug, label: placement.label })
+      setGroupSlug(placement.groupSlug)
+      setSectionK(PENDING_SECTION_KEY)
+    } else {
+      setPendingPlacement({ kind: 'new-topic', topicName: placement.topicName, blurb: placement.blurb, label: placement.label })
+      setGroupSlug(PENDING_GROUP_SLUG)
+      setSectionK(PENDING_SECTION_KEY)
+    }
+    setPlacement(null)
+  }
+
   const handleSave = async () => {
     if (!canSave) return
     setSaving(true)
     setError(null)
     try {
+      // A staged new topic/subtopic only gets created here, right before the
+      // question that needs it — so cancelling out of the modal earlier
+      // never leaves an empty topic/subtopic behind.
+      let targetSection: SectionMeta
+      if (groupSlug === PENDING_GROUP_SLUG && pendingPlacement?.kind === 'new-topic') {
+        const newGroup = await addTopicGroup({ groupName: pendingPlacement.topicName, blurb: pendingPlacement.blurb })
+        targetSection = (await addSection({ groupSlug: newGroup.slug, label: pendingPlacement.label })).section
+      } else if (sectionK === PENDING_SECTION_KEY && pendingPlacement?.kind === 'new-subtopic') {
+        targetSection = (await addSection({ groupSlug: pendingPlacement.groupSlug, label: pendingPlacement.label })).section
+      } else {
+        targetSection = section!
+      }
+
       const input = {
-        topic: section.topic,
-        file: section.file,
+        topic: targetSection.topic,
+        file: targetSection.file,
         title,
         markdown,
         lang,
@@ -306,7 +421,8 @@ export default function AddQuestionModal({ defaultSection, editing, onClose, onS
       }
       const q = isEdit ? await updateQuestion(editing!.id, input) : await addQuestion(input)
       if (priority) setPriority(q.id, priority)
-      onSaved(q, section)
+      if (fromInboxId) removeInboxItem(fromInboxId)
+      onSaved(q, targetSection)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save this question — try again.')
       setSaving(false)
@@ -315,9 +431,9 @@ export default function AddQuestionModal({ defaultSection, editing, onClose, onS
 
   return (
     <div className="modal-scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="aq-modal" role="dialog" aria-modal="true" aria-label={isEdit ? 'Edit question' : 'Add question'}>
+      <div className="aq-modal" role="dialog" aria-modal="true" aria-label={isEdit ? 'Edit question' : fromInboxId ? 'Assign from Inbox' : 'Add question'}>
         <div className="aq-head">
-          <h2>{isEdit ? 'Edit question' : 'Add question'}</h2>
+          <h2>{isEdit ? 'Edit question' : fromInboxId ? 'Assign from Inbox' : 'Add question'}</h2>
           <button className="aq-close" onClick={onClose} aria-label="Close" title="Close"><X size={15} /></button>
         </div>
 
@@ -331,6 +447,26 @@ export default function AddQuestionModal({ defaultSection, editing, onClose, onS
         ) : (
           <>
             <div className="aq-body">
+              <div className="aq-field">
+                <div className="aq-label-row">
+                  <label>Placement</label>
+                  <button
+                    type="button"
+                    className={`aq-generate-btn ${placeState === 'loading' ? 'loading' : ''}`}
+                    onClick={handleSuggestPlacement}
+                    disabled={!canSuggestPlacement}
+                    title={title.trim().length > 3 ? 'Suggest where this question belongs, using the existing topics' : 'Write a question first'}
+                  >
+                    {placeState === 'loading' ? (
+                      <><span className="aq-gen-spinner" />Thinking…</>
+                    ) : (
+                      <><Sparkles size={12.5} /> Suggest placement</>
+                    )}
+                  </button>
+                </div>
+                {placeState === 'error' && <div className="aq-gen-error" style={{ padding: '0 0 6px', background: 'none' }}>Couldn&apos;t get a suggestion — try again.</div>}
+              </div>
+
               <div className="aq-row">
                 <div className="aq-field">
                   <label htmlFor="aq-topic">Topic</label>
@@ -338,7 +474,7 @@ export default function AddQuestionModal({ defaultSection, editing, onClose, onS
                     id="aq-topic"
                     value={groupSlug}
                     onChange={setGroupSlug}
-                    options={groups.map(g => ({ value: g.slug, label: g.groupName }))}
+                    options={topicOptions}
                   />
                 </div>
                 <div className="aq-field">
@@ -347,10 +483,46 @@ export default function AddQuestionModal({ defaultSection, editing, onClose, onS
                     id="aq-subtopic"
                     value={sectionK}
                     onChange={setSectionK}
-                    options={group.sections.map(s => ({ value: sectionKey(s), label: s.label }))}
+                    options={sectionOptions}
                   />
                 </div>
               </div>
+
+              {placement && (
+                <div className="aq-suggest-card">
+                  <div className="aq-suggest-path">
+                    <Sparkles size={13} />
+                    <span>
+                      {placement.mode === 'existing' && (
+                        <>
+                          <b>{groups.find(g => g.slug === placement.groupSlug)?.groupName}</b>
+                          {' → '}
+                          <b>{groups.find(g => g.slug === placement.groupSlug)?.sections.find(s => s.topic === placement.topic && s.file === placement.file)?.label}</b>
+                        </>
+                      )}
+                      {placement.mode === 'new-subtopic' && (
+                        <>
+                          <b>{groups.find(g => g.slug === placement.groupSlug)?.groupName}</b>
+                          {' → '}
+                          <b>{placement.label}</b><span className="aq-suggest-badge">new subtopic</span>
+                        </>
+                      )}
+                      {placement.mode === 'new-topic' && (
+                        <>
+                          <b>{placement.topicName}</b><span className="aq-suggest-badge">new topic</span>
+                          {' → '}
+                          <b>{placement.label}</b><span className="aq-suggest-badge">new subtopic</span>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                  {placement.reasoning && <p className="aq-suggest-reason">{placement.reasoning}</p>}
+                  <div className="aq-suggest-actions">
+                    <button type="button" className="btn-cancel" onClick={() => setPlacement(null)}>Choose manually</button>
+                    <button type="button" className="btn-primary" onClick={handleApplyPlacement}>Use this placement</button>
+                  </div>
+                </div>
+              )}
 
               <div className="aq-field">
                 <div className="aq-label-row">
@@ -521,6 +693,7 @@ export default function AddQuestionModal({ defaultSection, editing, onClose, onS
                 <AqInstructionsModal
                   value={instructions}
                   model={model}
+                  isImpl={isImpl}
                   onClose={() => setShowInstructions(false)}
                   onSave={handleSaveInstructions}
                 />
@@ -531,7 +704,11 @@ export default function AddQuestionModal({ defaultSection, editing, onClose, onS
 
             <div className="aq-foot">
               <span className="aq-foot-left">
-                {isEdit ? 'Saving updates this question in place, everywhere it appears.' : 'Saving writes this question straight to the database — no file editing needed.'}
+                {isEdit
+                  ? 'Saving updates this question in place, everywhere it appears.'
+                  : fromInboxId
+                    ? 'Saves the question and removes it from your Inbox.'
+                    : 'Saving writes this question straight to the database — no file editing needed.'}
               </span>
               <div className="aq-foot-actions">
                 <button className="btn-cancel" onClick={onClose}>Cancel</button>

@@ -28,11 +28,12 @@ interface Props {
 
 export default function DashboardClient({ groups }: Props) {
   const router = useRouter()
-  const { stats, mounted } = useProgress()
+  const { stats, mounted, resetAll } = useProgress()
   const [addTarget, setAddTarget] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<{ slug: string; label: string } | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [confirmReset, setConfirmReset] = useState(false)
 
   const doneCount = stats.completed
   const totalCount = stats.total
@@ -66,20 +67,26 @@ export default function DashboardClient({ groups }: Props) {
           <h1 className="dash-title">Frontend interview prep, organized.</h1>
           <p className="dash-sub">A curated track across {totalCount} questions. Pick a topic, expand a question, mark it done. Your progress is saved in the cloud.</p>
         </div>
-        <div className="overall-card">
-          <div className="label">Overall</div>
+      </header>
+
+      <div className="overall-row-card">
+        <div className="orc-stat">
+          <div className="label">Overall progress</div>
           <div className="overall-row">
             <span className="overall-num">{mounted ? overallPct : 0}%</span>
-            <span className="overall-of">{mounted ? doneCount : 0} / {totalCount}</span>
-          </div>
-          <div className="bar">
-            <div
-              className="bar-fill"
-              style={{ width: `${mounted ? overallPct : 0}%` }}
-            />
+            <span className="overall-of">{mounted ? doneCount : 0} of {totalCount} questions</span>
           </div>
         </div>
-      </header>
+        <div className="bar orc-bar">
+          <div
+            className="bar-fill"
+            style={{ width: `${mounted ? overallPct : 0}%` }}
+          />
+        </div>
+        <button className="reset-all" onClick={() => setConfirmReset(true)} disabled={doneCount === 0}>
+          Reset all progress
+        </button>
+      </div>
 
       <div className="dash-grid">
         {groups.map((group) => {
@@ -157,6 +164,16 @@ export default function DashboardClient({ groups }: Props) {
         })}
       </div>
 
+      <ConfirmDialog
+        open={confirmReset}
+        danger
+        requireText="RESET"
+        title="Reset everything?"
+        message={`This permanently clears progress on all ${doneCount} completed questions across every topic. This action cannot be undone.`}
+        confirmLabel="Reset everything"
+        onConfirm={() => { resetAll(); setConfirmReset(false) }}
+        onCancel={() => setConfirmReset(false)}
+      />
       <ConfirmDialog
         open={!!deleteTarget}
         danger

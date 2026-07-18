@@ -7,6 +7,7 @@ import { TopicGroup, sectionUrl } from '@/lib/topics'
 import { useProgress } from '@/lib/ProgressContext'
 import { useUI } from '@/lib/UIContext'
 import { deleteSection, deleteTopicGroup } from '@/lib/actions/topics'
+import { Settings } from 'lucide-react'
 import ConfirmDialog from './ConfirmDialog'
 import AddTopicModal from './AddTopicModal'
 
@@ -21,15 +22,15 @@ const Icon = {
       <path d="M2 7l6-5 6 5v6.5a1 1 0 0 1-1 1h-2.5v-4h-5v4H3a1 1 0 0 1-1-1V7z" />
     </svg>
   ),
-  Gear: () => (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M6.6 2.2h2.8l.4 1.7c.45.15.87.36 1.25.62l1.6-.7 1.98 1.98-.7 1.6c.26.38.47.8.62 1.25l1.7.4v2.8l-1.7.4a4.9 4.9 0 0 1-.62 1.25l.7 1.6-1.98 1.98-1.6-.7a4.9 4.9 0 0 1-1.25.62l-.4 1.7H6.6l-.4-1.7a4.9 4.9 0 0 1-1.25-.62l-1.6.7-1.98-1.98.7-1.6a4.9 4.9 0 0 1-.62-1.25l-1.7-.4V6.8l1.7-.4c.15-.45.36-.87.62-1.25l-.7-1.6L4.75 1.57l1.6.7c.38-.26.8-.47 1.25-.62l.4-1.7Z" />
-      <circle cx="8" cy="8" r="2.1" />
-    </svg>
-  ),
+  Gear: () => <Settings size={16} strokeWidth={1.7} aria-hidden="true" />,
   Filter: () => (
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M2 4h12M4 8h8M6 12h4" />
+    </svg>
+  ),
+  Inbox: () => (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2 8h3.2l1.1 2.4h3.4L10.8 8H14M2 8V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v4M2 8v4a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8" />
     </svg>
   ),
   Plus: () => (
@@ -52,10 +53,9 @@ type DeleteTarget =
 export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { stats, resetAll } = useProgress()
+  const { stats, inboxItems } = useProgress()
   const { drawerOpen, setDrawerOpen } = useUI()
   const [expanded, setExpanded] = useState<Set<string>>(new Set(['javascript', 'react']))
-  const [confirmReset, setConfirmReset] = useState(false)
   const [addTarget, setAddTarget] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -81,9 +81,7 @@ export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
     }
   }
 
-  const doneCount = stats.completed
   const totalCount = stats.total
-  const overallPct = totalCount ? Math.round((doneCount / totalCount) * 100) : 0
 
   const toggleExpanded = (id: string) => {
     setExpanded((prev) => {
@@ -108,22 +106,6 @@ export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
           </Link>
         </div>
 
-        <div className="sidebar-summary">
-          <div className="label">Overall progress</div>
-          <div className="stat">
-            <span className="stat-num">{doneCount}</span>
-            <span className="stat-of">of {totalCount} · {overallPct}%</span>
-          </div>
-          <div className="bar"><div className="bar-fill" style={{ width: `${overallPct}%` }} /></div>
-          <button
-            className="reset-all"
-            onClick={() => setConfirmReset(true)}
-            disabled={doneCount === 0}
-          >
-            Reset all progress
-          </button>
-        </div>
-
         <nav className="sidebar-nav">
           <Link
             href="/"
@@ -132,8 +114,22 @@ export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
             style={{ marginBottom: 8 }}
             prefetch={false}
           >
-            <span style={{ display: 'inline-flex', color: 'var(--text-subtle)' }}><Icon.Home /></span>
+            <span style={{ display: 'inline-flex', color: 'var(--text-subtle)', width: 16, height: 16 }}><Icon.Home /></span>
             <span className="subtopic-name">Dashboard</span>
+          </Link>
+
+          <Link
+            href="/inbox"
+            className={`subtopic-row ${pathname === '/inbox' ? 'active' : ''}`}
+            onClick={() => setDrawerOpen(false)}
+            style={{ marginBottom: 8, justifyContent: 'space-between' }}
+            prefetch={false}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ display: 'inline-flex', color: 'var(--text-subtle)', width: 16, height: 16 }}><Icon.Inbox /></span>
+              <span className="subtopic-name">Inbox</span>
+            </span>
+            {inboxItems.length > 0 && <span className="ic-nav-badge">{inboxItems.length}</span>}
           </Link>
 
           <Link
@@ -143,9 +139,22 @@ export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
             style={{ marginBottom: 8 }}
             prefetch={false}
           >
-            <span style={{ display: 'inline-flex', color: 'var(--text-subtle)' }}><Icon.Filter /></span>
+            <span style={{ display: 'inline-flex', color: 'var(--text-subtle)', width: 16, height: 16 }}><Icon.Filter /></span>
             <span className="subtopic-name">Priority Mix</span>
           </Link>
+
+          <Link
+            href="/settings"
+            className={`subtopic-row ${pathname === '/settings' ? 'active' : ''}`}
+            onClick={() => setDrawerOpen(false)}
+            style={{ marginBottom: 8 }}
+            prefetch={false}
+          >
+            <span style={{ display: 'inline-flex', color: 'var(--text-subtle)', width: 16, height: 16 }}><Icon.Gear /></span>
+            <span className="subtopic-name">Settings</span>
+          </Link>
+
+          <div className="sidebar-nav-sep" />
 
           {groups.map((group) => {
             const isExp = expanded.has(group.slug)
@@ -250,16 +259,6 @@ export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
         </nav>
       </aside>
 
-      <ConfirmDialog
-        open={confirmReset}
-        danger
-        requireText="RESET"
-        title="Reset everything?"
-        message={`This permanently clears progress on all ${doneCount} completed questions across every topic. This action cannot be undone.`}
-        confirmLabel="Reset everything"
-        onConfirm={() => { resetAll(); setConfirmReset(false) }}
-        onCancel={() => setConfirmReset(false)}
-      />
       <ConfirmDialog
         open={!!deleteTarget}
         danger

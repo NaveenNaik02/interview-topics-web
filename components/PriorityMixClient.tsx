@@ -10,6 +10,8 @@ import { deleteQuestion } from '@/lib/actions/questions'
 import type { PriorityLevel } from '@/lib/offlineSync'
 import QuestionItem from './QuestionItem'
 import AddQuestionModal, { type EditingQuestion } from './AddQuestionModal'
+import MoveQuestionModal from './MoveQuestionModal'
+import SaveToast from './SaveToast'
 
 export interface PriorityMixQuestion {
   id: string
@@ -154,7 +156,7 @@ function SubtopicPicker({ flatSubs, selected, onToggle }: { flatSubs: FlatSub[];
 }
 
 export default function PriorityMixClient({ questions }: Props) {
-  const { getPriority, isComplete, toggle, setPriority, isOnline, offlineModeEnabled, mounted, user } = useProgress()
+  const { getPriority, isComplete, toggle, setPriority, isOnline, offlineModeEnabled, mounted, navigateAfterMove, user } = useProgress()
   const groups = useTopicGroups()
   const flatSubs = useMemo(() => groups.flatMap(g =>
     g.sections.map((s: SectionMeta) => ({ key: sectionUrl(s), label: s.label, topicName: g.groupName }))
@@ -163,6 +165,8 @@ export default function PriorityMixClient({ questions }: Props) {
   const [openId, setOpenId] = useState<string | null>(null)
   const [showOfflineModal, setShowOfflineModal] = useState(false)
   const [editingQuestion, setEditingQuestion] = useState<EditingQuestion | null>(null)
+  const [movingQuestion, setMovingQuestion] = useState<{ id: string; label: string; section: SectionMeta } | null>(null)
+  const [moveToast, setMoveToast] = useState<string | null>(null)
 
   const [selPri, setSelPri] = useState<Set<PriorityLevel>>(new Set())
   const [selSubs, setSelSubs] = useState<Set<string>>(new Set())
@@ -324,6 +328,7 @@ export default function PriorityMixClient({ questions }: Props) {
                   tags: r.q.tags,
                   problem: r.q.problem,
                 }) : undefined}
+                onMove={canManage ? () => setMovingQuestion({ id: r.q.id, label: r.q.title, section }) : undefined}
                 onDelete={canManage ? async () => {
                   await deleteQuestion(r.q.id)
                   router.refresh()
@@ -371,6 +376,29 @@ export default function PriorityMixClient({ questions }: Props) {
           }}
         />
       )}
+
+      {movingQuestion && (
+        <MoveQuestionModal
+          groups={groups}
+          questionId={movingQuestion.id}
+          label={movingQuestion.label}
+          currentSection={movingQuestion.section}
+          onClose={() => setMovingQuestion(null)}
+          onMoved={(destination) => {
+            setMovingQuestion(null)
+            if (navigateAfterMove) {
+              router.push(sectionUrl(destination))
+            } else {
+              const destGroup = findGroupForSection(groups, destination)
+              setMoveToast(`${destGroup?.groupName ?? ''} → ${destination.label}`)
+              setTimeout(() => setMoveToast(null), 3600)
+              router.refresh()
+            }
+          }}
+        />
+      )}
+
+      {moveToast && <SaveToast title="Moved" detail={moveToast} />}
     </div>
   )
 }

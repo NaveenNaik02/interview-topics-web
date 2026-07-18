@@ -4,15 +4,18 @@ import React, { useState, useEffect, useLayoutEffect, useCallback, useMemo, useR
 import { useRouter } from 'next/navigation'
 import { Send } from 'lucide-react'
 import { useProgress } from '@/lib/ProgressContext'
+import { useTopicGroups } from '@/lib/TopicsContext'
 import type { ParsedQuestion } from '@/lib/parser'
 import type { PriorityLevel } from '@/lib/offlineSync'
-import { sectionUrl, type SectionMeta, type TopicGroup } from '@/lib/topics'
+import { sectionUrl, findGroupForSection, type SectionMeta, type TopicGroup } from '@/lib/topics'
 import { getCachedQuestions } from '@/lib/offlineSync'
 import { deleteQuestion } from '@/lib/actions/questions'
 import QuestionItem from './QuestionItem'
 import ConfirmDialog from './ConfirmDialog'
 import FilterSortToolbar, { type PriorityFilterKey, type StatusFilter, type SortMode } from './FilterSortToolbar'
 import AddQuestionModal, { type EditingQuestion } from './AddQuestionModal'
+import MoveQuestionModal from './MoveQuestionModal'
+import SaveToast from './SaveToast'
 
 interface Props {
   section: SectionMeta
@@ -21,13 +24,16 @@ interface Props {
 }
 
 export default function SectionClient({ section, group, questions: serverQuestions }: Props) {
-  const { isComplete, toggle, setMany, sectionStats, setSectionTotal, mounted, isOnline, offlineModeEnabled, getPriority, setPriority, priorityStats, defaultSort, rememberFilters, settingsLoaded, user } = useProgress()
+  const { isComplete, toggle, setMany, sectionStats, setSectionTotal, mounted, isOnline, offlineModeEnabled, getPriority, setPriority, priorityStats, defaultSort, rememberFilters, settingsLoaded, navigateAfterMove, user } = useProgress()
+  const groups = useTopicGroups()
   const router = useRouter()
   const [openId, setOpenId] = useState<string | null>(null)
   const [confirm, setConfirm] = useState<'select' | 'unselect' | null>(null)
   const [questions, setQuestions] = useState<ParsedQuestion[]>(serverQuestions)
   const [showOfflineModal, setShowOfflineModal] = useState(false)
+  const [moveToast, setMoveToast] = useState<string | null>(null)
   const [editingQuestion, setEditingQuestion] = useState<EditingQuestion | null>(null)
+  const [movingQuestion, setMovingQuestion] = useState<{ id: string; label: string } | null>(null)
 
   // Filter/sort state
   const [filterSet, setFilterSet] = useState<Set<PriorityFilterKey>>(() => new Set())
@@ -236,6 +242,7 @@ export default function SectionClient({ section, group, questions: serverQuestio
                 tags: q.tags,
                 problem: q.problem,
               }) : undefined}
+              onMove={canManage ? () => setMovingQuestion({ id: q.id, label: q.title }) : undefined}
               onDelete={canManage ? async () => {
                 await deleteQuestion(q.id)
                 router.refresh()
@@ -244,6 +251,33 @@ export default function SectionClient({ section, group, questions: serverQuestio
           )
         })}
       </div>
+
+      {movingQuestion && (
+        <MoveQuestionModal
+          groups={groups}
+          questionId={movingQuestion.id}
+          label={movingQuestion.label}
+          currentSection={section}
+          onClose={() => setMovingQuestion(null)}
+          onMoved={(destination) => {
+            setMovingQuestion(null)
+            if (navigateAfterMove) {
+              if (destination.topic !== section.topic || destination.file !== section.file) {
+                router.push(sectionUrl(destination))
+              } else {
+                router.refresh()
+              }
+            } else {
+              const destGroup = findGroupForSection(groups, destination)
+              setMoveToast(`${destGroup?.groupName ?? ''} → ${destination.label}`)
+              setTimeout(() => setMoveToast(null), 3600)
+              router.refresh()
+            }
+          }}
+        />
+      )}
+
+      {moveToast && <SaveToast title="Moved" detail={moveToast} />}
 
       {editingQuestion && (
         <AddQuestionModal

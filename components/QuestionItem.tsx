@@ -152,10 +152,11 @@ interface Props {
   onSetPriority: (level: PriorityLevel | null) => void
   crumb?: QuestionCrumb
   onEdit?: () => void
+  onMove?: () => void
   onDelete?: () => void
 }
 
-export default function QuestionItem({ q, idx, isDone, isOpen, priority, onToggleOpen, onToggleDone, onSetPriority, crumb, onEdit, onDelete }: Props) {
+export default function QuestionItem({ q, idx, isDone, isOpen, priority, onToggleOpen, onToggleDone, onSetPriority, crumb, onEdit, onMove, onDelete }: Props) {
   return (
     <div className={`q-item ${isDone ? 'done' : ''} ${isOpen ? 'open' : ''} ${priority ? `pri-${priority}` : ''}`}>
       <div
@@ -192,7 +193,7 @@ export default function QuestionItem({ q, idx, isDone, isOpen, priority, onToggl
         ) : (
           <span className="q-text" dangerouslySetInnerHTML={{ __html: q.title }} />
         )}
-        <RowActions getText={() => stripHtml(q.title)} onEdit={onEdit} onDelete={onDelete} />
+        <RowActions getText={() => stripHtml(q.title)} onEdit={onEdit} onMove={onMove} onDelete={onDelete} />
         <PriorityPicker value={priority} onChange={onSetPriority} />
       </div>
       {isOpen && <QuestionAnswerBody q={q} />}

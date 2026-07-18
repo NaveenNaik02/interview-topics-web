@@ -164,6 +164,57 @@ export async function updateQuestion(id: string, input: AddQuestionInput): Promi
   return { id: data.id, number: data.number, title: data.title, bodyHtml: data.body_html }
 }
 
+export interface MoveQuestionDestination {
+  topic: string
+  file: string
+}
+
+// A lighter-weight sibling of updateQuestion for the kebab menu's "Move
+// to…" action — only touches placement (topic/file/label/group_slug/
+// number), leaving title/markdown/etc. untouched, so the picker doesn't
+// need to load or resubmit the full question content just to relocate it.
+export async function moveQuestion(id: string, dest: MoveQuestionDestination): Promise<void> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+  if (user.is_anonymous) throw new Error('Sign in to move questions')
+
+  const groups = await getAllGroups()
+  const segments = [...dest.topic.split('/'), dest.file].filter(Boolean)
+  const section = findSection(groups, segments)
+  if (!section) throw new Error('Unknown topic/section')
+  const group = findGroupForSection(groups, section)
+  if (!group) throw new Error('Unknown topic/section')
+
+  const { data: existing } = await supabase
+    .from('questions')
+    .select('topic, file')
+    .eq('id', id)
+    .maybeSingle()
+  if (!existing) throw new Error('Question not found')
+
+  const { data: maxRow } = await supabase
+    .from('questions')
+    .select('number')
+    .eq('topic', section.topic)
+    .eq('file', section.file)
+    .order('number', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  const number = (maxRow?.number ?? 0) + 1
+
+  const { data, error } = await supabase
+    .from('questions')
+    .update({ topic: section.topic, file: section.file, number, label: section.label, group_slug: group.slug })
+    .eq('id', id)
+    .select('id')
+    .single()
+  if (error || !data) throw new Error('You can only move your own questions.')
+
+  revalidateSection(section.topic, section.file)
+  revalidateSection(existing.topic, existing.file)
+}
+
 export async function deleteQuestion(id: string): Promise<void> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

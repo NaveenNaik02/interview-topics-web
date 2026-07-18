@@ -1,0 +1,36 @@
+'use server'
+
+import { createClient } from '@/lib/supabase/server'
+import type { InboxItem } from '@/lib/db/inbox'
+
+async function requireUser() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+  return { supabase, user }
+}
+
+// Deliberately allows anonymous users (unlike addQuestion/addTopicGroup) —
+// inbox items are private per-user scratch notes, not shared authored
+// content, so there's no reason to gate zero-friction capture behind sign-in.
+export async function addInboxItem(text: string): Promise<InboxItem> {
+  const { supabase, user } = await requireUser()
+
+  const trimmed = text.trim()
+  if (trimmed.length < 4) throw new Error('Write a bit more before saving')
+
+  const { data, error } = await supabase
+    .from('inbox_items')
+    .insert({ user_id: user.id, text: trimmed })
+    .select('id, text, created_at')
+    .single()
+  if (error || !data) throw error ?? new Error('Could not save — try again.')
+
+  return { id: data.id, text: data.text, createdAt: data.created_at }
+}
+
+export async function deleteInboxItem(id: string): Promise<void> {
+  const { supabase, user } = await requireUser()
+  const { error } = await supabase.from('inbox_items').delete().eq('id', id).eq('user_id', user.id)
+  if (error) throw error
+}

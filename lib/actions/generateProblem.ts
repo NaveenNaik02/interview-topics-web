@@ -10,6 +10,7 @@ export interface GenerateProblemInput {
   lang?: string
   tags?: string
   model?: string
+  instructions?: string
 }
 
 export async function generateProblem(input: GenerateProblemInput): Promise<string> {
@@ -30,7 +31,8 @@ export async function generateProblem(input: GenerateProblemInput): Promise<stri
     'You write a short, precise problem statement (1-3 sentences, plain prose, no preamble)',
     'describing what a developer must implement, for a coding-interview flashcard app.',
     'Name the function/signature if relevant. Respond with only the problem statement.',
-  ].join(' ')
+    input.instructions?.trim() ? input.instructions.trim() : '',
+  ].filter(Boolean).join(' ')
 
   const contextBits = [
     input.lang && input.lang !== 'none' ? `Language: ${input.lang}` : '',

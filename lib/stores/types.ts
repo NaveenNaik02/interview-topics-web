@@ -2,6 +2,9 @@ import type { User } from '@supabase/supabase-js'
 import type { SortMode } from '@/components/FilterSortToolbar'
 import type { Theme } from '@/lib/ThemeContext'
 import type { PriorityLevel } from '@/lib/offlineSync'
+import type { TopicGroup } from '@/lib/topics'
+import type { InstructionPreset } from '@/lib/instructionPresets'
+import type { InboxItem } from '@/lib/db/inbox'
 import type { ProgressStats } from './progressSelectors'
 
 export type ProgressStore = Record<string, boolean>
@@ -18,10 +21,16 @@ export interface AuthSlice {
 export interface ProgressSlice {
   store: ProgressStore
   totals: Record<string, number>
+  // Merged static + DB-backed topic tree, kept in sync from TopicsContext by
+  // StoreBootstrap (a plain store action can't call the useTopicGroups()
+  // hook itself) — needed here so stats/offline caching reflect dynamically
+  // added topics/subtopics, not just the static curriculum.
+  groups: TopicGroup[]
   stats: ProgressStats
   mounted: boolean
   setInitialTotals: (totals: Record<string, number>) => void
   setSectionTotal: (url: string, total: number) => void
+  setGroups: (groups: TopicGroup[]) => void
   toggle: (id: string) => void
   setMany: (ids: string[], value: boolean) => void
   resetAll: () => void
@@ -39,11 +48,28 @@ export interface SettingsSlice {
   defaultSort: SortMode
   rememberFilters: boolean
   settingsTheme: Theme
+  navigateAfterMove: boolean
   setDefaultSort: (v: SortMode) => void
   setRememberFilters: (v: boolean) => void
   setThemeSetting: (v: Theme) => void
+  setNavigateAfterMove: (v: boolean) => void
+  // Instruction presets
+  instructionPresets: InstructionPreset[]
+  activeInstructionPresetId: string
+  setActiveInstructionPresetId: (id: string) => void
+  addInstructionPreset: (v: { name: string; text: string }) => InstructionPreset
+  updateInstructionPreset: (id: string, v: { name: string; text: string }) => void
+  deleteInstructionPreset: (id: string) => void
+  resetSettingsToDefaults: () => void
   loadSettings: (uid: string) => Promise<void>
   initSettingsFromLocalStorage: () => void
+}
+
+export interface InboxSlice {
+  inboxItems: InboxItem[]
+  appendInboxItem: (item: InboxItem) => void
+  removeInboxItem: (id: string) => void
+  loadInbox: (uid: string) => Promise<void>
 }
 
 export interface OfflineSlice {
@@ -61,4 +87,4 @@ export interface OfflineSlice {
   initOfflineState: () => () => void
 }
 
-export type AppState = AuthSlice & ProgressSlice & PrioritySlice & SettingsSlice & OfflineSlice
+export type AppState = AuthSlice & ProgressSlice & PrioritySlice & SettingsSlice & InboxSlice & OfflineSlice

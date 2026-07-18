@@ -4,10 +4,11 @@ import './globals.css'
 import Sidebar from '@/components/Sidebar'
 import Topbar from '@/components/Topbar'
 import MainContent from '@/components/MainContent'
-import { ProgressProvider } from '@/lib/ProgressContext'
+import StoreBootstrap from '@/components/StoreBootstrap'
 import { ThemeProvider } from '@/lib/ThemeContext'
 import { FontSizeProvider } from '@/lib/FontSizeContext'
 import { TopicsProvider } from '@/lib/TopicsContext'
+import { TotalsProvider } from '@/lib/TotalsContext'
 import { getAllGroups } from '@/lib/topicsData'
 import { UIProvider } from '@/lib/UIContext'
 import { fetchAllCounts } from '@/lib/parser'
@@ -15,6 +16,7 @@ import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistratio
 import OfflineToast from '@/components/OfflineToast'
 import ThemeSync from '@/components/ThemeSync'
 import AddQuestionFab from '@/components/AddQuestionFab'
+import InboxFab from '@/components/InboxFab'
 
 const ibmSans = IBM_Plex_Sans({
   subsets: ['latin'],
@@ -53,10 +55,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <ThemeProvider>
           <FontSizeProvider>
             <TopicsProvider groups={groups}>
-              <ProgressProvider initialTotals={initialTotals}>
+              <TotalsProvider initialTotals={initialTotals}>
+                <StoreBootstrap initialTotals={initialTotals} />
                 <ThemeSync />
                 <OfflineToast />
                 <AddQuestionFab />
+                <InboxFab />
                 <UIProvider>
                   <div className="app-container">
                     <Sidebar groups={groups} />
@@ -66,7 +70,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     </main>
                   </div>
                 </UIProvider>
-              </ProgressProvider>
+              </TotalsProvider>
             </TopicsProvider>
           </FontSizeProvider>
         </ThemeProvider>
