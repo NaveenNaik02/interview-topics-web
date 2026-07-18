@@ -783,11 +783,13 @@ mark {
   place-items: center;
   border: none;
   box-shadow: var(--shadow-lg);
-  cursor: pointer;
-  transition: transform 0.12s, filter 0.12s;
+  cursor: grab;
+  touch-action: none;
+  transition: filter 0.12s;
 }
+.fab:active { cursor: grabbing; }
 .fab svg { width: 22px; height: 22px; }
-.fab:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.fab:hover { filter: brightness(1.06); }
 @media (max-width: 880px) {
   .fab { right: var(--s-4); bottom: var(--s-4); width: 48px; height: 48px; }
   .fab svg { width: 20px; height: 20px; }
@@ -1221,9 +1223,44 @@ mark {
 .aq-spin { animation: spin 0.7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* Phone-width: Add/Edit question (and its nested Instructions modal) become
+   full-screen sheets with sticky header/footer instead of a centered card. */
 @media (max-width: 640px) {
+  .modal-scrim, .aq-instr-scrim { padding: 0; align-items: stretch; }
+  .aq-modal, .aq-instr-modal {
+    max-width: none; width: 100%; height: 100%; max-height: none;
+    border-radius: 0; border: none; animation: none;
+  }
+  .aq-head {
+    position: sticky; top: 0; z-index: 5; background: var(--bg-card);
+    padding: var(--s-4) var(--s-4) var(--s-3);
+  }
+  .aq-head h2 { font-size: 17px; }
+  .aq-close { width: 36px; height: 36px; }
+  .aq-body { padding: var(--s-4); gap: var(--s-4); -webkit-overflow-scrolling: touch; }
   .aq-row { grid-template-columns: 1fr; }
   .aq-md-panes { grid-template-columns: 1fr; }
+  .aq-foot {
+    position: sticky; bottom: 0; z-index: 5; background: var(--bg-card);
+    flex-direction: column-reverse; align-items: stretch; padding: var(--s-3) var(--s-4);
+    padding-bottom: max(var(--s-3), env(safe-area-inset-bottom));
+  }
+  .aq-foot-left { display: none; }
+  .aq-foot-actions { flex-direction: row; width: 100%; }
+  .aq-foot-actions .btn-cancel, .aq-foot-actions .btn-primary { flex: 1; justify-content: center; }
+  .aq-input, .aq-select, .aq-dd-trigger, .btn-cancel, .btn-primary { height: 44px; font-size: 15px; }
+  .aq-problem-input { height: auto; }
+  .aq-label-row { flex-wrap: wrap; }
+  .aq-generate-btn, .aq-format-btn { height: 34px; font-size: 12.5px; }
+  .aq-pills { flex-wrap: wrap; }
+  .aq-pill { height: 40px; flex: 1; justify-content: center; }
+  .aq-md-tabs { flex-wrap: wrap; gap: 4px; padding: var(--s-2); }
+  .aq-gen-controls { flex-wrap: wrap; gap: 8px; }
+  .aq-md-editor-pane textarea { font-size: 15px; }
+  .aq-dd-menu { max-height: 45vh; }
+  .aq-toggle-track { width: 40px; height: 24px; }
+  .aq-toggle-thumb { width: 20px; height: 20px; }
+  .aq-toggle input:checked + .aq-toggle-track .aq-toggle-thumb { transform: translateX(16px); }
 }
 
 /* =========================================================
@@ -2318,6 +2355,10 @@ mark {
 }
 @media (max-width: 880px) {
   .save-toast { left: var(--s-4); right: var(--s-4); max-width: none; bottom: calc(var(--s-4) + 74px); }
+  .aq-row { grid-template-columns: 1fr; }
+  .aq-foot { flex-direction: column; align-items: stretch; }
+  .aq-foot-left { order: -1; }
+  .aq-foot-actions { justify-content: flex-end; }
 }
 
 /* ── Offline toast ──────────────────────────────────────────────────────────── */
@@ -2427,9 +2468,7 @@ mark {
 .settings-row-label { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
 .settings-row-hint { font-size: 12.5px; color: var(--text-muted); line-height: 1.5; max-width: 46ch; }
 
-.theme-pill-group, .sort-pill-group { display: flex; gap: var(--s-2); flex-shrink: 0; justify-content: flex-end; }
-.theme-pill-group { flex-wrap: wrap; }
-.sort-pill-group { flex-wrap: nowrap; }
+.theme-pill-group, .sort-pill-group { display: flex; flex-wrap: wrap; gap: var(--s-2); flex-shrink: 1; justify-content: flex-end; }
 .theme-pill, .sort-pill {
   display: inline-flex; align-items: center; gap: 7px;
   height: 34px; padding: 0 13px; border-radius: 99px;
@@ -2454,10 +2493,12 @@ mark {
 .instr-preset-text { flex: 1; min-width: 0; }
 .instr-preset-name { font-size: 13.5px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: var(--s-2); }
 .instr-preset-name svg { width: 12px; height: 12px; color: var(--text-subtle); flex-shrink: 0; }
+.instr-preset-name-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .instr-preset-tag {
   font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700;
   color: var(--accent); background: color-mix(in oklch, var(--accent) 14%, transparent);
   padding: 1px 6px; border-radius: 99px;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: default; flex-shrink: 0;
 }
 .instr-preset-preview {
   font-size: 12.5px; color: var(--text-muted); margin-top: 2px; line-height: 1.5;

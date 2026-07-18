@@ -88,16 +88,19 @@ export const createSettingsSlice: StateCreator<AppState, [], [], SettingsSlice> 
     }
   },
 
-  // Restores study defaults and the four built-in AI instruction presets to
-  // what a brand-new account starts with. Deliberately leaves theme alone
-  // (a display preference, not a "setting" in this sense) and never touches
-  // questions, progress, or topics.
+  // Restores every setting on this page — theme, study defaults, and the
+  // four built-in AI instruction presets — to what a brand-new account
+  // starts with. Never touches questions, progress, or topics. Setting
+  // `settingsTheme` here is enough to apply it: ThemeSync watches that field
+  // and pushes it into ThemeContext (which handles the DOM class + its own
+  // localStorage key).
   resetSettingsToDefaults: () => {
     const freshPresets = DEFAULT_SETTINGS.instruction_presets.map(p => ({ ...p }))
     const freshActiveId = DEFAULT_SETTINGS.active_instruction_preset_id
     set({
       defaultSort: DEFAULT_SETTINGS.default_sort,
       rememberFilters: DEFAULT_SETTINGS.remember_filters,
+      settingsTheme: DEFAULT_SETTINGS.theme,
       navigateAfterMove: DEFAULT_SETTINGS.navigate_after_move,
       instructionPresets: freshPresets,
       activeInstructionPresetId: freshActiveId,
@@ -112,6 +115,7 @@ export const createSettingsSlice: StateCreator<AppState, [], [], SettingsSlice> 
       settingsActions.upsertSetting({
         default_sort: DEFAULT_SETTINGS.default_sort,
         remember_filters: DEFAULT_SETTINGS.remember_filters,
+        theme: DEFAULT_SETTINGS.theme,
         navigate_after_move: DEFAULT_SETTINGS.navigate_after_move,
         instruction_presets: freshPresets,
         active_instruction_preset_id: freshActiveId,

@@ -108,11 +108,11 @@ function InstructionPresetsEditor() {
           <div className="instr-preset-text">
             <div className="instr-preset-name">
               {p.protected && <Lock size={12} aria-label="Can't be deleted" />}
-              {p.name}
-              {p.kind === 'text' && <span className="instr-preset-tag">Text default</span>}
-              {p.kind === 'code' && <span className="instr-preset-tag">Code default</span>}
-              {p.kind === 'suggestion' && <span className="instr-preset-tag">Question suggestion</span>}
-              {p.kind === 'problem' && <span className="instr-preset-tag">Problem statement</span>}
+              <span className="instr-preset-name-text">{p.name}</span>
+              {p.kind === 'text' && <span className="instr-preset-tag" title="Explanation default">Explanation default</span>}
+              {p.kind === 'code' && <span className="instr-preset-tag" title="Code default">Code default</span>}
+              {p.kind === 'suggestion' && <span className="instr-preset-tag" title="Suggestion default">Suggestion default</span>}
+              {p.kind === 'problem' && <span className="instr-preset-tag" title="Problem default">Problem default</span>}
             </div>
             <div className="instr-preset-preview">
               {p.text.trim() ? p.text.trim() : 'No formatting preferences — uses the base prompt only.'}
@@ -310,7 +310,7 @@ export default function SettingsClient() {
           <div className="settings-row-text">
             <div className="settings-row-label">Reset settings to default</div>
             <div className="settings-row-hint">
-              Restores study defaults and AI instruction presets to what a brand-new account starts with. Doesn&apos;t touch your questions, progress, or topics.
+              Restores everything on this page (theme, study defaults, AI instruction presets, etc.) to what a brand-new account starts with. Doesn&apos;t touch your questions, progress, or topics.
             </div>
           </div>
           <button className="reset-all" onClick={() => setResetConfirmOpen(true)}>Reset settings</button>
@@ -320,7 +320,7 @@ export default function SettingsClient() {
       <ConfirmDialog
         open={resetConfirmOpen}
         title="Reset settings to default?"
-        message="This restores study defaults (sort order, remembered filters, move-navigation) and the four built-in AI instruction presets to their original values. Any custom instruction versions you added will be removed. Your questions, topics, and progress are unaffected."
+        message="This restores every setting on this page (theme, sort order, remembered filters, move-navigation, AI instruction presets, etc.) to its original value. Any custom instruction versions you added will be removed. Your questions, topics, and progress are unaffected."
         confirmLabel="Reset settings"
         onConfirm={() => { resetSettingsToDefaults(); setResetConfirmOpen(false) }}
         onCancel={() => setResetConfirmOpen(false)}

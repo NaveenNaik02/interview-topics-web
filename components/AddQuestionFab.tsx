@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { findSection, sectionUrl } from '@/lib/topics'
 import { useTopicGroups } from '@/lib/TopicsContext'
+import { useFabDrag } from '@/lib/useFabDrag'
 import AddQuestionModal from './AddQuestionModal'
 import AddTopicModal from './AddTopicModal'
 
@@ -13,6 +14,7 @@ export default function AddQuestionFab() {
   const router = useRouter()
   const groups = useTopicGroups()
   const [open, setOpen] = useState(false)
+  const { style, handlers } = useFabDrag()
 
   const isSettings = pathname === '/settings'
   if (isSettings) return null
@@ -24,9 +26,11 @@ export default function AddQuestionFab() {
     <>
       <button
         className="fab"
+        style={style}
         title={isHome ? 'Add topic' : 'Add question'}
         aria-label={isHome ? 'Add topic' : 'Add question'}
         onClick={() => setOpen(true)}
+        {...handlers}
       >
         <Plus size={22} />
       </button>
