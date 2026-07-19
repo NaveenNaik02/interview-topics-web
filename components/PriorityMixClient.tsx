@@ -12,6 +12,7 @@ import QuestionItem from './QuestionItem'
 import AddQuestionModal, { type EditingQuestion } from './AddQuestionModal'
 import MoveQuestionModal from './MoveQuestionModal'
 import SaveToast from './SaveToast'
+import { htmlToMarkdown } from '@/lib/htmlToMarkdown'
 
 export interface PriorityMixQuestion {
   id: string
@@ -321,7 +322,10 @@ export default function PriorityMixClient({ questions }: Props) {
                 onEdit={canManage ? () => setEditingQuestion({
                   id: r.q.id,
                   title: r.q.title,
-                  markdown: r.q.markdown ?? '',
+                  // ETL-imported questions never had raw markdown persisted,
+                  // only the pre-rendered HTML — fall back to a best-effort
+                  // conversion so the edit form isn't blank.
+                  markdown: r.q.markdown || htmlToMarkdown(r.q.bodyHtml),
                   section,
                   priority: r.priority,
                   lang: r.q.lang,

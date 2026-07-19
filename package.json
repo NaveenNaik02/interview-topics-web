@@ -33,6 +33,7 @@
     "serwist": "^9.5.11",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
+    "turndown": "^7.2.4",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
@@ -40,6 +41,7 @@
     "@types/node": "^20.14.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@types/turndown": "^5.0.6",
     "autoprefixer": "^10.4.19",
     "dotenv-cli": "^11.0.0",
     "eslint": "^9.39.5",

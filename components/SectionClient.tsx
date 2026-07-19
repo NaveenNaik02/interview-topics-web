@@ -16,6 +16,7 @@ import FilterSortToolbar, { type PriorityFilterKey, type StatusFilter, type Sort
 import AddQuestionModal, { type EditingQuestion } from './AddQuestionModal'
 import MoveQuestionModal from './MoveQuestionModal'
 import SaveToast from './SaveToast'
+import { htmlToMarkdown } from '@/lib/htmlToMarkdown'
 
 interface Props {
   section: SectionMeta
@@ -235,7 +236,10 @@ export default function SectionClient({ section, group, questions: serverQuestio
               onEdit={canManage ? () => setEditingQuestion({
                 id: q.id,
                 title: q.title,
-                markdown: q.markdown ?? '',
+                // ETL-imported questions never had raw markdown persisted,
+                // only the pre-rendered HTML — fall back to a best-effort
+                // conversion so the edit form isn't blank.
+                markdown: q.markdown || htmlToMarkdown(q.bodyHtml),
                 section,
                 priority,
                 lang: q.lang,
@@ -261,16 +265,19 @@ export default function SectionClient({ section, group, questions: serverQuestio
           onClose={() => setMovingQuestion(null)}
           onMoved={(destination) => {
             setMovingQuestion(null)
-            if (navigateAfterMove) {
-              if (destination.topic !== section.topic || destination.file !== section.file) {
-                router.push(sectionUrl(destination))
-              } else {
-                router.refresh()
-              }
-            } else {
+            const changedSection = destination.topic !== section.topic || destination.file !== section.file
+            if (navigateAfterMove && changedSection) {
+              router.push(sectionUrl(destination))
+              // Router Cache can still serve a stale prefetch of the
+              // destination even after the server action's revalidatePath —
+              // force it to refetch instead of waiting on a manual reload.
+              router.refresh()
+            } else if (changedSection) {
               const destGroup = findGroupForSection(groups, destination)
               setMoveToast(`${destGroup?.groupName ?? ''} → ${destination.label}`)
               setTimeout(() => setMoveToast(null), 3600)
+              router.refresh()
+            } else {
               router.refresh()
             }
           }}
@@ -285,8 +292,18 @@ export default function SectionClient({ section, group, questions: serverQuestio
           onClose={() => setEditingQuestion(null)}
           onSaved={(_question, newSection) => {
             setEditingQuestion(null)
-            if (newSection.topic !== section.topic || newSection.file !== section.file) {
+            const changedSection = newSection.topic !== section.topic || newSection.file !== section.file
+            if (navigateAfterMove && changedSection) {
               router.push(sectionUrl(newSection))
+              // Router Cache can still serve a stale prefetch of the
+              // destination even after the server action's revalidatePath —
+              // force it to refetch instead of waiting on a manual reload.
+              router.refresh()
+            } else if (changedSection) {
+              const destGroup = findGroupForSection(groups, newSection)
+              setMoveToast(`${destGroup?.groupName ?? ''} → ${newSection.label}`)
+              setTimeout(() => setMoveToast(null), 3600)
+              router.refresh()
             } else {
               router.refresh()
             }
