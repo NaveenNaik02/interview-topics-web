@@ -6,6 +6,7 @@ import { useTheme, Theme } from '@/lib/ThemeContext'
 import { useProgress } from '@/lib/ProgressContext'
 import ConfirmDialog from './ConfirmDialog'
 import type { SortMode } from './FilterSortToolbar'
+import type { PriorityLevel } from '@/lib/offlineSync'
 
 const THEME_ORDER: Theme[] = ['light', 'sepia', 'dark']
 const THEME_META: Record<Theme, { label: string; icon: React.ReactNode }> = {
@@ -18,6 +19,13 @@ const SORT_OPTIONS: { k: SortMode; label: string }[] = [
   { k: 'manual', label: 'Manual (curriculum order)' },
   { k: 'high',   label: 'High priority first' },
   { k: 'low',    label: 'Low priority first' },
+]
+
+const PRIORITY_OPTIONS: { k: PriorityLevel | null; label: string }[] = [
+  { k: 'high', label: 'High' },
+  { k: 'med',  label: 'Med' },
+  { k: 'low',  label: 'Low' },
+  { k: null,   label: 'None' },
 ]
 
 function ToggleSwitch({ on, onChange, id }: { on: boolean; onChange: (v: boolean) => void; id: string }) {
@@ -163,8 +171,8 @@ function InstructionPresetsEditor() {
 export default function SettingsClient() {
   const { theme, setTheme } = useTheme()
   const {
-    defaultSort, rememberFilters, navigateAfterMove,
-    setDefaultSort, setRememberFilters, setThemeSetting, setNavigateAfterMove,
+    defaultSort, rememberFilters, navigateAfterMove, defaultPriority,
+    setDefaultSort, setRememberFilters, setThemeSetting, setNavigateAfterMove, setDefaultPriority,
     isOnline, offlineModeEnabled, isCaching, cachingProgress,
     cachedAt, stats, enableOfflineMode, disableOfflineMode,
     resetSettingsToDefaults,
@@ -252,6 +260,24 @@ export default function SettingsClient() {
         </div>
         <div className="settings-row">
           <div className="settings-row-text">
+            <div className="settings-row-label">Default priority for new questions</div>
+            <div className="settings-row-hint">Pre-selected priority when you open the Add Question form. Choose &quot;None&quot; to leave it unset.</div>
+          </div>
+          <div className="sort-pill-group">
+            {PRIORITY_OPTIONS.map(o => (
+              <button
+                key={o.label}
+                className={`sort-pill ${defaultPriority === o.k ? 'on' : ''}`}
+                onClick={() => setDefaultPriority(o.k)}
+                aria-pressed={defaultPriority === o.k}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-text">
             <label className="settings-row-label" htmlFor="navigate-after-move-toggle">
               Jump to a question&apos;s new section after moving it
             </label>
@@ -320,7 +346,7 @@ export default function SettingsClient() {
       <ConfirmDialog
         open={resetConfirmOpen}
         title="Reset settings to default?"
-        message="This restores every setting on this page (theme, sort order, remembered filters, move-navigation, AI instruction presets, etc.) to its original value. Any custom instruction versions you added will be removed. Your questions, topics, and progress are unaffected."
+        message="This restores every setting on this page (theme, sort order, remembered filters, default priority, move-navigation, AI instruction presets, etc.) to its original value. Any custom instruction versions you added will be removed. Your questions, topics, and progress are unaffected."
         confirmLabel="Reset settings"
         onConfirm={() => { resetSettingsToDefaults(); setResetConfirmOpen(false) }}
         onCancel={() => setResetConfirmOpen(false)}

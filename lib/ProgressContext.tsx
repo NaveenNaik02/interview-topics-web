@@ -45,6 +45,8 @@ export function useProgress() {
     setThemeSetting: s.setThemeSetting,
     navigateAfterMove: s.navigateAfterMove,
     setNavigateAfterMove: s.setNavigateAfterMove,
+    defaultPriority: s.defaultPriority,
+    setDefaultPriority: s.setDefaultPriority,
     // Instruction presets
     instructionPresets: s.instructionPresets,
     activeInstructionPresetId: s.activeInstructionPresetId,

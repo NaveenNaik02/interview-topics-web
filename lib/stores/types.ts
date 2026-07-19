@@ -49,10 +49,12 @@ export interface SettingsSlice {
   rememberFilters: boolean
   settingsTheme: Theme
   navigateAfterMove: boolean
+  defaultPriority: PriorityLevel | null
   setDefaultSort: (v: SortMode) => void
   setRememberFilters: (v: boolean) => void
   setThemeSetting: (v: Theme) => void
   setNavigateAfterMove: (v: boolean) => void
+  setDefaultPriority: (v: PriorityLevel | null) => void
   // Instruction presets
   instructionPresets: InstructionPreset[]
   activeInstructionPresetId: string

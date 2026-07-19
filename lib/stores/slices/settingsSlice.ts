@@ -21,6 +21,7 @@ export const createSettingsSlice: StateCreator<AppState, [], [], SettingsSlice> 
   rememberFilters: DEFAULT_SETTINGS.remember_filters,
   settingsTheme: DEFAULT_SETTINGS.theme,
   navigateAfterMove: DEFAULT_SETTINGS.navigate_after_move,
+  defaultPriority: DEFAULT_SETTINGS.default_priority,
   instructionPresets: DEFAULT_SETTINGS.instruction_presets,
   activeInstructionPresetId: DEFAULT_SETTINGS.active_instruction_preset_id,
 
@@ -44,6 +45,11 @@ export const createSettingsSlice: StateCreator<AppState, [], [], SettingsSlice> 
   setNavigateAfterMove: (v: boolean) => {
     set({ navigateAfterMove: v })
     if (get().user) settingsActions.upsertSetting({ navigate_after_move: v }).catch(err => console.error('[settings] update failed:', err))
+  },
+
+  setDefaultPriority: (v) => {
+    set({ defaultPriority: v })
+    if (get().user) settingsActions.upsertSetting({ default_priority: v }).catch(err => console.error('[settings] update failed:', err))
   },
 
   setActiveInstructionPresetId: (id: string) => {
@@ -102,6 +108,7 @@ export const createSettingsSlice: StateCreator<AppState, [], [], SettingsSlice> 
       rememberFilters: DEFAULT_SETTINGS.remember_filters,
       settingsTheme: DEFAULT_SETTINGS.theme,
       navigateAfterMove: DEFAULT_SETTINGS.navigate_after_move,
+      defaultPriority: DEFAULT_SETTINGS.default_priority,
       instructionPresets: freshPresets,
       activeInstructionPresetId: freshActiveId,
     })
@@ -117,6 +124,7 @@ export const createSettingsSlice: StateCreator<AppState, [], [], SettingsSlice> 
         remember_filters: DEFAULT_SETTINGS.remember_filters,
         theme: DEFAULT_SETTINGS.theme,
         navigate_after_move: DEFAULT_SETTINGS.navigate_after_move,
+        default_priority: DEFAULT_SETTINGS.default_priority,
         instruction_presets: freshPresets,
         active_instruction_preset_id: freshActiveId,
       }).catch(err => console.error('[settings] reset failed:', err))
@@ -138,6 +146,7 @@ export const createSettingsSlice: StateCreator<AppState, [], [], SettingsSlice> 
         rememberFilters: data.remember_filters,
         settingsTheme: data.theme,
         navigateAfterMove: !!data.navigate_after_move,
+        defaultPriority: data.default_priority ?? DEFAULT_SETTINGS.default_priority,
         instructionPresets: presets,
         activeInstructionPresetId: activeId,
       })
@@ -173,6 +182,7 @@ export const createSettingsSlice: StateCreator<AppState, [], [], SettingsSlice> 
         rememberFilters: lsRemember,
         settingsTheme: lsTheme,
         navigateAfterMove: DEFAULT_SETTINGS.navigate_after_move,
+        defaultPriority: DEFAULT_SETTINGS.default_priority,
         instructionPresets: lsPresets,
         activeInstructionPresetId: lsActiveId,
       })
@@ -180,6 +190,7 @@ export const createSettingsSlice: StateCreator<AppState, [], [], SettingsSlice> 
         default_sort: lsSort, remember_filters: lsRemember, theme: lsTheme,
         instruction_presets: lsPresets, active_instruction_preset_id: lsActiveId,
         navigate_after_move: DEFAULT_SETTINGS.navigate_after_move,
+        default_priority: DEFAULT_SETTINGS.default_priority,
       }).catch(err => console.error('[settings] insert failed:', err))
     }
     set({ settingsLoaded: true })

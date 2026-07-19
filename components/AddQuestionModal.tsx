@@ -161,7 +161,7 @@ function AqInstructionsModal({ value, model, isImpl, onClose, onSave }: { value:
 }
 
 export default function AddQuestionModal({ defaultSection, editing, prefillTitle, fromInboxId, onClose, onSaved }: Props) {
-  const { user, mounted, signInWithGitHub, setPriority, removeInboxItem } = useProgress()
+  const { user, mounted, signInWithGitHub, setPriority, removeInboxItem, defaultPriority } = useProgress()
   const isEdit = !!editing
 
   // A freshly-added topic with no subtopics yet has nowhere to attach a
@@ -209,7 +209,7 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
   const activeSectionLabel = sectionK === PENDING_SECTION_KEY && pendingPlacement ? pendingPlacement.label : (section?.label ?? '')
 
   const [title, setTitle] = useState(editing?.title ?? prefillTitle ?? '')
-  const [priority, setPriorityLevel] = useState<PriorityLevel | null>(editing?.priority ?? 'med')
+  const [priority, setPriorityLevel] = useState<PriorityLevel | null>(editing?.priority ?? defaultPriority)
   const [lang, setLang] = useState(editing?.lang || 'js')
   const [tags, setTags] = useState(editing?.tags ?? '')
   const [markdown, setMarkdown] = useState(editing?.markdown ?? '')
