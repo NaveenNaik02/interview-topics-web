@@ -146,7 +146,9 @@ export const createSettingsSlice: StateCreator<AppState, [], [], SettingsSlice> 
         rememberFilters: data.remember_filters,
         settingsTheme: data.theme,
         navigateAfterMove: !!data.navigate_after_move,
-        defaultPriority: data.default_priority ?? DEFAULT_SETTINGS.default_priority,
+        // null is a real, saved choice here ("None" — see the migration
+        // that added this column), not a missing value to fall back from.
+        defaultPriority: data.default_priority,
         instructionPresets: presets,
         activeInstructionPresetId: activeId,
       })

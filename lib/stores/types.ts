@@ -70,6 +70,7 @@ export interface SettingsSlice {
 export interface InboxSlice {
   inboxItems: InboxItem[]
   appendInboxItem: (item: InboxItem) => void
+  appendInboxItems: (items: InboxItem[]) => void
   removeInboxItem: (id: string) => void
   loadInbox: (uid: string) => Promise<void>
 }

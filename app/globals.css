@@ -810,6 +810,12 @@ mark {
   border-radius: 99px; background: var(--accent); color: #fff; font-size: 10.5px; font-weight: 700; flex-shrink: 0;
 }
 
+/* Inbox page header — static capture button replaces the floating FABs,
+   which InboxFab/AddQuestionFab hide on this route. */
+.ic-page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-5); }
+.ic-page-cta { display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0; white-space: nowrap; }
+@media (max-width: 640px) { .ic-page-head { flex-direction: column; } }
+
 .ic-list { display: flex; flex-direction: column; gap: 10px; }
 .ic-card { border: 1px solid var(--border); border-radius: 11px; padding: 12px 14px; background: var(--bg-soft); display: flex; flex-direction: column; gap: 8px; }
 .ic-card-top { display: flex; align-items: center; justify-content: flex-end; }
@@ -1178,6 +1184,24 @@ mark {
 .aq-md-empty { font-size: 13px; color: var(--text-subtle); font-style: italic; }
 
 .aq-gen-error { font-size: 11.5px; color: var(--pri-high); padding: var(--s-2) 0 0; }
+
+/* AI split (Inbox capture) — offers to break a multi-question paste into
+   separate items before saving. */
+.split-toggle { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-3); border: 1px solid var(--border); border-radius: 9px; background: var(--bg-elev); font-size: 13px; color: var(--text-muted); margin-top: var(--s-3); }
+.split-toggle b { color: var(--text); font-weight: 600; }
+.split-toggle-text { flex: 1; }
+.split-ai-btn { display: flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 7px; border: 1px solid var(--border-strong); background: var(--bg-card); color: var(--accent-text); font-size: 12.5px; font-weight: 600; cursor: pointer; flex-shrink: 0; white-space: nowrap; }
+.split-ai-btn:hover { background: var(--bg-hover); }
+.split-ai-btn:disabled { opacity: 0.55; cursor: default; }
+.split-ai-btn svg { width: 13px; height: 13px; }
+.split-error { margin-top: var(--s-3); font-size: 12.5px; color: var(--pri-high); background: var(--pri-high-soft); border-radius: 8px; padding: var(--s-2) var(--s-3); }
+
+.split-preview { margin-top: var(--s-3); display: flex; flex-direction: column; gap: var(--s-2); max-height: 280px; overflow-y: auto; padding-right: 2px; }
+.split-item { display: flex; align-items: flex-start; gap: var(--s-3); padding: var(--s-3) var(--s-3); border: 1px solid var(--border); border-radius: 9px; background: var(--bg-card); }
+.split-item-num { font-family: var(--f-mono); font-size: 11px; color: var(--text-subtle); flex: 0 0 auto; width: 16px; padding-top: 2px; }
+.split-item-text { flex: 1; font-size: 13.5px; line-height: 1.45; color: var(--text); }
+.split-item-remove { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 6px; border: none; background: transparent; color: var(--text-subtle); display: grid; place-items: center; cursor: pointer; }
+.split-item-remove:hover { background: var(--bg-hover); color: var(--pri-high); }
 
 .aq-foot {
   display: flex;

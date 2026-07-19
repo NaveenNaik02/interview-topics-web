@@ -11,7 +11,9 @@ export default function InboxFab() {
   const [open, setOpen] = useState(false)
   const { style, handlers } = useFabDrag()
 
-  if (pathname === '/settings') return null
+  // Inbox has its own static "Save a question" button in the page header
+  // instead; Priority Mix has no capture entry point at all.
+  if (pathname === '/settings' || pathname === '/inbox' || pathname === '/priority-mix') return null
 
   return (
     <>

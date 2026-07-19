@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { Trash2, Sparkles } from 'lucide-react'
+import { Trash2, Sparkles, Bookmark } from 'lucide-react'
 import { useProgress } from '@/lib/ProgressContext'
 import AddQuestionModal from './AddQuestionModal'
+import InboxCaptureModal from './InboxCaptureModal'
 
 function timeAgo(iso: string): string {
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
@@ -16,19 +17,27 @@ function timeAgo(iso: string): string {
 export default function InboxClient() {
   const { inboxItems, mounted, removeInboxItem } = useProgress()
   const [assigning, setAssigning] = useState<{ id: string; text: string } | null>(null)
+  const [capturing, setCapturing] = useState(false)
 
   return (
     <div className="content-wrapper">
       <div className="subtopic-header" style={{ marginBottom: 'var(--s-5)' }}>
-        <div className="eyebrow">Save for later</div>
-        <h1 className="subtopic-title">Inbox</h1>
-        <p className="build-lede">Questions you saved for later — assign each to a topic whenever you&apos;re ready.</p>
+        <div className="ic-page-head">
+          <div>
+            <div className="eyebrow">Save for later</div>
+            <h1 className="subtopic-title">Inbox</h1>
+            <p className="build-lede">Questions you saved for later — assign each to a topic whenever you&apos;re ready.</p>
+          </div>
+          <button className="btn btn-primary ic-page-cta" onClick={() => setCapturing(true)}>
+            <Bookmark size={14} />Save a question
+          </button>
+        </div>
       </div>
 
       {!mounted ? null : inboxItems.length === 0 ? (
         <div className="empty-set">
           <div className="es-title">Nothing here yet</div>
-          <div className="es-sub">Use the bookmark button to save a question without picking a topic first.</div>
+          <div className="es-sub">Use &quot;Save a question&quot; above to capture something without picking a topic first.</div>
         </div>
       ) : (
         <div className="ic-list">
@@ -51,6 +60,13 @@ export default function InboxClient() {
           fromInboxId={assigning.id}
           onClose={() => setAssigning(null)}
           onSaved={() => setAssigning(null)}
+        />
+      )}
+
+      {capturing && (
+        <InboxCaptureModal
+          onClose={() => setCapturing(false)}
+          onSaved={() => setCapturing(false)}
         />
       )}
     </div>

@@ -19,6 +19,10 @@ export const createInboxSlice: StateCreator<AppState, [], [], InboxSlice> = (set
     set({ inboxItems: [item, ...get().inboxItems] })
   },
 
+  appendInboxItems: (items) => {
+    set({ inboxItems: [...items, ...get().inboxItems] })
+  },
+
   removeInboxItem: (id) => {
     if (!get().user) return
     set({ inboxItems: get().inboxItems.filter(it => it.id !== id) })
