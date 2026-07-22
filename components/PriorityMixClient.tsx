@@ -7,6 +7,7 @@ import { useProgress } from '@/lib/ProgressContext'
 import { useTopicGroups } from '@/lib/TopicsContext'
 import { sectionUrl, findGroupForSection, type SectionMeta } from '@/lib/topics'
 import { deleteQuestion } from '@/lib/actions/questions'
+import { setAsideQuestion } from '@/lib/actions/setAside'
 import type { PriorityLevel } from '@/lib/offlineSync'
 import QuestionItem from './QuestionItem'
 import AddQuestionModal, { type EditingQuestion } from './AddQuestionModal'
@@ -157,7 +158,7 @@ function SubtopicPicker({ flatSubs, selected, onToggle }: { flatSubs: FlatSub[];
 }
 
 export default function PriorityMixClient({ questions }: Props) {
-  const { getPriority, isComplete, toggle, setPriority, isOnline, offlineModeEnabled, mounted, navigateAfterMove, user } = useProgress()
+  const { getPriority, isComplete, toggle, setPriority, isOnline, offlineModeEnabled, mounted, navigateAfterMove, user, appendSetAsideItem } = useProgress()
   const groups = useTopicGroups()
   const flatSubs = useMemo(() => groups.flatMap(g =>
     g.sections.map((s: SectionMeta) => ({ key: sectionUrl(s), label: s.label, topicName: g.groupName }))
@@ -168,6 +169,7 @@ export default function PriorityMixClient({ questions }: Props) {
   const [editingQuestion, setEditingQuestion] = useState<EditingQuestion | null>(null)
   const [movingQuestion, setMovingQuestion] = useState<{ id: string; label: string; section: SectionMeta } | null>(null)
   const [moveToast, setMoveToast] = useState<string | null>(null)
+  const [asideToast, setAsideToast] = useState(false)
 
   const [selPri, setSelPri] = useState<Set<PriorityLevel>>(new Set())
   const [selSubs, setSelSubs] = useState<Set<string>>(new Set())
@@ -333,6 +335,13 @@ export default function PriorityMixClient({ questions }: Props) {
                   problem: r.q.problem,
                 }) : undefined}
                 onMove={canManage ? () => setMovingQuestion({ id: r.q.id, label: r.q.title, section }) : undefined}
+                onSetAside={canManage ? async () => {
+                  const item = await setAsideQuestion(r.q.id)
+                  appendSetAsideItem(item)
+                  setAsideToast(true)
+                  setTimeout(() => setAsideToast(false), 3600)
+                  router.refresh()
+                } : undefined}
                 onDelete={canManage ? async () => {
                   await deleteQuestion(r.q.id)
                   router.refresh()
@@ -403,6 +412,7 @@ export default function PriorityMixClient({ questions }: Props) {
       )}
 
       {moveToast && <SaveToast title="Moved" detail={moveToast} />}
+      {asideToast && <SaveToast title="Set aside" detail="Find it in Inbox whenever you're ready." />}
     </div>
   )
 }

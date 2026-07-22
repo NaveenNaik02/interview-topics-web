@@ -53,7 +53,7 @@ type DeleteTarget =
 export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { stats, inboxItems } = useProgress()
+  const { stats, inboxItems, setAsideItems } = useProgress()
   const { drawerOpen, setDrawerOpen } = useUI()
   const [expanded, setExpanded] = useState<Set<string>>(new Set(['javascript', 'react']))
   const [addTarget, setAddTarget] = useState<string | null>(null)
@@ -129,7 +129,7 @@ export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
               <span style={{ display: 'inline-flex', color: 'var(--text-subtle)', width: 16, height: 16 }}><Icon.Inbox /></span>
               <span className="subtopic-name">Inbox</span>
             </span>
-            {inboxItems.length > 0 && <span className="ic-nav-badge">{inboxItems.length}</span>}
+            {inboxItems.length + setAsideItems.length > 0 && <span className="ic-nav-badge">{inboxItems.length + setAsideItems.length}</span>}
           </Link>
 
           <Link

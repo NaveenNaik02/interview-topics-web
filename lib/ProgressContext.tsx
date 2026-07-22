@@ -34,6 +34,10 @@ export function useProgress() {
     appendInboxItem: s.appendInboxItem,
     appendInboxItems: s.appendInboxItems,
     removeInboxItem: s.removeInboxItem,
+    // Set aside
+    setAsideItems: s.setAsideItems,
+    appendSetAsideItem: s.appendSetAsideItem,
+    removeSetAsideItem: s.removeSetAsideItem,
     // Auth
     user: s.user,
     signInWithGitHub: s.signInWithGitHub,

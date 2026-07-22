@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { marked } from 'marked'
 import DOMPurify from 'isomorphic-dompurify'
-import { X, Github, Loader2, Sparkles, RefreshCw, SlidersHorizontal, AlignLeft } from 'lucide-react'
+import { X, Github, Loader2, Sparkles, RefreshCw, SlidersHorizontal, AlignLeft, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { useProgress } from '@/lib/ProgressContext'
 import { useTopicGroups } from '@/lib/TopicsContext'
 import { addQuestion, updateQuestion } from '@/lib/actions/questions'
@@ -13,6 +13,7 @@ import { generateQuestion } from '@/lib/actions/generateQuestion'
 import { generateProblem } from '@/lib/actions/generateProblem'
 import { formatAnswer } from '@/lib/actions/formatAnswer'
 import { suggestPlacement, type PlacementSuggestion } from '@/lib/actions/suggestPlacement'
+import { checkDuplicateQuestion, type DuplicateCheckResult } from '@/lib/actions/checkDuplicate'
 import { findGroupForSection, type SectionMeta } from '@/lib/topics'
 import { AQ_MODELS, type AqModelId } from '@/lib/aiModels'
 import { loadPresets, getActiveInstructionText, getSuggestionInstructionText, getProblemInstructionText } from '@/lib/instructionPresets'
@@ -43,6 +44,17 @@ interface Props {
   // save, that item is deleted (it's become a real question) and the
   // header/footer copy calls this out instead of the generic add/edit text.
   fromInboxId?: string
+  // Seeds the answer/lang/tags/problem fields alongside prefillTitle — used
+  // when assigning a Set aside item, which (unlike a captured Inbox item)
+  // already has a full question+answer, just needs a new topic/subtopic.
+  prefillMarkdown?: string
+  prefillLang?: string | null
+  prefillTags?: string | null
+  prefillProblem?: string | null
+  // Marks this Add flow as assigning the given Set aside item. On a
+  // successful save, that item is removed from Set aside the same way
+  // fromInboxId removes a captured Inbox item.
+  fromSetAsideId?: string
   onClose: () => void
   onSaved: (question: ParsedQuestion, section: SectionMeta) => void
 }
@@ -178,8 +190,8 @@ function AqInstructionsModal({ value, model, isImpl, onClose, onSave }: { value:
   )
 }
 
-export default function AddQuestionModal({ defaultSection, editing, prefillTitle, fromInboxId, onClose, onSaved }: Props) {
-  const { user, mounted, signInWithGitHub, setPriority, removeInboxItem, defaultPriority } = useProgress()
+export default function AddQuestionModal({ defaultSection, editing, prefillTitle, fromInboxId, prefillMarkdown, prefillLang, prefillTags, prefillProblem, fromSetAsideId, onClose, onSaved }: Props) {
+  const { user, mounted, signInWithGitHub, setPriority, removeInboxItem, removeSetAsideItem, defaultPriority } = useProgress()
   const isEdit = !!editing
 
   // A freshly-added topic with no subtopics yet has nowhere to attach a
@@ -228,11 +240,11 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
 
   const [title, setTitle] = useState(editing?.title ?? prefillTitle ?? '')
   const [priority, setPriorityLevel] = useState<PriorityLevel | null>(editing?.priority ?? defaultPriority)
-  const [lang, setLang] = useState(editing?.lang || 'js')
-  const [tags, setTags] = useState(editing?.tags ?? '')
-  const [markdown, setMarkdown] = useState(editing?.markdown ?? '')
-  const [isImpl, setIsImpl] = useState(!!editing?.problem)
-  const [problem, setProblem] = useState(editing?.problem ?? '')
+  const [lang, setLang] = useState(editing?.lang || prefillLang || 'js')
+  const [tags, setTags] = useState(editing?.tags ?? prefillTags ?? '')
+  const [markdown, setMarkdown] = useState(editing?.markdown ?? prefillMarkdown ?? '')
+  const [isImpl, setIsImpl] = useState(!!editing?.problem || !!prefillProblem)
+  const [problem, setProblem] = useState(editing?.problem ?? prefillProblem ?? '')
   const [problemGen, setProblemGen] = useState<'idle' | 'loading' | 'error'>('idle')
   const [tab, setTab] = useState<'write' | 'preview'>('write')
   const [saving, setSaving] = useState(false)
@@ -242,6 +254,8 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
   const [genState, setGenState] = useState<'idle' | 'loading' | 'done' | 'error' | 'limited'>('idle')
   const [genError, setGenError] = useState<string | null>(null)
   const [questionGen, setQuestionGen] = useState<'idle' | 'loading' | 'error'>('idle')
+  const [dupState, setDupState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
+  const [dupResult, setDupResult] = useState<DuplicateCheckResult | null>(null)
   const [showInstructions, setShowInstructions] = useState(false)
   // Seeded from the built-in default matching isImpl (text vs. code-only) —
   // per-question edits below are this question's local draft only and must
@@ -311,6 +325,9 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
     if (sectionOptions[0]) setSectionK(sectionOptions[0].value)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupSlug])
+  // A duplicate check is only valid for the topic/subtopic it ran against —
+  // picking a different one invalidates the result without needing a re-check.
+  useEffect(() => { setDupState('idle'); setDupResult(null) }, [groupSlug, sectionK])
   // Follows the Implementation toggle for a still-untouched instructions
   // draft (still exactly one of the two built-in defaults) — never
   // overwrites instructions the author has actually customized.
@@ -331,6 +348,8 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
   const canGenerateQuestion = questionGen !== 'loading'
   const canGenerateProblem = title.trim().length > 3 && problemGen !== 'loading'
   const canSuggestPlacement = title.trim().length > 3 && placeState !== 'loading'
+  // Nothing to compare against yet for a subtopic that doesn't exist until Save.
+  const canCheckDuplicate = title.trim().length > 3 && dupState !== 'loading' && !!section && sectionK !== PENDING_SECTION_KEY
 
   const isAnonymous = mounted && !!user?.is_anonymous
 
@@ -437,6 +456,25 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
     }
   }
 
+  const handleCheckDuplicate = async () => {
+    if (!canCheckDuplicate || !section) return
+    setDupState('loading')
+    setDupResult(null)
+    try {
+      const result = await checkDuplicateQuestion({
+        title,
+        topic: section.topic,
+        file: section.file,
+        excludeId: isEdit ? editing!.id : undefined,
+        model,
+      })
+      setDupResult(result)
+      setDupState('done')
+    } catch {
+      setDupState('error')
+    }
+  }
+
   const handleApplyPlacement = () => {
     if (!placement) return
     if (placement.mode === 'existing') {
@@ -485,6 +523,7 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
       const q = isEdit ? await updateQuestion(editing!.id, input) : await addQuestion(input)
       if (priority) setPriority(q.id, priority)
       if (fromInboxId) removeInboxItem(fromInboxId)
+      if (fromSetAsideId) removeSetAsideItem(fromSetAsideId)
       onSaved(q, targetSection)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save this question — try again.')
@@ -494,9 +533,9 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
 
   return (
     <div className="modal-scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="aq-modal" role="dialog" aria-modal="true" aria-label={isEdit ? 'Edit question' : fromInboxId ? 'Assign from Inbox' : 'Add question'}>
+      <div className="aq-modal" role="dialog" aria-modal="true" aria-label={isEdit ? 'Edit question' : fromInboxId ? 'Assign from Inbox' : fromSetAsideId ? 'Assign to a topic' : 'Add question'}>
         <div className="aq-head">
-          <h2>{isEdit ? 'Edit question' : fromInboxId ? 'Assign from Inbox' : 'Add question'}</h2>
+          <h2>{isEdit ? 'Edit question' : fromInboxId ? 'Assign from Inbox' : fromSetAsideId ? 'Assign to a topic' : 'Add question'}</h2>
           <button className="aq-close" onClick={onClose} aria-label="Close" title="Close"><X size={15} /></button>
         </div>
 
@@ -609,6 +648,19 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
                         <RefreshCw size={12.5} /> Revert to original
                       </button>
                     )}
+                    <button
+                      type="button"
+                      className={`aq-generate-btn ${dupState === 'loading' ? 'loading' : ''}`}
+                      onClick={handleCheckDuplicate}
+                      disabled={!canCheckDuplicate}
+                      title="Check this question against existing ones in the selected subtopic"
+                    >
+                      {dupState === 'loading' ? (
+                        <><span className="aq-gen-spinner" />Checking…</>
+                      ) : (
+                        <><Sparkles size={12.5} /> Check for duplicates</>
+                      )}
+                    </button>
                   </div>
                 </div>
                 <input
@@ -617,6 +669,22 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
                   value={title} onChange={(e) => setTitle(e.target.value)}
                 />
                 {questionGen === 'error' && <div className="aq-gen-error">Couldn&apos;t generate a question — try again.</div>}
+                {dupState === 'error' && <div className="aq-gen-error">Couldn&apos;t check for duplicates — try again.</div>}
+                {dupState === 'done' && dupResult && (
+                  <div className={`aq-dup-card ${dupResult.isDuplicate ? 'is-dup' : 'is-clear'}`}>
+                    <div className="aq-dup-head">
+                      {dupResult.isDuplicate ? <AlertTriangle size={13} /> : <CheckCircle2 size={13} />}
+                      <span>{dupResult.isDuplicate ? 'Possible duplicate found' : 'No duplicate found'}</span>
+                    </div>
+                    {dupResult.match && (
+                      <>
+                        <span className="aq-dup-label">Matched question</span>
+                        <p className="aq-dup-match">&ldquo;{dupResult.match}&rdquo;</p>
+                      </>
+                    )}
+                    {dupResult.reasoning && <p className="aq-suggest-reason">{dupResult.reasoning}</p>}
+                  </div>
+                )}
               </div>
 
               <div className="aq-field">
@@ -794,7 +862,9 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
                   ? 'Saving updates this question in place, everywhere it appears.'
                   : fromInboxId
                     ? 'Saves the question and removes it from your Inbox.'
-                    : 'Saving writes this question straight to the database — no file editing needed.'}
+                    : fromSetAsideId
+                      ? 'Saves the question to the topic above and removes it from Set aside.'
+                      : 'Saving writes this question straight to the database — no file editing needed.'}
               </span>
               <div className="aq-foot-actions">
                 <button className="btn-cancel" onClick={onClose}>Cancel</button>

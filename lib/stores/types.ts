@@ -5,6 +5,7 @@ import type { PriorityLevel } from '@/lib/offlineSync'
 import type { TopicGroup } from '@/lib/topics'
 import type { InstructionPreset } from '@/lib/instructionPresets'
 import type { InboxItem } from '@/lib/db/inbox'
+import type { SetAsideItem } from '@/lib/db/setAside'
 import type { ProgressStats } from './progressSelectors'
 
 export type ProgressStore = Record<string, boolean>
@@ -82,6 +83,13 @@ export interface InboxSlice {
   loadInbox: (uid: string) => Promise<void>
 }
 
+export interface SetAsideSlice {
+  setAsideItems: SetAsideItem[]
+  appendSetAsideItem: (item: SetAsideItem) => void
+  removeSetAsideItem: (id: string) => void
+  loadSetAside: (uid: string) => Promise<void>
+}
+
 export interface OfflineSlice {
   isOnline: boolean
   offlineModeEnabled: boolean
@@ -97,4 +105,4 @@ export interface OfflineSlice {
   initOfflineState: () => () => void
 }
 
-export type AppState = AuthSlice & ProgressSlice & PrioritySlice & SettingsSlice & InboxSlice & OfflineSlice
+export type AppState = AuthSlice & ProgressSlice & PrioritySlice & SettingsSlice & InboxSlice & SetAsideSlice & OfflineSlice

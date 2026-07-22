@@ -10,6 +10,7 @@ import type { PriorityLevel } from '@/lib/offlineSync'
 import { sectionUrl, findGroupForSection, type SectionMeta, type TopicGroup } from '@/lib/topics'
 import { getCachedQuestions } from '@/lib/offlineSync'
 import { deleteQuestion } from '@/lib/actions/questions'
+import { setAsideQuestion } from '@/lib/actions/setAside'
 import QuestionItem from './QuestionItem'
 import ConfirmDialog from './ConfirmDialog'
 import FilterSortToolbar, { type PriorityFilterKey, type StatusFilter, type SortMode } from './FilterSortToolbar'
@@ -25,7 +26,7 @@ interface Props {
 }
 
 export default function SectionClient({ section, group, questions: serverQuestions }: Props) {
-  const { isComplete, toggle, setMany, sectionStats, setSectionTotal, mounted, isOnline, offlineModeEnabled, getPriority, setPriority, priorityStats, defaultSort, rememberFilters, settingsLoaded, navigateAfterMove, user, renameProgressId, renamePriorityId } = useProgress()
+  const { isComplete, toggle, setMany, sectionStats, setSectionTotal, mounted, isOnline, offlineModeEnabled, getPriority, setPriority, priorityStats, defaultSort, rememberFilters, settingsLoaded, navigateAfterMove, user, renameProgressId, renamePriorityId, appendSetAsideItem } = useProgress()
   const groups = useTopicGroups()
   const router = useRouter()
   const [openId, setOpenId] = useState<string | null>(null)
@@ -33,6 +34,7 @@ export default function SectionClient({ section, group, questions: serverQuestio
   const [questions, setQuestions] = useState<ParsedQuestion[]>(serverQuestions)
   const [showOfflineModal, setShowOfflineModal] = useState(false)
   const [moveToast, setMoveToast] = useState<string | null>(null)
+  const [asideToast, setAsideToast] = useState(false)
   const [editingQuestion, setEditingQuestion] = useState<EditingQuestion | null>(null)
   const [movingQuestion, setMovingQuestion] = useState<{ id: string; label: string } | null>(null)
 
@@ -247,6 +249,13 @@ export default function SectionClient({ section, group, questions: serverQuestio
                 problem: q.problem,
               }) : undefined}
               onMove={canManage ? () => setMovingQuestion({ id: q.id, label: q.title }) : undefined}
+              onSetAside={canManage ? async () => {
+                const item = await setAsideQuestion(q.id)
+                appendSetAsideItem(item)
+                setAsideToast(true)
+                setTimeout(() => setAsideToast(false), 3600)
+                router.refresh()
+              } : undefined}
               onDelete={canManage ? async () => {
                 await deleteQuestion(q.id)
                 router.refresh()
@@ -289,6 +298,7 @@ export default function SectionClient({ section, group, questions: serverQuestio
       )}
 
       {moveToast && <SaveToast title="Moved" detail={moveToast} />}
+      {asideToast && <SaveToast title="Set aside" detail="Find it in Inbox whenever you're ready." />}
 
       {editingQuestion && (
         <AddQuestionModal
