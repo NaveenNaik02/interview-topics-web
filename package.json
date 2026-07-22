@@ -27,6 +27,7 @@
     "lucide-react": "^0.400.0",
     "marked": "^18.0.6",
     "next": "^16.2.4",
+    "prismjs": "^1.30.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "server-only": "^0.0.1",
@@ -39,6 +40,7 @@
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.13",
     "@types/node": "^20.14.0",
+    "@types/prismjs": "^1.26.6",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@types/turndown": "^5.0.6",

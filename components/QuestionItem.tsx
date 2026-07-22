@@ -6,6 +6,7 @@ import type { ParsedQuestion } from '@/lib/parser'
 import type { PriorityLevel } from '@/lib/offlineSync'
 import PriorityPicker from './PriorityPicker'
 import RowActions from './RowActions'
+import { highlightIn } from '@/lib/highlight'
 
 function stripHtml(html: string): string {
   return html
@@ -87,6 +88,13 @@ function QuestionAnswerBody({ q }: { q: ParsedQuestion }) {
     const m = codeEl?.className.match(/language-(\S+)/)
     setCodeLang(m ? m[1] : (q.lang && q.lang !== 'none' ? q.lang : ''))
   }, [q.id, q.bodyHtml, q.lang])
+
+  // Runs after the codeLang state update above has committed (and re-rendered
+  // the badge), so Prism's injected <span> tokens aren't the render that got
+  // reset by that update — dangerouslySetInnerHTML gets reapplied on it.
+  useEffect(() => {
+    highlightIn(ref.current)
+  }, [q.id, q.bodyHtml, codeLang])
 
   if (!q.problem) {
     return (

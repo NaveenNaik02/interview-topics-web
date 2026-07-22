@@ -1932,6 +1932,39 @@ mark {
   font-size: inherit;
   font-weight: 400;
 }
+
+/* Syntax highlighting tokens (Prism) — code-bg stays dark across every
+   theme, so one fixed palette works everywhere rather than per-theme. */
+.q-body pre .token.comment,
+.q-body pre .token.prolog,
+.q-body pre .token.doctype,
+.q-body pre .token.cdata { color: #7d7869; font-style: italic; }
+.q-body pre .token.punctuation { color: #a39c8c; }
+.q-body pre .token.property,
+.q-body pre .token.tag,
+.q-body pre .token.constant,
+.q-body pre .token.symbol,
+.q-body pre .token.deleted,
+.q-body pre .token.class-name,
+.q-body pre .token.maybe-class-name { color: #e5c07b; }
+.q-body pre .token.boolean,
+.q-body pre .token.number { color: #d19a66; }
+.q-body pre .token.string,
+.q-body pre .token.char,
+.q-body pre .token.attr-value,
+.q-body pre .token.inserted { color: #98c379; }
+.q-body pre .token.operator,
+.q-body pre .token.entity,
+.q-body pre .token.url,
+.q-body pre .token.variable { color: #a39c8c; }
+.q-body pre .token.atrule,
+.q-body pre .token.keyword,
+.q-body pre .token.important { color: #c586c0; }
+.q-body pre .token.function,
+.q-body pre .token.selector { color: #61afef; }
+.q-body pre .token.regex { color: #e06c75; }
+.q-body pre .token.bold { font-weight: 700; }
+.q-body pre .token.italic { font-style: italic; }
 .q-body table {
   width: 100%;
   border-collapse: collapse;
