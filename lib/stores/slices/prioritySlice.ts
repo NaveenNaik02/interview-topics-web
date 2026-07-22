@@ -30,6 +30,13 @@ export const createPrioritySlice: StateCreator<AppState, [], [], PrioritySlice> 
     }
   },
 
+  renamePriorityId: (oldId: string, newId: string) => {
+    const { priorityStore } = get()
+    if (!(oldId in priorityStore)) return
+    const { [oldId]: value, ...rest } = priorityStore
+    set({ priorityStore: { ...rest, [newId]: value } })
+  },
+
   loadPriority: async (uid: string) => {
     const offlineEnabled = getOfflineEnabled()
 

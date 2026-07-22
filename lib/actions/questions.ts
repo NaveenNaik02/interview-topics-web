@@ -36,6 +36,38 @@ function renderAnswerHtml(markdown: string): string {
   return DOMPurify.sanitize(remapped)
 }
 
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>
+
+// Migrates the current user's own progress/priority rows from a question's
+// old id to its new one after a cross-section move — otherwise a question
+// the user had already checked off would silently read as "not done" again
+// once its id changes. Cross-user rows (e.g. someone else's completion on a
+// shared ETL question) are out of scope: this app has no service-role
+// client to touch rows outside the caller's own (same limitation noted on
+// deleteQuestion's cleanup below).
+async function carryOverProgress(supabase: SupabaseServerClient, userId: string, oldId: string, newId: string) {
+  const { data: prog } = await supabase
+    .from('progress')
+    .select('user_id')
+    .eq('user_id', userId)
+    .eq('question_id', oldId)
+    .maybeSingle()
+  if (prog) {
+    // progress has no UPDATE policy (row presence is the state) — insert the
+    // new row before dropping the old one so a failure here can't lose it.
+    await supabase.from('progress').insert({ user_id: userId, question_id: newId })
+    await supabase.from('progress').delete().eq('user_id', userId).eq('question_id', oldId)
+  }
+
+  // priority does have an own-row UPDATE policy, so this is a single
+  // no-op-if-absent statement.
+  await supabase
+    .from('priority')
+    .update({ question_id: newId })
+    .eq('user_id', userId)
+    .eq('question_id', oldId)
+}
+
 export async function addQuestion(input: AddQuestionInput): Promise<ParsedQuestion> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -118,8 +150,10 @@ export async function updateQuestion(id: string, input: AddQuestionInput): Promi
     .maybeSingle()
   if (!existing) throw new Error('Question not found')
 
+  const changedSection = existing.topic !== section.topic || existing.file !== section.file
+
   let number = existing.number
-  if (existing.topic !== section.topic || existing.file !== section.file) {
+  if (changedSection) {
     const { data: maxRow } = await supabase
       .from('questions')
       .select('number')
@@ -131,11 +165,21 @@ export async function updateQuestion(id: string, input: AddQuestionInput): Promi
     number = (maxRow?.number ?? 0) + 1
   }
 
+  // ids are namespaced by section ("{topic}/{file}/…") — the sidebar and
+  // per-section progress counts rely on that prefix to attribute a completed
+  // id to the right subtopic without loading every question client-side.
+  // Leaving the old id in place after a cross-section move would silently
+  // break that attribution (the question would count toward the OLD
+  // subtopic's completion forever, and could never reach 100% in the new
+  // one), so mint a fresh id whenever the section actually changes.
+  const newId = changedSection ? `${section.topic}/${section.file}/u-${randomUUID()}` : id
+
   const bodyHtml = renderAnswerHtml(markdown)
 
   const { data, error } = await supabase
     .from('questions')
     .update({
+      id: newId,
       topic: section.topic,
       file: section.file,
       number,
@@ -156,8 +200,10 @@ export async function updateQuestion(id: string, input: AddQuestionInput): Promi
   // here as either an error or zero rows, not a thrown permission error.
   if (error || !data) throw new Error('You can only edit your own questions.')
 
+  if (changedSection) await carryOverProgress(supabase, user.id, id, newId)
+
   revalidateSection(section.topic, section.file)
-  if (existing.topic !== section.topic || existing.file !== section.file) {
+  if (changedSection) {
     revalidateSection(existing.topic, existing.file)
   }
 
@@ -173,7 +219,7 @@ export interface MoveQuestionDestination {
 // to…" action — only touches placement (topic/file/label/group_slug/
 // number), leaving title/markdown/etc. untouched, so the picker doesn't
 // need to load or resubmit the full question content just to relocate it.
-export async function moveQuestion(id: string, dest: MoveQuestionDestination): Promise<void> {
+export async function moveQuestion(id: string, dest: MoveQuestionDestination): Promise<{ id: string }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
@@ -203,16 +249,26 @@ export async function moveQuestion(id: string, dest: MoveQuestionDestination): P
     .maybeSingle()
   const number = (maxRow?.number ?? 0) + 1
 
+  // Same reasoning as updateQuestion: the id's "{topic}/{file}/…" prefix is
+  // what the client uses to attribute a completed question to its section,
+  // so a move (always cross-section, per MoveQuestionModal's own guard) has
+  // to mint a fresh id rather than just repointing topic/file/number.
+  const newId = `${section.topic}/${section.file}/u-${randomUUID()}`
+
   const { data, error } = await supabase
     .from('questions')
-    .update({ topic: section.topic, file: section.file, number, label: section.label, group_slug: group.slug })
+    .update({ id: newId, topic: section.topic, file: section.file, number, label: section.label, group_slug: group.slug })
     .eq('id', id)
     .select('id')
     .single()
   if (error || !data) throw new Error('You can only move your own questions.')
 
+  await carryOverProgress(supabase, user.id, id, newId)
+
   revalidateSection(section.topic, section.file)
   revalidateSection(existing.topic, existing.file)
+
+  return { id: data.id }
 }
 
 export async function deleteQuestion(id: string): Promise<void> {

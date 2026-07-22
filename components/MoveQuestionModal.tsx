@@ -11,7 +11,7 @@ interface Props {
   label: string
   currentSection: SectionMeta
   onClose: () => void
-  onMoved: (destination: SectionMeta) => void
+  onMoved: (destination: SectionMeta, newId: string) => void
 }
 
 const sectionKey = (s: { topic: string; file: string }) => `${s.topic}/${s.file}`
@@ -45,8 +45,8 @@ export default function MoveQuestionModal({ groups, questionId, label, currentSe
     setMoving(true)
     setError(null)
     try {
-      await moveQuestion(questionId, { topic: pick.topic, file: pick.file })
-      onMoved(pick)
+      const { id: newId } = await moveQuestion(questionId, { topic: pick.topic, file: pick.file })
+      onMoved(pick, newId)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not move — try again.')
       setMoving(false)

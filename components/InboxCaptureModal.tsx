@@ -89,7 +89,7 @@ export default function InboxCaptureModal({ onClose, onSaved }: Props) {
 
   return (
     <div className="modal-scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="aq-modal" style={{ maxWidth: 560 }} role="dialog" aria-modal="true" aria-label="Save for later">
+      <div className="aq-modal" role="dialog" aria-modal="true" aria-label="Save for later">
         <div className="aq-head">
           <h2>Save for later</h2>
           <button className="aq-close" onClick={onClose} aria-label="Close" title="Close"><X size={15} /></button>

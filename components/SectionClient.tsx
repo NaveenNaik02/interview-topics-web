@@ -25,7 +25,7 @@ interface Props {
 }
 
 export default function SectionClient({ section, group, questions: serverQuestions }: Props) {
-  const { isComplete, toggle, setMany, sectionStats, setSectionTotal, mounted, isOnline, offlineModeEnabled, getPriority, setPriority, priorityStats, defaultSort, rememberFilters, settingsLoaded, navigateAfterMove, user } = useProgress()
+  const { isComplete, toggle, setMany, sectionStats, setSectionTotal, mounted, isOnline, offlineModeEnabled, getPriority, setPriority, priorityStats, defaultSort, rememberFilters, settingsLoaded, navigateAfterMove, user, renameProgressId, renamePriorityId } = useProgress()
   const groups = useTopicGroups()
   const router = useRouter()
   const [openId, setOpenId] = useState<string | null>(null)
@@ -263,9 +263,13 @@ export default function SectionClient({ section, group, questions: serverQuestio
           label={movingQuestion.label}
           currentSection={section}
           onClose={() => setMovingQuestion(null)}
-          onMoved={(destination) => {
-            setMovingQuestion(null)
+          onMoved={(destination, newId) => {
             const changedSection = destination.topic !== section.topic || destination.file !== section.file
+            if (changedSection) {
+              renameProgressId(movingQuestion.id, newId)
+              renamePriorityId(movingQuestion.id, newId)
+            }
+            setMovingQuestion(null)
             if (navigateAfterMove && changedSection) {
               router.push(sectionUrl(destination))
               // Router Cache can still serve a stale prefetch of the
@@ -290,9 +294,13 @@ export default function SectionClient({ section, group, questions: serverQuestio
         <AddQuestionModal
           editing={editingQuestion}
           onClose={() => setEditingQuestion(null)}
-          onSaved={(_question, newSection) => {
-            setEditingQuestion(null)
+          onSaved={(question, newSection) => {
             const changedSection = newSection.topic !== section.topic || newSection.file !== section.file
+            if (changedSection && editingQuestion) {
+              renameProgressId(editingQuestion.id, question.id)
+              renamePriorityId(editingQuestion.id, question.id)
+            }
+            setEditingQuestion(null)
             if (navigateAfterMove && changedSection) {
               router.push(sectionUrl(newSection))
               // Router Cache can still serve a stale prefetch of the

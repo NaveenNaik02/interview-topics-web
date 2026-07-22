@@ -34,12 +34,19 @@ export interface ProgressSlice {
   toggle: (id: string) => void
   setMany: (ids: string[], value: boolean) => void
   resetAll: () => void
+  // Carries a completed flag from an old question id to a new one — used
+  // when a question moves to a different section and the server mints it a
+  // new (correctly section-prefixed) id, so the local store doesn't have to
+  // wait for a full reload to stop reading the question as "not done".
+  renameProgressId: (oldId: string, newId: string) => void
   loadProgress: (uid: string) => Promise<void>
 }
 
 export interface PrioritySlice {
   priorityStore: PriorityStore
   setPriority: (id: string, level: PriorityLevel | null) => void
+  // Sibling of renameProgressId, for the priority store.
+  renamePriorityId: (oldId: string, newId: string) => void
   loadPriority: (uid: string) => Promise<void>
 }
 

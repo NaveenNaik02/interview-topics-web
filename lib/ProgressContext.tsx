@@ -24,9 +24,11 @@ export function useProgress() {
     toggle: s.toggle,
     setMany: s.setMany,
     resetAll: s.resetAll,
+    renameProgressId: s.renameProgressId,
     // Priority
     priorityStore: s.priorityStore,
     setPriority: s.setPriority,
+    renamePriorityId: s.renamePriorityId,
     // Inbox
     inboxItems: s.inboxItems,
     appendInboxItem: s.appendInboxItem,

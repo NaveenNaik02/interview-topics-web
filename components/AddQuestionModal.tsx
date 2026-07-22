@@ -54,6 +54,24 @@ function renderPreviewHtml(markdown: string): string {
   return DOMPurify.sanitize(remapped)
 }
 
+interface AnswerVersion {
+  id: string
+  label: string
+  text: string
+}
+
+// Answer drafts are pure in-memory session state — never persisted, so
+// closing the modal always throws them away. Only the last 2 generated
+// drafts are kept (oldest dropped first); "Original" (the answer as it was
+// when the modal opened, for edits) is pinned and never evicted by that cap.
+const MAX_ANSWER_DRAFTS = 2
+
+function capAnswerVersions(list: AnswerVersion[]): AnswerVersion[] {
+  const original = list.find(v => v.id === 'original')
+  const drafts = list.filter(v => v.id !== 'original').slice(-MAX_ANSWER_DRAFTS)
+  return original ? [original, ...drafts] : drafts
+}
+
 const PRIORITY_OPTIONS: { level: PriorityLevel; label: string }[] = [
   { level: 'high', label: 'High' },
   { level: 'med', label: 'Med' },
@@ -239,6 +257,49 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
   const typewriteQuestion = useTypewriter(setTitle)
   const typewriteProblem = useTypewriter(setProblem)
 
+  const originalTitle = editing?.title ?? ''
+  const canRevertTitle = isEdit && !!originalTitle && title !== originalTitle
+  const handleRevertTitle = () => setTitle(originalTitle)
+
+  // Version history for the answer editor: every Generate/Format snapshots
+  // whatever's there before overwriting it, so switching drafts (or back to
+  // the original saved answer) never loses work. Manual typing doesn't
+  // create a snapshot — it just detaches from whichever version was active.
+  const originalMarkdown = editing?.markdown ?? ''
+  const [answerVersions, setAnswerVersions] = useState<AnswerVersion[]>(() => (
+    originalMarkdown.trim() ? [{ id: 'original', label: 'Original', text: originalMarkdown }] : []
+  ))
+  const [activeVersionId, setActiveVersionId] = useState<string | null>(() => (originalMarkdown.trim() ? 'original' : null))
+  const draftCountRef = useRef(0)
+
+  const snapshotCurrentAnswer = () => {
+    if (!markdown.trim()) return
+    setAnswerVersions(prev => {
+      if (prev.length && prev[prev.length - 1].text === markdown) return prev
+      const label = activeVersionId === 'original' ? 'Original' : prev.find(v => v.id === activeVersionId)?.label
+      if (label && prev.some(v => v.text === markdown)) return prev
+      draftCountRef.current += 1
+      return capAnswerVersions([...prev, { id: `v${Date.now()}`, label: label ?? `Draft ${draftCountRef.current}`, text: markdown }])
+    })
+  }
+
+  const addAnswerVersion = (text: string) => {
+    draftCountRef.current += 1
+    const id = `v${Date.now()}`
+    setAnswerVersions(prev => capAnswerVersions([...prev, { id, label: `Draft ${draftCountRef.current}`, text }]))
+    setActiveVersionId(id)
+  }
+
+  const handleMarkdownChange = (value: string) => {
+    setMarkdown(value)
+    setActiveVersionId(null)
+  }
+
+  const handleSelectAnswerVersion = (v: AnswerVersion) => {
+    setMarkdown(v.text)
+    setActiveVersionId(v.id)
+  }
+
   useEffect(() => { firstFieldRef.current?.focus() }, [])
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -318,6 +379,7 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
 
   const handleGenerate = async () => {
     if (!canGenerate) return
+    snapshotCurrentAnswer()
     setGenState('loading')
     setGenError(null)
     setTab('write')
@@ -329,7 +391,7 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
         instructions,
         model,
       })
-      typewrite(text, () => setGenState('done'))
+      typewrite(text, () => { setGenState('done'); addAnswerVersion(text) })
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       setGenState(/rate|quota|limit|429|overloaded|exhausted|unavailable/i.test(msg) ? 'limited' : 'error')
@@ -339,12 +401,13 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
 
   const handleFormat = async () => {
     if (!canFormat) return
+    snapshotCurrentAnswer()
     setGenState('loading')
     setGenError(null)
     setTab('write')
     try {
       const text = await formatAnswer({ text: markdown, question: title, instructions, isImpl, lang, model })
-      typewrite(text, () => setGenState('done'))
+      typewrite(text, () => { setGenState('done'); addAnswerVersion(text) })
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       setGenState(/rate|quota|limit|429|overloaded|exhausted|unavailable/i.test(msg) ? 'limited' : 'error')
@@ -527,19 +590,26 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
               <div className="aq-field">
                 <div className="aq-label-row">
                   <label htmlFor="aq-question">Question</label>
-                  <button
-                    type="button"
-                    className={`aq-generate-btn ${questionGen === 'loading' ? 'loading' : ''}`}
-                    onClick={handleGenerateQuestion}
-                    disabled={!canGenerateQuestion}
-                    title={title.trim() ? 'Generate a fresh question, using your text above as a rough idea' : 'Generate a question for this topic/subtopic'}
-                  >
-                    {questionGen === 'loading' ? (
-                      <><span className="aq-gen-spinner" />Generating…</>
-                    ) : (
-                      <><Sparkles size={12.5} /> {title.trim() ? 'Regenerate' : 'Generate question'}</>
+                  <div className="aq-label-actions">
+                    <button
+                      type="button"
+                      className={`aq-generate-btn ${questionGen === 'loading' ? 'loading' : ''}`}
+                      onClick={handleGenerateQuestion}
+                      disabled={!canGenerateQuestion}
+                      title={title.trim() ? 'Generate a fresh question, using your text above as a rough idea' : 'Generate a question for this topic/subtopic'}
+                    >
+                      {questionGen === 'loading' ? (
+                        <><span className="aq-gen-spinner" />Generating…</>
+                      ) : (
+                        <><Sparkles size={12.5} /> {title.trim() ? 'Regenerate' : 'Generate question'}</>
+                      )}
+                    </button>
+                    {canRevertTitle && (
+                      <button type="button" className="aq-generate-btn aq-revert-btn" onClick={handleRevertTitle} title="Restore the original saved question text">
+                        <RefreshCw size={12.5} /> Revert to original
+                      </button>
                     )}
-                  </button>
+                  </div>
                 </div>
                 <input
                   id="aq-question" ref={firstFieldRef} className="aq-input" type="text"
@@ -659,6 +729,22 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
                       </button>
                     </div>
                   </div>
+                  {answerVersions.length >= 1 && (
+                    <div className="aq-version-row">
+                      <span className="aq-version-label">Drafts:</span>
+                      {answerVersions.map(v => (
+                        <button
+                          type="button"
+                          key={v.id}
+                          className={`aq-version-chip ${activeVersionId === v.id ? 'active' : ''}`}
+                          onClick={() => handleSelectAnswerVersion(v)}
+                          title={v.text.slice(0, 140)}
+                        >
+                          {v.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   {genState === 'error' && genError && <div className="aq-gen-error">{genError}</div>}
                   {genState === 'limited' && (
                     <div className="aq-gen-error">
@@ -669,7 +755,7 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
                     <div className="aq-md-editor-pane">
                       <textarea
                         value={markdown}
-                        onChange={(e) => setMarkdown(e.target.value)}
+                        onChange={(e) => handleMarkdownChange(e.target.value)}
                         readOnly={genState === 'loading'}
                         className={genState === 'loading' ? 'aq-gen-active' : ''}
                         placeholder={isImpl

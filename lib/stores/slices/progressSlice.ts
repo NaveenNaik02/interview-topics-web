@@ -109,6 +109,14 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
       }
     },
 
+    renameProgressId: (oldId: string, newId: string) => {
+      const { store } = get()
+      if (!(oldId in store)) return
+      const { [oldId]: value, ...rest } = store
+      set({ store: { ...rest, [newId]: value } })
+      recomputeStats()
+    },
+
     resetAll: () => {
       const { user, store, isOnline, offlineModeEnabled } = get()
       if (!user) return
