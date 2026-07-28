@@ -26,7 +26,7 @@ interface Props {
 }
 
 export default function SectionClient({ section, group, questions: serverQuestions }: Props) {
-  const { isComplete, toggle, setMany, sectionStats, setSectionTotal, mounted, isOnline, offlineModeEnabled, getPriority, setPriority, priorityStats, defaultSort, rememberFilters, settingsLoaded, navigateAfterMove, user, renameProgressId, renamePriorityId, appendSetAsideItem } = useProgress()
+  const { isComplete, toggle, setMany, sectionStats, setSectionTotal, mounted, isOnline, offlineModeEnabled, getPriority, setPriority, priorityStats, defaultSort, rememberFilters, settingsLoaded, navigateAfterMove, user, renameProgressId, renamePriorityId, renameStarId, appendSetAsideItem, isStarred, toggleStar } = useProgress()
   const groups = useTopicGroups()
   const router = useRouter()
   const [openId, setOpenId] = useState<string | null>(null)
@@ -235,6 +235,8 @@ export default function SectionClient({ section, group, questions: serverQuestio
                 toggle(q.id)
               }}
               onSetPriority={(level) => handleSetPriority(q.id, level)}
+              isStarred={isStarred(q.id)}
+              onToggleStar={() => toggleStar(q.id)}
               onEdit={canManage ? () => setEditingQuestion({
                 id: q.id,
                 title: q.title,
@@ -277,6 +279,7 @@ export default function SectionClient({ section, group, questions: serverQuestio
             if (changedSection) {
               renameProgressId(movingQuestion.id, newId)
               renamePriorityId(movingQuestion.id, newId)
+              renameStarId(movingQuestion.id, newId)
             }
             setMovingQuestion(null)
             if (navigateAfterMove && changedSection) {
@@ -309,6 +312,7 @@ export default function SectionClient({ section, group, questions: serverQuestio
             if (changedSection && editingQuestion) {
               renameProgressId(editingQuestion.id, question.id)
               renamePriorityId(editingQuestion.id, question.id)
+              renameStarId(editingQuestion.id, question.id)
             }
             setEditingQuestion(null)
             if (navigateAfterMove && changedSection) {

@@ -44,6 +44,8 @@
   --accent-text: oklch(0.42 0.13 var(--accent-hue));
   --success: oklch(0.62 0.12 150);
   --success-soft: oklch(0.92 0.04 150);
+  --warn: oklch(0.62 0.14 65);
+  --warn-soft: oklch(0.93 0.05 75);
   --pri-high: oklch(0.55 0.17 25);
   --pri-high-soft: oklch(0.92 0.05 25);
   --pri-med: oklch(0.62 0.14 65);
@@ -91,6 +93,8 @@
   --accent-text: oklch(0.82 0.11 256);
   --success: oklch(0.72 0.12 150);
   --success-soft: oklch(0.32 0.05 150);
+  --warn: oklch(0.78 0.13 70);
+  --warn-soft: oklch(0.34 0.06 65);
   --pri-high: oklch(0.72 0.17 25);
   --pri-high-soft: oklch(0.32 0.06 25);
   --pri-med: oklch(0.75 0.14 65);
@@ -138,6 +142,8 @@
   --accent-text: oklch(0.42 0.13 45);
   --success: oklch(0.55 0.1 130);
   --success-soft: oklch(0.88 0.04 130);
+  --warn: oklch(0.55 0.12 60);
+  --warn-soft: oklch(0.86 0.06 70);
   --pri-high: oklch(0.5 0.17 25);
   --pri-high-soft: oklch(0.88 0.05 30);
   --pri-med: oklch(0.55 0.14 65);
@@ -1354,6 +1360,7 @@ mark {
   align-items: flex-start;
   gap: var(--s-4);
   padding: var(--card-pad, 18px) var(--s-5);
+  padding-right: 68px;
   text-align: left;
   cursor: pointer;
   transition: background 0.15s;
@@ -1364,6 +1371,10 @@ mark {
   outline-offset: -2px;
   border-radius: var(--radius);
 }
+
+/* Wraps q-num + q-check so they can stack vertically on mobile (see the
+   max-width: 880px block) instead of needing separate q-head overrides. */
+.q-check-col { display: flex; flex-direction: row; align-items: center; gap: 8px; flex-shrink: 0; }
 
 .q-num {
   font-family: var(--f-mono);
@@ -1430,75 +1441,22 @@ mark {
 .q-item.pri-med::before { background: var(--pri-med); }
 .q-item.pri-low::before { background: var(--pri-low); }
 
-/* Priority chip (trigger) */
-.pri-wrap { position: relative; flex-shrink: 0; display: inline-flex; }
-.pri-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 26px;
-  padding: 0 11px 0 8px;
-  border-radius: 99px;
-  font-size: 12px;
-  font-weight: 600;
-  border: 1px solid var(--border-strong);
-  background: var(--bg-soft);
-  color: var(--text-muted);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: opacity 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
+/* Row actions cluster — star + kebab, pinned to the card's top-right corner
+   and always visible (no more hover-to-reveal). Priority is set from inside
+   the kebab menu's pill row now (see .kebab-pri-row below) and otherwise
+   only reads back via the card's left color spine (.q-item.pri-*::before),
+   so there's no separate inline priority chip anymore. */
+.q-actions { position: absolute; top: 14px; right: 14px; display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.q-star {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
+  border: none; background: none; cursor: pointer;
+  color: var(--text-subtle); transition: color 0.12s, background 0.12s;
 }
-.pri-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border-strong); flex-shrink: 0; }
-.pri-chip:hover { border-color: var(--border-strong); background: var(--bg-hover); }
-.pri-chip.high { border-color: color-mix(in oklch, var(--pri-high) 45%, transparent); background: var(--pri-high-soft); color: var(--pri-high); }
-.pri-chip.high .dot { background: var(--pri-high); }
-.pri-chip.med { border-color: color-mix(in oklch, var(--pri-med) 45%, transparent); background: var(--pri-med-soft); color: var(--pri-med); }
-.pri-chip.med .dot { background: var(--pri-med); }
-.pri-chip.low { border-color: color-mix(in oklch, var(--pri-low) 45%, transparent); background: var(--pri-low-soft); color: var(--pri-low); }
-.pri-chip.low .dot { background: var(--pri-low); }
-/* Unset chip stays quiet until the row is hovered / it's active */
-.pri-chip.none { opacity: 0; }
-.q-head:hover .pri-chip.none,
-.pri-wrap.open .pri-chip.none,
-.pri-chip.none:focus-visible { opacity: 1; }
-@media (hover: none) { .pri-chip.none { opacity: 1; } }
-
-.pop-pills {
-  position: fixed;
-  z-index: 300;
-  display: inline-flex;
-  gap: 6px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 99px;
-  box-shadow: var(--shadow-lg);
-  padding: 6px;
-  animation: popIn 0.16s cubic-bezier(0.2, 0.9, 0.25, 1);
-}
-.pop-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  height: 30px;
-  padding: 0 14px;
-  border-radius: 99px;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: none;
-  border: none;
-  cursor: pointer;
-  transition: background 0.12s, color 0.12s;
-}
-.pop-pill .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--border-strong); flex-shrink: 0; }
-.pop-pill:hover { background: var(--bg-hover); color: var(--text); }
-.pop-pill.high.sel { background: var(--pri-high-soft); color: var(--pri-high); }
-.pop-pill.high.sel .dot { background: var(--pri-high); }
-.pop-pill.med.sel { background: var(--pri-med-soft); color: var(--pri-med); }
-.pop-pill.med.sel .dot { background: var(--pri-med); }
-.pop-pill.low.sel { background: var(--pri-low-soft); color: var(--pri-low); }
-.pop-pill.low.sel .dot { background: var(--pri-low); }
-.pop-pill.none.sel { background: var(--bg-soft); color: var(--text); }
+.q-star svg { width: 15px; height: 15px; }
+.q-star:hover { background: var(--bg-hover); color: var(--text); }
+.q-star.on { color: var(--warn); }
+.q-star.on:hover { background: var(--warn-soft); }
 
 /* ── Section toolbar — Select all / Unselect all + priority filter + sort ── */
 .section-toolbar {
@@ -1665,7 +1623,8 @@ mark {
 .q-copy:hover { background: var(--bg-soft); color: var(--accent-text); }
 @media (hover: none) { .q-copy { opacity: 1; } }
 
-/* Row overflow menu (kebab) — replaces the old separate copy/edit icons */
+/* Row overflow menu (kebab) — lives in .q-actions now, always visible
+   (part of the persistent top-right corner cluster, not hover-reveal). */
 .kebab-wrap { position: relative; flex-shrink: 0; }
 .q-kebab {
   display: inline-flex;
@@ -1678,15 +1637,11 @@ mark {
   background: none;
   color: var(--text-subtle);
   cursor: pointer;
-  opacity: 0;
-  transition: background 0.15s, color 0.15s, opacity 0.15s;
+  opacity: 1;
+  transition: background 0.15s, color 0.15s;
 }
 .q-kebab svg { width: 15px; height: 15px; }
-.q-head:hover .q-kebab,
-.q-kebab:focus-visible,
-.kebab-wrap.open .q-kebab { opacity: 1; }
 .q-kebab:hover { background: var(--bg-soft); color: var(--text); }
-@media (hover: none) { .q-kebab { opacity: 1; } }
 
 .kebab-menu {
   background: var(--bg-card);
@@ -1694,7 +1649,7 @@ mark {
   border-radius: 10px;
   box-shadow: var(--shadow-lg);
   padding: 5px;
-  min-width: 156px;
+  min-width: 200px;
 }
 .kebab-item {
   display: flex;
@@ -1717,6 +1672,26 @@ mark {
 .kebab-item.danger svg { color: var(--pri-high); }
 .kebab-item.danger:hover { background: var(--pri-high-soft); }
 .kebab-sep { height: 1px; background: var(--border); margin: 4px 2px; }
+
+/* Priority pill row inside the kebab — replaces the old standalone
+   pri-chip/pop-pills popover; click the selected pill again to unset. */
+.kebab-pri-row { display: flex; gap: 4px; padding: 4px 6px 6px; }
+.kebab-pri {
+  flex: 1;
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  height: 28px; border-radius: 7px;
+  border: 1px solid var(--border); background: var(--bg-soft);
+  font-size: 12px; font-weight: 600; color: var(--text-muted);
+  cursor: pointer;
+}
+.kebab-pri .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border-strong); }
+.kebab-pri.high.sel { background: var(--pri-high-soft); color: var(--pri-high); border-color: color-mix(in oklch, var(--pri-high) 45%, transparent); }
+.kebab-pri.high.sel .dot { background: var(--pri-high); }
+.kebab-pri.med.sel { background: var(--pri-med-soft); color: var(--pri-med); border-color: color-mix(in oklch, var(--pri-med) 45%, transparent); }
+.kebab-pri.med.sel .dot { background: var(--pri-med); }
+.kebab-pri.low.sel { background: var(--pri-low-soft); color: var(--pri-low); border-color: color-mix(in oklch, var(--pri-low) 45%, transparent); }
+.kebab-pri.low.sel .dot { background: var(--pri-low); }
+
 .kebab-confirm { padding: 10px; width: 190px; }
 .kebab-confirm-msg { font-size: 12.5px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4; }
 .kebab-confirm-row { display: flex; justify-content: flex-end; gap: 6px; }
@@ -2241,8 +2216,12 @@ mark {
   .dash-title { font-size: 38px; }
   .subtopic-title { font-size: 30px; }
   .subtopic-meta .bar { width: 140px; }
-  .q-head { padding: var(--s-4); gap: var(--s-3); }
+  .q-head { padding: var(--s-4); gap: var(--s-3); padding-right: var(--s-4); }
   .q-text { font-size: 15px; }
+  .q-check-col { flex-direction: column; gap: 3px; }
+  .q-star { display: none; }
+  .q-kebab { width: 34px; height: 34px; }
+  .q-actions { position: static; }
   .search-box { width: 150px; min-width: 0; flex-shrink: 1; }
   .search-box:focus-within { width: 180px; }
   .search-box .search-input { min-width: 0; }

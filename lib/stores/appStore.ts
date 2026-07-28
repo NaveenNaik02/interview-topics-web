@@ -5,6 +5,7 @@ import { createPrioritySlice } from './slices/prioritySlice';
 import { createSettingsSlice } from './slices/settingsSlice';
 import { createInboxSlice } from './slices/inboxSlice';
 import { createSetAsideSlice } from './slices/setAsideSlice';
+import { createStarredSlice } from './slices/starredSlice';
 import { createOfflineSlice } from './slices/offlineSlice';
 import type { AppState } from './types';
 
@@ -15,5 +16,6 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createSettingsSlice(...a),
   ...createInboxSlice(...a),
   ...createSetAsideSlice(...a),
+  ...createStarredSlice(...a),
   ...createOfflineSlice(...a),
 }));

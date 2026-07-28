@@ -90,6 +90,14 @@ export interface SetAsideSlice {
   loadSetAside: (uid: string) => Promise<void>
 }
 
+export interface StarredSlice {
+  starredStore: Record<string, boolean>
+  toggleStar: (id: string) => void
+  // Sibling of renameProgressId/renamePriorityId, for the starred store.
+  renameStarId: (oldId: string, newId: string) => void
+  loadStarred: (uid: string) => Promise<void>
+}
+
 export interface OfflineSlice {
   isOnline: boolean
   offlineModeEnabled: boolean
@@ -105,4 +113,4 @@ export interface OfflineSlice {
   initOfflineState: () => () => void
 }
 
-export type AppState = AuthSlice & ProgressSlice & PrioritySlice & SettingsSlice & InboxSlice & SetAsideSlice & OfflineSlice
+export type AppState = AuthSlice & ProgressSlice & PrioritySlice & SettingsSlice & InboxSlice & SetAsideSlice & StarredSlice & OfflineSlice

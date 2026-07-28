@@ -45,6 +45,7 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (set, 
       get().loadSettings(uid)
       get().loadInbox(uid)
       get().loadSetAside(uid)
+      get().loadStarred(uid)
     }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -77,7 +78,7 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (set, 
         }
       } else {
         loadedUserId = null
-        set({ user: null, store: {}, priorityStore: {}, inboxItems: [], setAsideItems: [] })
+        set({ user: null, store: {}, priorityStore: {}, inboxItems: [], setAsideItems: [], starredStore: {} })
       }
     })
 

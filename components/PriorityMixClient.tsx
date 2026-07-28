@@ -158,7 +158,7 @@ function SubtopicPicker({ flatSubs, selected, onToggle }: { flatSubs: FlatSub[];
 }
 
 export default function PriorityMixClient({ questions }: Props) {
-  const { getPriority, isComplete, toggle, setPriority, isOnline, offlineModeEnabled, mounted, navigateAfterMove, user, appendSetAsideItem } = useProgress()
+  const { getPriority, isComplete, toggle, setPriority, isOnline, offlineModeEnabled, mounted, navigateAfterMove, user, appendSetAsideItem, isStarred, toggleStar } = useProgress()
   const groups = useTopicGroups()
   const flatSubs = useMemo(() => groups.flatMap(g =>
     g.sections.map((s: SectionMeta) => ({ key: sectionUrl(s), label: s.label, topicName: g.groupName }))
@@ -321,6 +321,8 @@ export default function PriorityMixClient({ questions }: Props) {
                 }}
                 onSetPriority={(level) => handleSetPriority(r.q.id, level)}
                 crumb={{ topicLabel: group?.groupName ?? r.q.groupSlug, subLabel: r.q.label, href: r.subKey }}
+                isStarred={isStarred(r.q.id)}
+                onToggleStar={() => toggleStar(r.q.id)}
                 onEdit={canManage ? () => setEditingQuestion({
                   id: r.q.id,
                   title: r.q.title,

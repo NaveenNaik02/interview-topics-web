@@ -4,7 +4,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import type { ParsedQuestion } from '@/lib/parser'
 import type { PriorityLevel } from '@/lib/offlineSync'
-import PriorityPicker from './PriorityPicker'
+import { Star } from 'lucide-react'
 import RowActions from './RowActions'
 import { highlightIn } from '@/lib/highlight'
 
@@ -163,9 +163,11 @@ interface Props {
   onMove?: () => void
   onSetAside?: () => void
   onDelete?: () => void
+  isStarred?: boolean
+  onToggleStar?: () => void
 }
 
-export default function QuestionItem({ q, idx, isDone, isOpen, priority, onToggleOpen, onToggleDone, onSetPriority, crumb, onEdit, onMove, onSetAside, onDelete }: Props) {
+export default function QuestionItem({ q, idx, isDone, isOpen, priority, onToggleOpen, onToggleDone, onSetPriority, crumb, onEdit, onMove, onSetAside, onDelete, isStarred, onToggleStar }: Props) {
   return (
     <div className={`q-item ${isDone ? 'done' : ''} ${isOpen ? 'open' : ''} ${priority ? `pri-${priority}` : ''}`}>
       <div
@@ -176,15 +178,17 @@ export default function QuestionItem({ q, idx, isDone, isOpen, priority, onToggl
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggleOpen() } }}
         aria-expanded={isOpen}
       >
-        <button
-          className={`q-check ${isDone ? 'checked' : ''}`}
-          onClick={(e) => { e.stopPropagation(); onToggleDone() }}
-          aria-label={isDone ? 'Mark as not done' : 'Mark as done'}
-          aria-pressed={isDone}
-        >
-          <Icon.Check />
-        </button>
-        <span className="q-num">{String(idx + 1).padStart(2, '0')}</span>
+        <div className="q-check-col">
+          <span className="q-num">{String(idx + 1).padStart(2, '0')}</span>
+          <button
+            className={`q-check ${isDone ? 'checked' : ''}`}
+            onClick={(e) => { e.stopPropagation(); onToggleDone() }}
+            aria-label={isDone ? 'Mark as not done' : 'Mark as done'}
+            aria-pressed={isDone}
+          >
+            <Icon.Check />
+          </button>
+        </div>
         {crumb ? (
           <div className="q-body-col">
             <span className="q-text" dangerouslySetInnerHTML={{ __html: q.title }} />
@@ -202,8 +206,30 @@ export default function QuestionItem({ q, idx, isDone, isOpen, priority, onToggl
         ) : (
           <span className="q-text" dangerouslySetInnerHTML={{ __html: q.title }} />
         )}
-        <RowActions getText={() => stripHtml(q.title)} onEdit={onEdit} onMove={onMove} onSetAside={onSetAside} onDelete={onDelete} />
-        <PriorityPicker value={priority} onChange={onSetPriority} />
+        <div className="q-actions">
+          {onToggleStar && (
+            <button
+              className={`q-star ${isStarred ? 'on' : ''}`}
+              onClick={(e) => { e.stopPropagation(); onToggleStar() }}
+              aria-label={isStarred ? 'Unstar question' : 'Star for pre-interview review'}
+              aria-pressed={isStarred}
+              title={isStarred ? 'Starred — quick pre-interview review' : 'Star for pre-interview review'}
+            >
+              <Star fill={isStarred ? 'currentColor' : 'none'} />
+            </button>
+          )}
+          <RowActions
+            getText={() => stripHtml(q.title)}
+            onEdit={onEdit}
+            onMove={onMove}
+            onSetAside={onSetAside}
+            onDelete={onDelete}
+            isStarred={isStarred}
+            onToggleStar={onToggleStar}
+            priority={priority}
+            onSetPriority={onSetPriority}
+          />
+        </div>
       </div>
       {isOpen && <QuestionAnswerBody q={q} />}
     </div>

@@ -38,13 +38,13 @@ function renderAnswerHtml(markdown: string): string {
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>
 
-// Migrates the current user's own progress/priority rows from a question's
-// old id to its new one after a cross-section move — otherwise a question
-// the user had already checked off would silently read as "not done" again
-// once its id changes. Cross-user rows (e.g. someone else's completion on a
-// shared ETL question) are out of scope: this app has no service-role
-// client to touch rows outside the caller's own (same limitation noted on
-// deleteQuestion's cleanup below).
+// Migrates the current user's own progress/priority/starred rows from a
+// question's old id to its new one after a cross-section move — otherwise a
+// question the user had already checked off (or starred) would silently
+// read as "not done"/unstarred again once its id changes. Cross-user rows
+// (e.g. someone else's completion on a shared ETL question) are out of
+// scope: this app has no service-role client to touch rows outside the
+// caller's own (same limitation noted on deleteQuestion's cleanup below).
 async function carryOverProgress(supabase: SupabaseServerClient, userId: string, oldId: string, newId: string) {
   const { data: prog } = await supabase
     .from('progress')
@@ -59,10 +59,16 @@ async function carryOverProgress(supabase: SupabaseServerClient, userId: string,
     await supabase.from('progress').delete().eq('user_id', userId).eq('question_id', oldId)
   }
 
-  // priority does have an own-row UPDATE policy, so this is a single
-  // no-op-if-absent statement.
+  // priority and starred_questions both have an own-row UPDATE policy, so
+  // these are single no-op-if-absent statements.
   await supabase
     .from('priority')
+    .update({ question_id: newId })
+    .eq('user_id', userId)
+    .eq('question_id', oldId)
+
+  await supabase
+    .from('starred_questions')
     .update({ question_id: newId })
     .eq('user_id', userId)
     .eq('question_id', oldId)
@@ -285,11 +291,12 @@ export async function deleteQuestion(id: string): Promise<void> {
     .single()
   if (error || !data) throw new Error('You can only delete your own questions.')
 
-  // Best-effort cleanup of the current user's own progress/priority rows for
-  // this question. Cross-user orphan cleanup is out of scope — there's no
-  // service-role client in this app, and it's a rare edge case.
+  // Best-effort cleanup of the current user's own progress/priority/starred
+  // rows for this question. Cross-user orphan cleanup is out of scope —
+  // there's no service-role client in this app, and it's a rare edge case.
   await supabase.from('progress').delete().eq('user_id', user.id).eq('question_id', id)
   await supabase.from('priority').delete().eq('user_id', user.id).eq('question_id', id)
+  await supabase.from('starred_questions').delete().eq('user_id', user.id).eq('question_id', id)
 
   revalidateSection(data.topic, data.file)
 }

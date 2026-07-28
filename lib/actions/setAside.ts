@@ -65,9 +65,10 @@ export async function setAsideQuestion(id: string): Promise<SetAsideItem> {
   }
 
   // Best-effort cleanup, same as deleteQuestion — this is the current user's
-  // own progress/priority rows only.
+  // own progress/priority/starred rows only.
   await supabase.from('progress').delete().eq('user_id', user.id).eq('question_id', id)
   await supabase.from('priority').delete().eq('user_id', user.id).eq('question_id', id)
+  await supabase.from('starred_questions').delete().eq('user_id', user.id).eq('question_id', id)
 
   revalidateSection(deleted.topic, deleted.file)
 

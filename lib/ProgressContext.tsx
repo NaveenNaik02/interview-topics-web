@@ -38,6 +38,10 @@ export function useProgress() {
     setAsideItems: s.setAsideItems,
     appendSetAsideItem: s.appendSetAsideItem,
     removeSetAsideItem: s.removeSetAsideItem,
+    // Starred
+    starredStore: s.starredStore,
+    toggleStar: s.toggleStar,
+    renameStarId: s.renameStarId,
     // Auth
     user: s.user,
     signInWithGitHub: s.signInWithGitHub,
@@ -75,7 +79,7 @@ export function useProgress() {
     syncNow: s.syncNow,
   })))
 
-  const { store, priorityStore, mounted } = state
+  const { store, priorityStore, starredStore, mounted } = state
 
   // Computed here (not read from the store's own `stats`/groups/totals
   // fields) so it stays correct synchronously during render — groups and
@@ -93,6 +97,7 @@ export function useProgress() {
   const stats = useMemo(() => computeStats(store, totals, groups), [store, totals, groups])
 
   const isComplete = useCallback((id: string) => mounted && !!store[id], [store, mounted])
+  const isStarred = useCallback((id: string) => mounted && !!starredStore[id], [starredStore, mounted])
 
   const sectionStats = useCallback((topic: string, file: string, total: number) => {
     if (!mounted) return { done: 0, total }
@@ -122,5 +127,5 @@ export function useProgress() {
   // nothing has ever read `totals` directly off this hook.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { totals: _rawTotals, ...rest } = state
-  return { ...rest, stats, isComplete, sectionStats, allStats, getPriority, priorityStats }
+  return { ...rest, stats, isComplete, isStarred, sectionStats, allStats, getPriority, priorityStats }
 }

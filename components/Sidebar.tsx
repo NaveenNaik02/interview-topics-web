@@ -33,6 +33,11 @@ const Icon = {
       <path d="M2 8h3.2l1.1 2.4h3.4L10.8 8H14M2 8V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v4M2 8v4a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8" />
     </svg>
   ),
+  Star: () => (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true">
+      <path d="M8 1.6l1.9 4.2 4.5.5-3.4 3.1.9 4.5L8 11.7l-3.9 2.2.9-4.5-3.4-3.1 4.5-.5z" />
+    </svg>
+  ),
   Plus: () => (
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
       <line x1="8" y1="3" x2="8" y2="13" />
@@ -53,7 +58,7 @@ type DeleteTarget =
 export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { stats, inboxItems, setAsideItems } = useProgress()
+  const { stats, inboxItems, setAsideItems, starredStore } = useProgress()
   const { drawerOpen, setDrawerOpen } = useUI()
   const [expanded, setExpanded] = useState<Set<string>>(new Set(['javascript', 'react']))
   const [addTarget, setAddTarget] = useState<string | null>(null)
@@ -130,6 +135,20 @@ export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
               <span className="subtopic-name">Inbox</span>
             </span>
             {inboxItems.length + setAsideItems.length > 0 && <span className="ic-nav-badge">{inboxItems.length + setAsideItems.length}</span>}
+          </Link>
+
+          <Link
+            href="/starred"
+            className={`subtopic-row ${pathname === '/starred' ? 'active' : ''}`}
+            onClick={() => setDrawerOpen(false)}
+            style={{ marginBottom: 8, justifyContent: 'space-between' }}
+            prefetch={false}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ display: 'inline-flex', color: 'var(--text-subtle)', width: 16, height: 16 }}><Icon.Star /></span>
+              <span className="subtopic-name">Starred</span>
+            </span>
+            {Object.keys(starredStore).length > 0 && <span className="ic-nav-badge">{Object.keys(starredStore).length}</span>}
           </Link>
 
           <Link
