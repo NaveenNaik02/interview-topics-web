@@ -1332,7 +1332,46 @@ mark {
 /* =========================================================
    Question accordion
    ========================================================= */
-.questions-list { display: flex; flex-direction: column; gap: var(--s-3); }
+.questions-list { display: flex; flex-direction: column; gap: var(--s-3); position: relative; }
+
+div.drag-shadow.drag-shadow {
+  position: fixed !important;
+  pointer-events: none;
+  z-index: 50;
+  left: 0;
+  top: 0;
+  margin: 0;
+  background: var(--bg-elev);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-strong);
+  will-change: transform;
+  opacity: 0.55;
+}
+
+.drop-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  margin-top: -1.5px;
+  border-radius: 2px;
+  background: var(--accent);
+  pointer-events: none;
+  transition: top 0.12s ease;
+}
+
+.drop-indicator::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
 
 .q-item {
   background: var(--bg-card);
@@ -1372,19 +1411,15 @@ mark {
   border-radius: var(--radius);
 }
 
-/* Wraps q-num + q-check so they can stack vertically on mobile (see the
-   max-width: 880px block) instead of needing separate q-head overrides. */
-.q-check-col { display: flex; flex-direction: row; align-items: center; gap: 8px; flex-shrink: 0; }
+/* Drag-to-reorder affordance covers the whole row on hover — buttons
+   already get `cursor: pointer` from the global `button` rule, so only the
+   title text (its own click target for expand/collapse) needs an explicit
+   override back to the row's normal pointer cursor. */
+.q-item.reorderable .q-head:hover { cursor: move; }
+.q-item.reorderable .q-text { cursor: pointer; }
+.q-item.reorderable .q-actions { cursor: default; }
 
-.q-num {
-  font-family: var(--f-mono);
-  font-size: 12px;
-  color: var(--text-subtle);
-  font-variant-numeric: tabular-nums;
-  padding-top: 3px;
-  flex-shrink: 0;
-  min-width: 24px;
-}
+.q-check-col { display: flex; flex-direction: row; align-items: center; gap: 8px; flex-shrink: 0; }
 
 .q-text {
   flex: 1;

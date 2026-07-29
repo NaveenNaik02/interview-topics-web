@@ -7,6 +7,7 @@ import { createInboxSlice } from './slices/inboxSlice';
 import { createSetAsideSlice } from './slices/setAsideSlice';
 import { createStarredSlice } from './slices/starredSlice';
 import { createOfflineSlice } from './slices/offlineSlice';
+import { createQuestionOrderSlice } from './slices/questionOrderSlice';
 import type { AppState } from './types';
 
 export const useAppStore = create<AppState>()((...a) => ({
@@ -18,4 +19,5 @@ export const useAppStore = create<AppState>()((...a) => ({
   ...createSetAsideSlice(...a),
   ...createStarredSlice(...a),
   ...createOfflineSlice(...a),
+  ...createQuestionOrderSlice(...a),
 }));

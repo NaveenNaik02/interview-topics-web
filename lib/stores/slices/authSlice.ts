@@ -46,6 +46,7 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (set, 
       get().loadInbox(uid)
       get().loadSetAside(uid)
       get().loadStarred(uid)
+      get().loadQuestionOrder(uid)
     }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {

@@ -19,6 +19,10 @@ import MoveQuestionModal from './MoveQuestionModal'
 import SaveToast from './SaveToast'
 import { htmlToMarkdown } from '@/lib/htmlToMarkdown'
 
+// Movement below this (px) counts as a click, not a drag — mirrors
+// DRAG_THRESHOLD in lib/useFabDrag.ts.
+const DRAG_THRESHOLD = 6
+
 interface Props {
   section: SectionMeta
   group: TopicGroup
@@ -26,7 +30,7 @@ interface Props {
 }
 
 export default function SectionClient({ section, group, questions: serverQuestions }: Props) {
-  const { isComplete, toggle, setMany, sectionStats, setSectionTotal, mounted, isOnline, offlineModeEnabled, getPriority, setPriority, priorityStats, defaultSort, rememberFilters, settingsLoaded, navigateAfterMove, user, renameProgressId, renamePriorityId, renameStarId, appendSetAsideItem, isStarred, toggleStar } = useProgress()
+  const { isComplete, toggle, setMany, sectionStats, setSectionTotal, mounted, isOnline, offlineModeEnabled, getPriority, setPriority, priorityStats, defaultSort, rememberFilters, settingsLoaded, navigateAfterMove, user, renameProgressId, renamePriorityId, renameStarId, appendSetAsideItem, isStarred, toggleStar, getOrderPosition, setQuestionOrder, renameOrderId } = useProgress()
   const groups = useTopicGroups()
   const router = useRouter()
   const [openId, setOpenId] = useState<string | null>(null)
@@ -91,7 +95,19 @@ export default function SectionClient({ section, group, questions: serverQuestio
     if (filterSet.size) list = list.filter(x => filterSet.has(x.priority ?? 'none'))
     if (statusFilter === 'done') list = list.filter(x => isComplete(x.q.id))
     else if (statusFilter === 'notdone') list = list.filter(x => !isComplete(x.q.id))
-    if (sortMode !== 'manual') {
+    if (sortMode === 'manual') {
+      // Dragged questions get an explicit position; anything never dragged
+      // (or added since the user's last reorder) keeps its original
+      // number-order, appended after every positioned question.
+      list = [...list].sort((a, b) => {
+        const pa = getOrderPosition(a.q.id)
+        const pb = getOrderPosition(b.q.id)
+        if (pa != null && pb != null) return pa - pb
+        if (pa != null) return -1
+        if (pb != null) return 1
+        return a.origIdx - b.origIdx
+      })
+    } else {
       const RANK: Record<string, number> = { high: 3, med: 2, low: 1 }
       list = [...list].sort((a, b) => {
         const ar = RANK[a.priority ?? ''] || 0
@@ -102,7 +118,11 @@ export default function SectionClient({ section, group, questions: serverQuestio
       })
     }
     return list
-  }, [questions, filterSet, statusFilter, sortMode, isComplete, getPriority])
+  }, [questions, filterSet, statusFilter, sortMode, isComplete, getPriority, getOrderPosition])
+
+  // Drag-to-reorder is only meaningful in manual mode with nothing filtered
+  // out — otherwise the visible list isn't "the whole section in one order".
+  const reorderable = sortMode === 'manual' && filterSet.size === 0 && statusFilter === null
 
   // Changing a question's priority can move it elsewhere in the sorted/filtered
   // list — that's expected. What shouldn't happen is the viewport following it
@@ -169,6 +189,121 @@ export default function SectionClient({ section, group, questions: serverQuestio
     setConfirm('unselect')
   }, [isOnline, offlineModeEnabled])
 
+  // Drag-to-reorder: native Pointer Events, no library. A floating shadow
+  // clone of the dragged row tracks the pointer; the source row stays put.
+  // Slot = nearest gap between the *other* (non-dragged) rows, found by
+  // comparing the pointer's Y to each one's vertical midpoint.
+  const listRef = useRef<HTMLDivElement>(null)
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [indicatorTop, setIndicatorTop] = useState<number | null>(null)
+  const dragIdRef = useRef<string | null>(null)
+  const activeSlotRef = useRef<number | null>(null)
+  const dragOffsetRef = useRef({ x: 0, y: 0 })
+  const shadowRef = useRef<HTMLElement | null>(null)
+
+  const otherItemEls = useCallback(() => {
+    if (!listRef.current) return [] as HTMLElement[]
+    return [...listRef.current.querySelectorAll<HTMLElement>('.q-item')].filter(
+      el => el.dataset.qid !== dragIdRef.current
+    )
+  }, [])
+
+  const slotForY = useCallback((clientY: number) => {
+    const items = otherItemEls()
+    for (let i = 0; i < items.length; i++) {
+      const r = items[i].getBoundingClientRect()
+      if (clientY < r.top + r.height / 2) return i
+    }
+    return items.length
+  }, [otherItemEls])
+
+  const updateIndicator = useCallback((slot: number) => {
+    const container = listRef.current
+    if (!container) return
+    const items = otherItemEls()
+    const containerRect = container.getBoundingClientRect()
+    let top: number
+    if (items.length === 0) top = 0
+    else if (slot <= 0) top = items[0].getBoundingClientRect().top - containerRect.top - 6
+    else if (slot >= items.length) top = items[items.length - 1].getBoundingClientRect().bottom - containerRect.top + 6
+    else {
+      const rPrev = items[slot - 1].getBoundingClientRect()
+      const rNext = items[slot].getBoundingClientRect()
+      top = (rPrev.bottom + rNext.top) / 2 - containerRect.top
+    }
+    setIndicatorTop(top)
+  }, [otherItemEls])
+
+  // The handle now covers the whole row (not just the checkbox) so the
+  // move-cursor affordance is easy to find on hover, but text/action clicks
+  // must keep working normally — so nothing about the drag (shadow clone,
+  // preventDefault, reorder) engages until the pointer has actually moved
+  // past a small threshold. Mirrors the click-vs-drag pattern in useFabDrag.ts.
+  const handlePointerDown = useCallback((id: string) => (e: React.PointerEvent) => {
+    const target = e.target as HTMLElement
+    if (target.closest('.q-actions, .q-text, .q-body-col')) return
+    if (!isOnline && !offlineModeEnabled) { setShowOfflineModal(true); return }
+    const itemEl = (e.currentTarget as HTMLElement).closest<HTMLElement>('.q-item')
+    if (!itemEl) return
+    e.preventDefault() // avoid text-selection drag if this turns into a real reorder
+
+    const startX = e.clientX
+    const startY = e.clientY
+    let shadow: HTMLElement | null = null
+    let engaged = false
+
+    const engage = () => {
+      engaged = true
+      const rect = itemEl.getBoundingClientRect()
+      dragOffsetRef.current = { x: startX - rect.left, y: startY - rect.top }
+
+      shadow = itemEl.cloneNode(true) as HTMLElement
+      shadow.className = `drag-shadow ${itemEl.className}`
+      shadow.style.width = `${rect.width}px`
+      shadow.style.transform = `translate(${rect.left}px, ${rect.top}px)`
+      document.body.appendChild(shadow)
+      shadowRef.current = shadow
+
+      const startSlot = processed.findIndex(({ q }) => q.id === id)
+      dragIdRef.current = id
+      activeSlotRef.current = startSlot
+      setDragId(id)
+      updateIndicator(startSlot)
+    }
+
+    const onPointerMove = (ev: PointerEvent) => {
+      if (!engaged) {
+        if (Math.hypot(ev.clientX - startX, ev.clientY - startY) < DRAG_THRESHOLD) return
+        engage()
+      }
+      const { x, y } = dragOffsetRef.current
+      shadow!.style.transform = `translate(${ev.clientX - x}px, ${ev.clientY - y}px)`
+      const slot = slotForY(ev.clientY)
+      if (slot !== activeSlotRef.current) {
+        activeSlotRef.current = slot
+        updateIndicator(slot)
+      }
+    }
+    const onPointerUp = () => {
+      document.removeEventListener('pointermove', onPointerMove)
+      if (!engaged) return
+      const finalId = dragIdRef.current
+      const finalSlot = activeSlotRef.current
+      if (finalId != null && finalSlot != null) {
+        const others = processed.map(({ q }) => q.id).filter(qid => qid !== finalId)
+        others.splice(finalSlot, 0, finalId)
+        setQuestionOrder(others)
+      }
+      if (shadowRef.current) { shadowRef.current.remove(); shadowRef.current = null }
+      dragIdRef.current = null
+      activeSlotRef.current = null
+      setDragId(null)
+      setIndicatorTop(null)
+    }
+    document.addEventListener('pointermove', onPointerMove)
+    document.addEventListener('pointerup', onPointerUp, { once: true })
+  }, [isOnline, offlineModeEnabled, processed, slotForY, updateIndicator, setQuestionOrder])
+
   return (
     <div className="content-wrapper">
       <div className="subtopic-header">
@@ -204,22 +339,23 @@ export default function SectionClient({ section, group, questions: serverQuestio
         />
       </div>
 
-      <div className="questions-list">
+      <div className="questions-list" ref={listRef}>
         {processed.length === 0 ? (
           <div className="filter-empty">
             No questions match this filter.{' '}
             <button type="button" className="link-btn" onClick={clearFilters}>Clear filter</button>
           </div>
-        ) : processed.map(({ q, origIdx, priority }) => {
+        ) : processed.map(({ q, priority }) => {
           const canManage = mounted && !!user && (q.createdBy === user.id || user.app_metadata?.is_admin === true)
           return (
             <QuestionItem
               key={q.id}
               q={q}
-              idx={origIdx}
               isDone={isComplete(q.id)}
               isOpen={openId === q.id}
               priority={priority}
+              reorderable={reorderable}
+              onHandlePointerDown={handlePointerDown(q.id)}
               onToggleOpen={() => {
                 if (!isOnline && !offlineModeEnabled) {
                   setShowOfflineModal(true)
@@ -265,6 +401,9 @@ export default function SectionClient({ section, group, questions: serverQuestio
             />
           )
         })}
+        {reorderable && dragId != null && indicatorTop != null && (
+          <div className="drop-indicator" style={{ top: `${indicatorTop}px` }} />
+        )}
       </div>
 
       {movingQuestion && (
@@ -280,6 +419,7 @@ export default function SectionClient({ section, group, questions: serverQuestio
               renameProgressId(movingQuestion.id, newId)
               renamePriorityId(movingQuestion.id, newId)
               renameStarId(movingQuestion.id, newId)
+              renameOrderId(movingQuestion.id, newId)
             }
             setMovingQuestion(null)
             if (navigateAfterMove && changedSection) {
@@ -313,6 +453,7 @@ export default function SectionClient({ section, group, questions: serverQuestio
               renameProgressId(editingQuestion.id, question.id)
               renamePriorityId(editingQuestion.id, question.id)
               renameStarId(editingQuestion.id, question.id)
+              renameOrderId(editingQuestion.id, question.id)
             }
             setEditingQuestion(null)
             if (navigateAfterMove && changedSection) {

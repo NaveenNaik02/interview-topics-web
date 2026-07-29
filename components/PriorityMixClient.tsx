@@ -299,7 +299,7 @@ export default function PriorityMixClient({ questions }: Props) {
         </div>
       ) : (
         <div className="questions-list">
-          {matched.map((r, i) => {
+          {matched.map((r) => {
             const group = findGroupForSection(groups, { topic: r.q.topic, file: r.q.file, label: r.q.label })
             const section: SectionMeta = { topic: r.q.topic, file: r.q.file, label: r.q.label }
             const canManage = mounted && !!user && (r.q.createdBy === user.id || user.app_metadata?.is_admin === true)
@@ -307,7 +307,6 @@ export default function PriorityMixClient({ questions }: Props) {
               <QuestionItem
                 key={r.q.id}
                 q={{ id: r.q.id, number: r.q.number, title: r.q.title, bodyHtml: r.q.bodyHtml, problem: r.q.problem }}
-                idx={i}
                 isDone={isComplete(r.q.id)}
                 isOpen={openId === r.q.id}
                 priority={r.priority}

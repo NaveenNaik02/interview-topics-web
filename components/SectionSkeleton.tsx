@@ -20,7 +20,6 @@ export default function SectionSkeleton() {
           <div key={i} className="q-item">
             <div className="q-head">
               <div className="q-check border-[var(--border)] bg-[var(--bg-soft)]" />
-              <div className="q-num bg-[var(--bg-soft)] h-3 w-4 rounded" />
               <div className="q-text h-5 bg-[var(--bg-soft)] rounded w-3/4" />
               <div className="q-toggle bg-[var(--bg-soft)] h-4 w-4 rounded" />
             </div>

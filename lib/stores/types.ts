@@ -98,6 +98,20 @@ export interface StarredSlice {
   loadStarred: (uid: string) => Promise<void>
 }
 
+export interface QuestionOrderSlice {
+  // Personal manual-order position, keyed by question id. Only ever compared
+  // between questions already scoped to one section by the caller, so a flat
+  // map (like priorityStore/starredStore) is enough — no per-section keying.
+  orderStore: Record<string, number>
+  // Rewrites the full position for every id in the given order (0..N-1) —
+  // a drag-drop always reorders the whole visible list, so there's no
+  // single-item variant.
+  setQuestionOrder: (ids: string[]) => void
+  // Sibling of renameProgressId/renamePriorityId/renameStarId, for the order store.
+  renameOrderId: (oldId: string, newId: string) => void
+  loadQuestionOrder: (uid: string) => Promise<void>
+}
+
 export interface OfflineSlice {
   isOnline: boolean
   offlineModeEnabled: boolean
@@ -113,4 +127,4 @@ export interface OfflineSlice {
   initOfflineState: () => () => void
 }
 
-export type AppState = AuthSlice & ProgressSlice & PrioritySlice & SettingsSlice & InboxSlice & SetAsideSlice & StarredSlice & OfflineSlice
+export type AppState = AuthSlice & ProgressSlice & PrioritySlice & SettingsSlice & InboxSlice & SetAsideSlice & StarredSlice & OfflineSlice & QuestionOrderSlice

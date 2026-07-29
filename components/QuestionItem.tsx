@@ -151,7 +151,6 @@ function QuestionAnswerBody({ q }: { q: ParsedQuestion }) {
 
 interface Props {
   q: ParsedQuestion
-  idx: number
   isDone: boolean
   isOpen: boolean
   priority: PriorityLevel | null
@@ -165,11 +164,13 @@ interface Props {
   onDelete?: () => void
   isStarred?: boolean
   onToggleStar?: () => void
+  reorderable?: boolean
+  onHandlePointerDown?: (e: React.PointerEvent) => void
 }
 
-export default function QuestionItem({ q, idx, isDone, isOpen, priority, onToggleOpen, onToggleDone, onSetPriority, crumb, onEdit, onMove, onSetAside, onDelete, isStarred, onToggleStar }: Props) {
+export default function QuestionItem({ q, isDone, isOpen, priority, onToggleOpen, onToggleDone, onSetPriority, crumb, onEdit, onMove, onSetAside, onDelete, isStarred, onToggleStar, reorderable, onHandlePointerDown }: Props) {
   return (
-    <div className={`q-item ${isDone ? 'done' : ''} ${isOpen ? 'open' : ''} ${priority ? `pri-${priority}` : ''}`}>
+    <div className={`q-item ${isDone ? 'done' : ''} ${isOpen ? 'open' : ''} ${priority ? `pri-${priority}` : ''} ${reorderable ? 'reorderable' : ''}`} data-qid={q.id}>
       <div
         className="q-head"
         role="button"
@@ -177,9 +178,9 @@ export default function QuestionItem({ q, idx, isDone, isOpen, priority, onToggl
         onClick={onToggleOpen}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggleOpen() } }}
         aria-expanded={isOpen}
+        {...(reorderable ? { onPointerDown: onHandlePointerDown } : {})}
       >
         <div className="q-check-col">
-          <span className="q-num">{String(idx + 1).padStart(2, '0')}</span>
           <button
             className={`q-check ${isDone ? 'checked' : ''}`}
             onClick={(e) => { e.stopPropagation(); onToggleDone() }}

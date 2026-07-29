@@ -42,6 +42,10 @@ export function useProgress() {
     starredStore: s.starredStore,
     toggleStar: s.toggleStar,
     renameStarId: s.renameStarId,
+    // Question order
+    orderStore: s.orderStore,
+    setQuestionOrder: s.setQuestionOrder,
+    renameOrderId: s.renameOrderId,
     // Auth
     user: s.user,
     signInWithGitHub: s.signInWithGitHub,
@@ -79,7 +83,7 @@ export function useProgress() {
     syncNow: s.syncNow,
   })))
 
-  const { store, priorityStore, starredStore, mounted } = state
+  const { store, priorityStore, starredStore, orderStore, mounted } = state
 
   // Computed here (not read from the store's own `stats`/groups/totals
   // fields) so it stays correct synchronously during render — groups and
@@ -117,6 +121,8 @@ export function useProgress() {
 
   const getPriority = useCallback((id: string) => (mounted ? priorityStore[id] ?? null : null), [priorityStore, mounted])
 
+  const getOrderPosition = useCallback((id: string) => (mounted ? orderStore[id] ?? null : null), [orderStore, mounted])
+
   const priorityStats = useCallback((topic: string, file: string, total: number) => {
     if (!mounted) return { high: 0, med: 0, low: 0, none: 0 }
     return computePriorityStats(priorityStore, topic, file, total)
@@ -127,5 +133,5 @@ export function useProgress() {
   // nothing has ever read `totals` directly off this hook.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { totals: _rawTotals, ...rest } = state
-  return { ...rest, stats, isComplete, isStarred, sectionStats, allStats, getPriority, priorityStats }
+  return { ...rest, stats, isComplete, isStarred, sectionStats, allStats, getPriority, priorityStats, getOrderPosition }
 }

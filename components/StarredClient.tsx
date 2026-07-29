@@ -81,7 +81,7 @@ export default function StarredClient({ questions }: Props) {
         </div>
       ) : (
         <div className="questions-list">
-          {starred.map((q, i) => {
+          {starred.map((q) => {
             const group = findGroupForSection(groups, { topic: q.topic, file: q.file, label: q.label })
             const section: SectionMeta = { topic: q.topic, file: q.file, label: q.label }
             const subKey = sectionUrl(section)
@@ -90,7 +90,6 @@ export default function StarredClient({ questions }: Props) {
               <QuestionItem
                 key={q.id}
                 q={{ id: q.id, number: q.number, title: q.title, bodyHtml: q.bodyHtml, problem: q.problem }}
-                idx={i}
                 isDone={isComplete(q.id)}
                 isOpen={openId === q.id}
                 priority={q.priority}
