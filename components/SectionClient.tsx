@@ -240,6 +240,11 @@ export default function SectionClient({ section, group, questions: serverQuestio
   // preventDefault, reorder) engages until the pointer has actually moved
   // past a small threshold. Mirrors the click-vs-drag pattern in useFabDrag.ts.
   const handlePointerDown = useCallback((id: string) => (e: React.PointerEvent) => {
+    // Mouse-only: the cursor:move affordance this relies on doesn't exist on
+    // touch anyway, and a touch drag gesture is indistinguishable from a
+    // scroll swipe until it's too late — bailing here leaves scrolling
+    // completely untouched (no listeners attached, no preventDefault).
+    if (e.pointerType !== 'mouse') return
     const target = e.target as HTMLElement
     if (target.closest('.q-actions, .q-text, .q-body-col')) return
     if (!isOnline && !offlineModeEnabled) { setShowOfflineModal(true); return }
