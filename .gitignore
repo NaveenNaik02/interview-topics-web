@@ -1,6 +1,7 @@
 node_modules/
 .next/
 .next-local/
+.next-remote/
 *.tsbuildinfo
 .env*.local*
 .vercel
@@ -8,3 +9,5 @@ node_modules/
 /design
 /supabase/.branches
 /supabase/.temp
+
+.claude/skills/vercel-react-best-practices

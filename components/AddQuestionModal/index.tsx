@@ -1,194 +1,27 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { marked } from 'marked'
-import DOMPurify from 'isomorphic-dompurify'
+import { useEffect, useRef, useState } from 'react'
 import { X, Github, Loader2, Sparkles, RefreshCw, SlidersHorizontal, AlignLeft, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { useProgress } from '@/lib/ProgressContext'
 import { useTopicGroups } from '@/lib/TopicsContext'
 import { addQuestion, updateQuestion } from '@/lib/actions/questions'
 import { addTopicGroup, addSection } from '@/lib/actions/topics'
-import { generateAnswer } from '@/lib/actions/generateAnswer'
-import { generateQuestion } from '@/lib/actions/generateQuestion'
-import { generateProblem } from '@/lib/actions/generateProblem'
-import { formatAnswer } from '@/lib/actions/formatAnswer'
-import { suggestPlacement, type PlacementSuggestion } from '@/lib/actions/suggestPlacement'
-import { checkDuplicateQuestion, type DuplicateCheckResult } from '@/lib/actions/checkDuplicate'
 import { findGroupForSection, type SectionMeta } from '@/lib/topics'
 import { AQ_MODELS, type AqModelId } from '@/lib/aiModels'
-import { loadPresets, getActiveInstructionText, getSuggestionInstructionText, getProblemInstructionText } from '@/lib/instructionPresets'
-import type { ParsedQuestion } from '@/lib/parser'
+import { loadPresets, getActiveInstructionText } from '@/lib/instructionPresets'
 import type { PriorityLevel } from '@/lib/offlineSync'
 import { useTypewriter } from '@/lib/useTypewriter'
-import AqSelect from './AqSelect'
+import AqSelect from '../AqSelect'
+import MarkdownField from './MarkdownField'
+import InstructionsModal from './InstructionsModal'
+import { useAnswerVersions } from './useAnswerVersions'
+import { useAiActions } from './useAiActions'
+import {
+  PRIORITY_OPTIONS, LANG_OPTIONS, AQ_MODEL_KEY, PENDING_GROUP_SLUG, PENDING_SECTION_KEY,
+  type Props, type PendingPlacement,
+} from './types'
 
-export interface EditingQuestion {
-  id: string
-  title: string
-  markdown: string
-  section: SectionMeta
-  priority: PriorityLevel | null
-  lang?: string | null
-  tags?: string | null
-  problem?: string | null
-}
-
-interface Props {
-  defaultSection?: SectionMeta
-  editing?: EditingQuestion
-  // Seeds the title field for a fresh (non-edit) add — used when assigning
-  // a captured Inbox item, so the raw pasted text lands in Question instead
-  // of starting blank.
-  prefillTitle?: string
-  // Marks this Add flow as assigning the given Inbox item. On a successful
-  // save, that item is deleted (it's become a real question) and the
-  // header/footer copy calls this out instead of the generic add/edit text.
-  fromInboxId?: string
-  // Seeds the answer/lang/tags/problem fields alongside prefillTitle — used
-  // when assigning a Set aside item, which (unlike a captured Inbox item)
-  // already has a full question+answer, just needs a new topic/subtopic.
-  prefillMarkdown?: string
-  prefillLang?: string | null
-  prefillTags?: string | null
-  prefillProblem?: string | null
-  // Marks this Add flow as assigning the given Set aside item. On a
-  // successful save, that item is removed from Set aside the same way
-  // fromInboxId removes a captured Inbox item.
-  fromSetAsideId?: string
-  onClose: () => void
-  onSaved: (question: ParsedQuestion, section: SectionMeta) => void
-}
-
-function renderPreviewHtml(markdown: string): string {
-  if (!markdown.trim()) return ''
-  const raw = marked.parse(markdown, { breaks: true }) as string
-  const remapped = raw.replace(/<h[1-6]([^>]*)>/gi, '<h4$1>').replace(/<\/h[1-6]>/gi, '</h4>')
-  return DOMPurify.sanitize(remapped)
-}
-
-interface AnswerVersion {
-  id: string
-  label: string
-  text: string
-}
-
-// Answer drafts are pure in-memory session state — never persisted, so
-// closing the modal always throws them away. Only the last 2 generated
-// drafts are kept (oldest dropped first); "Original" (the answer as it was
-// when the modal opened, for edits) is pinned and never evicted by that cap.
-const MAX_ANSWER_DRAFTS = 2
-
-function capAnswerVersions(list: AnswerVersion[]): AnswerVersion[] {
-  const original = list.find(v => v.id === 'original')
-  const drafts = list.filter(v => v.id !== 'original').slice(-MAX_ANSWER_DRAFTS)
-  return original ? [original, ...drafts] : drafts
-}
-
-const PRIORITY_OPTIONS: { level: PriorityLevel; label: string }[] = [
-  { level: 'high', label: 'High' },
-  { level: 'med', label: 'Med' },
-  { level: 'low', label: 'Low' },
-]
-
-const LANG_OPTIONS = ['js', 'jsx', 'ts', 'html', 'css', 'bash', 'none']
-
-const AQ_MODEL_KEY = 'prep-tracker:ai-model'
-
-// Sentinel select values for a suggested topic/subtopic that doesn't exist
-// yet — nothing is created in the database until Save, so these stand in
-// for a real slug/sectionKey until then.
-const PENDING_GROUP_SLUG = '__pending-topic__'
-const PENDING_SECTION_KEY = '__pending-section__'
-
-type PendingPlacement =
-  | { kind: 'new-subtopic'; groupSlug: string; label: string }
-  | { kind: 'new-topic'; topicName: string; blurb: string; label: string }
-
-function AqInstructionsModal({ value, model, isImpl, onClose, onSave }: { value: string; model: AqModelId; isImpl: boolean; onClose: () => void; onSave: (v: string, m: AqModelId) => void }) {
-  const [draft, setDraft] = useState(value)
-  const [draftModel, setDraftModel] = useState<AqModelId>(model)
-  const [tab, setTab] = useState<'write' | 'preview'>('write')
-  const presets = useMemo(() => loadPresets(), [])
-  const [presetPick, setPresetPick] = useState(() => presets.find(p => p.kind === (isImpl ? 'code' : 'text'))?.id ?? presets[0]?.id ?? '')
-  const html = useMemo(() => renderPreviewHtml(draft), [draft])
-
-  const handleLoadPreset = (id: string) => {
-    setPresetPick(id)
-    if (!id) return
-    const p = presets.find(x => x.id === id)
-    if (p) setDraft(p.text)
-  }
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
-
-  return (
-    <div className="aq-instr-scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="aq-instr-modal" role="dialog" aria-modal="true" aria-label="Instructions">
-        <div className="aq-head">
-          <h2>Instructions</h2>
-          <button className="aq-close" onClick={onClose} aria-label="Close" title="Close"><X size={15} /></button>
-        </div>
-        <div className="aq-body">
-          <div className="aq-field">
-            <label>AI model</label>
-            <AqSelect
-              value={draftModel}
-              onChange={(v) => setDraftModel(v as AqModelId)}
-              options={AQ_MODELS.map(m => ({ value: m.id, label: m.label, sub: m.sub }))}
-            />
-            <p className="aq-model-hint">If a model is rate-limited, switch here and regenerate.</p>
-          </div>
-          {presets.length > 1 && (
-            <div className="aq-field">
-              <label>Start from a saved version <span className="aq-customize-sub">(loads into this question only — your default in Settings won&apos;t change)</span></label>
-              <AqSelect
-                value={presetPick}
-                onChange={handleLoadPreset}
-                options={presets.map(p => ({ value: p.id, label: p.name, sub: p.text.trim() ? undefined : 'Blank' }))}
-              />
-            </div>
-          )}
-          <div className="aq-field">
-            <label>How should the AI format generated answers? <span className="aq-customize-sub">(this question only)</span></label>
-            <div className="aq-md-wrap">
-              <div className="aq-md-tabs">
-                <div className="aq-md-tabbtns">
-                  <button type="button" className={`aq-md-tab ${tab === 'write' ? 'active' : ''}`} onClick={() => setTab('write')}>Write</button>
-                  <button type="button" className={`aq-md-tab ${tab === 'preview' ? 'active' : ''}`} onClick={() => setTab('preview')}>Preview</button>
-                </div>
-                <span className="aq-md-hint">Markdown supported</span>
-              </div>
-              <div className={`aq-md-panes single show-${tab === 'write' ? 'editor' : 'preview'}`}>
-                <div className="aq-md-editor-pane aq-instr-editor-pane">
-                  <textarea
-                    autoFocus
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    placeholder={'e.g.\n- Keep answers to 3 short bullets max\n- Always include one runnable code example\n- Bold the key term being defined'}
-                  />
-                </div>
-                <div className="aq-md-preview-pane">
-                  {html ? <div className="q-answer q-body prose prose-slate dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: html }} /> : <div className="aq-md-empty">Preview appears here as you type…</div>}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="aq-foot">
-          <span className="aq-foot-left">Applies to this question only — manage your default in Settings.</span>
-          <div className="aq-foot-actions">
-            <button className="btn-cancel" onClick={onClose}>Cancel</button>
-            <button className="btn-primary btn-save" onClick={() => onSave(draft, draftModel)}>Use for this question</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
+export type { EditingQuestion } from './types'
 
 export default function AddQuestionModal({ defaultSection, editing, prefillTitle, fromInboxId, prefillMarkdown, prefillLang, prefillTags, prefillProblem, fromSetAsideId, onClose, onSaved }: Props) {
   const { user, mounted, signInWithGitHub, setPriority, removeInboxItem, removeSetAsideItem, defaultPriority } = useProgress()
@@ -219,8 +52,6 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
   // created for real in handleSave, so cancelling the modal leaves no
   // orphaned topic/subtopic behind.
   const [pendingPlacement, setPendingPlacement] = useState<PendingPlacement | null>(null)
-  const [placement, setPlacement] = useState<PlacementSuggestion | null>(null)
-  const [placeState, setPlaceState] = useState<'idle' | 'loading' | 'error'>('idle')
 
   const pendingTopic = pendingPlacement?.kind === 'new-topic' ? pendingPlacement : null
   const pendingSubtopicForGroup = pendingPlacement?.kind === 'new-subtopic' && pendingPlacement.groupSlug === groupSlug ? pendingPlacement : null
@@ -245,17 +76,11 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
   const [markdown, setMarkdown] = useState(editing?.markdown ?? prefillMarkdown ?? '')
   const [isImpl, setIsImpl] = useState(!!editing?.problem || !!prefillProblem)
   const [problem, setProblem] = useState(editing?.problem ?? prefillProblem ?? '')
-  const [problemGen, setProblemGen] = useState<'idle' | 'loading' | 'error'>('idle')
   const [tab, setTab] = useState<'write' | 'preview'>('write')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const firstFieldRef = useRef<HTMLInputElement>(null)
 
-  const [genState, setGenState] = useState<'idle' | 'loading' | 'done' | 'error' | 'limited'>('idle')
-  const [genError, setGenError] = useState<string | null>(null)
-  const [questionGen, setQuestionGen] = useState<'idle' | 'loading' | 'error'>('idle')
-  const [dupState, setDupState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
-  const [dupResult, setDupResult] = useState<DuplicateCheckResult | null>(null)
   const [showInstructions, setShowInstructions] = useState(false)
   // Seeded from the built-in default matching isImpl (text vs. code-only) —
   // per-question edits below are this question's local draft only and must
@@ -275,44 +100,17 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
   const canRevertTitle = isEdit && !!originalTitle && title !== originalTitle
   const handleRevertTitle = () => setTitle(originalTitle)
 
-  // Version history for the answer editor: every Generate/Format snapshots
-  // whatever's there before overwriting it, so switching drafts (or back to
-  // the original saved answer) never loses work. Manual typing doesn't
-  // create a snapshot — it just detaches from whichever version was active.
   const originalMarkdown = editing?.markdown ?? ''
-  const [answerVersions, setAnswerVersions] = useState<AnswerVersion[]>(() => (
-    originalMarkdown.trim() ? [{ id: 'original', label: 'Original', text: originalMarkdown }] : []
-  ))
-  const [activeVersionId, setActiveVersionId] = useState<string | null>(() => (originalMarkdown.trim() ? 'original' : null))
-  const draftCountRef = useRef(0)
+  const {
+    answerVersions, activeVersionId, snapshotCurrentAnswer, addAnswerVersion, handleMarkdownChange, handleSelectAnswerVersion,
+  } = useAnswerVersions(markdown, setMarkdown, originalMarkdown)
 
-  const snapshotCurrentAnswer = () => {
-    if (!markdown.trim()) return
-    setAnswerVersions(prev => {
-      if (prev.length && prev[prev.length - 1].text === markdown) return prev
-      const label = activeVersionId === 'original' ? 'Original' : prev.find(v => v.id === activeVersionId)?.label
-      if (label && prev.some(v => v.text === markdown)) return prev
-      draftCountRef.current += 1
-      return capAnswerVersions([...prev, { id: `v${Date.now()}`, label: label ?? `Draft ${draftCountRef.current}`, text: markdown }])
-    })
-  }
-
-  const addAnswerVersion = (text: string) => {
-    draftCountRef.current += 1
-    const id = `v${Date.now()}`
-    setAnswerVersions(prev => capAnswerVersions([...prev, { id, label: `Draft ${draftCountRef.current}`, text }]))
-    setActiveVersionId(id)
-  }
-
-  const handleMarkdownChange = (value: string) => {
-    setMarkdown(value)
-    setActiveVersionId(null)
-  }
-
-  const handleSelectAnswerVersion = (v: AnswerVersion) => {
-    setMarkdown(v.text)
-    setActiveVersionId(v.id)
-  }
+  const ai = useAiActions({
+    title, markdown, activeTopicName, activeSectionLabel, isImpl, lang, tags, model, instructions,
+    section, isEdit, editingId: editing?.id, groups, groupSlug, sectionK,
+    typewrite, typewriteQuestion, typewriteProblem, setTab, snapshotCurrentAnswer, addAnswerVersion,
+    setGroupSlug, setSectionK, setPendingPlacement,
+  })
 
   useEffect(() => { firstFieldRef.current?.focus() }, [])
   useEffect(() => {
@@ -327,7 +125,7 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
   }, [groupSlug])
   // A duplicate check is only valid for the topic/subtopic it ran against —
   // picking a different one invalidates the result without needing a re-check.
-  useEffect(() => { setDupState('idle'); setDupResult(null) }, [groupSlug, sectionK])
+  useEffect(() => { ai.setDupState('idle'); ai.setDupResult(null) }, [groupSlug, sectionK]) // eslint-disable-line react-hooks/exhaustive-deps
   // Follows the Implementation toggle for a still-untouched instructions
   // draft (still exactly one of the two built-in defaults) — never
   // overwrites instructions the author has actually customized.
@@ -341,17 +139,19 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isImpl])
 
-  const previewHtml = useMemo(() => renderPreviewHtml(markdown), [markdown])
   const canSave = title.trim().length > 3 && markdown.trim().length > 3 && !saving && (!isImpl || problem.trim().length > 3)
-  const canGenerate = title.trim().length > 3 && genState !== 'loading'
-  const canFormat = markdown.trim().length > 3 && genState !== 'loading'
-  const canGenerateQuestion = questionGen !== 'loading'
-  const canGenerateProblem = title.trim().length > 3 && problemGen !== 'loading'
-  const canSuggestPlacement = title.trim().length > 3 && placeState !== 'loading'
+  const canGenerate = title.trim().length > 3 && ai.genState !== 'loading'
+  const canFormat = markdown.trim().length > 3 && ai.genState !== 'loading'
+  const canGenerateQuestion = ai.questionGen !== 'loading'
+  const canGenerateProblem = title.trim().length > 3 && ai.problemGen !== 'loading'
+  const canSuggestPlacement = title.trim().length > 3 && ai.placeState !== 'loading'
   // Nothing to compare against yet for a subtopic that doesn't exist until Save.
-  const canCheckDuplicate = title.trim().length > 3 && dupState !== 'loading' && !!section && sectionK !== PENDING_SECTION_KEY
+  const canCheckDuplicate = title.trim().length > 3 && ai.dupState !== 'loading' && !!section && sectionK !== PENDING_SECTION_KEY
 
   const isAnonymous = mounted && !!user?.is_anonymous
+  // Narrowed local so TS can discriminate `.mode` across the JSX below —
+  // repeated `ai.placement!.x` reads don't narrow, this does.
+  const placement = ai.placement
 
   const handleModelChange = (id: AqModelId) => {
     setModel(id)
@@ -362,135 +162,6 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
     setInstructions(v)
     handleModelChange(m)
     setShowInstructions(false)
-  }
-
-  const handleGenerateQuestion = async () => {
-    if (!canGenerateQuestion) return
-    setQuestionGen('loading')
-    try {
-      const text = await generateQuestion({
-        topicName: activeTopicName,
-        subName: activeSectionLabel,
-        seed: title,
-        isImpl,
-        lang,
-        tags,
-        model,
-        instructions: getSuggestionInstructionText(),
-      })
-      typewriteQuestion(text, () => setQuestionGen('idle'))
-    } catch (err) {
-      setQuestionGen('error')
-      setGenError(err instanceof Error ? err.message : String(err))
-    }
-  }
-
-  const handleGenerateProblem = async () => {
-    if (!canGenerateProblem) return
-    setProblemGen('loading')
-    try {
-      const text = await generateProblem({ question: title, lang, tags, model, instructions: getProblemInstructionText() })
-      typewriteProblem(text, () => setProblemGen('idle'))
-    } catch {
-      setProblemGen('error')
-    }
-  }
-
-  const handleGenerate = async () => {
-    if (!canGenerate) return
-    snapshotCurrentAnswer()
-    setGenState('loading')
-    setGenError(null)
-    setTab('write')
-    try {
-      const text = await generateAnswer({
-        question: title,
-        topicName: activeTopicName,
-        subName: activeSectionLabel,
-        instructions,
-        model,
-      })
-      typewrite(text, () => { setGenState('done'); addAnswerVersion(text) })
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      setGenState(/rate|quota|limit|429|overloaded|exhausted|unavailable/i.test(msg) ? 'limited' : 'error')
-      setGenError(msg)
-    }
-  }
-
-  const handleFormat = async () => {
-    if (!canFormat) return
-    snapshotCurrentAnswer()
-    setGenState('loading')
-    setGenError(null)
-    setTab('write')
-    try {
-      const text = await formatAnswer({ text: markdown, question: title, instructions, isImpl, lang, model })
-      typewrite(text, () => { setGenState('done'); addAnswerVersion(text) })
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      setGenState(/rate|quota|limit|429|overloaded|exhausted|unavailable/i.test(msg) ? 'limited' : 'error')
-      setGenError(msg)
-    }
-  }
-
-  const handleSuggestPlacement = async () => {
-    if (!canSuggestPlacement) return
-    setPlaceState('loading')
-    setPlacement(null)
-    try {
-      const result = await suggestPlacement({
-        title,
-        tags,
-        groups: groups.map(g => ({
-          groupSlug: g.slug,
-          groupName: g.groupName,
-          sections: g.sections.map(s => ({ topic: s.topic, file: s.file, label: s.label })),
-        })),
-        model,
-      })
-      setPlacement(result)
-      setPlaceState('idle')
-    } catch {
-      setPlaceState('error')
-    }
-  }
-
-  const handleCheckDuplicate = async () => {
-    if (!canCheckDuplicate || !section) return
-    setDupState('loading')
-    setDupResult(null)
-    try {
-      const result = await checkDuplicateQuestion({
-        title,
-        topic: section.topic,
-        file: section.file,
-        excludeId: isEdit ? editing!.id : undefined,
-        model,
-      })
-      setDupResult(result)
-      setDupState('done')
-    } catch {
-      setDupState('error')
-    }
-  }
-
-  const handleApplyPlacement = () => {
-    if (!placement) return
-    if (placement.mode === 'existing') {
-      setPendingPlacement(null)
-      setGroupSlug(placement.groupSlug)
-      setSectionK(`${placement.topic}/${placement.file}`)
-    } else if (placement.mode === 'new-subtopic') {
-      setPendingPlacement({ kind: 'new-subtopic', groupSlug: placement.groupSlug, label: placement.label })
-      setGroupSlug(placement.groupSlug)
-      setSectionK(PENDING_SECTION_KEY)
-    } else {
-      setPendingPlacement({ kind: 'new-topic', topicName: placement.topicName, blurb: placement.blurb, label: placement.label })
-      setGroupSlug(PENDING_GROUP_SLUG)
-      setSectionK(PENDING_SECTION_KEY)
-    }
-    setPlacement(null)
   }
 
   const handleSave = async () => {
@@ -554,19 +225,19 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
                   <label>Placement</label>
                   <button
                     type="button"
-                    className={`aq-generate-btn ${placeState === 'loading' ? 'loading' : ''}`}
-                    onClick={handleSuggestPlacement}
+                    className={`aq-generate-btn ${ai.placeState === 'loading' ? 'loading' : ''}`}
+                    onClick={ai.handleSuggestPlacement}
                     disabled={!canSuggestPlacement}
                     title={title.trim().length > 3 ? 'Suggest where this question belongs, using the existing topics' : 'Write a question first'}
                   >
-                    {placeState === 'loading' ? (
+                    {ai.placeState === 'loading' ? (
                       <><span className="aq-gen-spinner" />Thinking…</>
                     ) : (
                       <><Sparkles size={12.5} /> Suggest placement</>
                     )}
                   </button>
                 </div>
-                {placeState === 'error' && <div className="aq-gen-error" style={{ padding: '0 0 6px', background: 'none' }}>Couldn&apos;t get a suggestion — try again.</div>}
+                {ai.placeState === 'error' && <div className="aq-gen-error" style={{ padding: '0 0 6px', background: 'none' }}>Couldn&apos;t get a suggestion — try again.</div>}
               </div>
 
               <div className="aq-row">
@@ -620,8 +291,8 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
                   </div>
                   {placement.reasoning && <p className="aq-suggest-reason">{placement.reasoning}</p>}
                   <div className="aq-suggest-actions">
-                    <button type="button" className="btn-cancel" onClick={() => setPlacement(null)}>Choose manually</button>
-                    <button type="button" className="btn-primary" onClick={handleApplyPlacement}>Use this placement</button>
+                    <button type="button" className="btn-cancel" onClick={ai.clearPlacement}>Choose manually</button>
+                    <button type="button" className="btn-primary" onClick={ai.handleApplyPlacement}>Use this placement</button>
                   </div>
                 </div>
               )}
@@ -632,12 +303,12 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
                   <div className="aq-label-actions">
                     <button
                       type="button"
-                      className={`aq-generate-btn ${questionGen === 'loading' ? 'loading' : ''}`}
-                      onClick={handleGenerateQuestion}
+                      className={`aq-generate-btn ${ai.questionGen === 'loading' ? 'loading' : ''}`}
+                      onClick={ai.handleGenerateQuestion}
                       disabled={!canGenerateQuestion}
                       title={title.trim() ? 'Generate a fresh question, using your text above as a rough idea' : 'Generate a question for this topic/subtopic'}
                     >
-                      {questionGen === 'loading' ? (
+                      {ai.questionGen === 'loading' ? (
                         <><span className="aq-gen-spinner" />Generating…</>
                       ) : (
                         <><Sparkles size={12.5} /> {title.trim() ? 'Regenerate' : 'Generate question'}</>
@@ -650,12 +321,12 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
                     )}
                     <button
                       type="button"
-                      className={`aq-generate-btn ${dupState === 'loading' ? 'loading' : ''}`}
-                      onClick={handleCheckDuplicate}
+                      className={`aq-generate-btn ${ai.dupState === 'loading' ? 'loading' : ''}`}
+                      onClick={ai.handleCheckDuplicate}
                       disabled={!canCheckDuplicate}
                       title="Check this question against existing ones in the selected subtopic"
                     >
-                      {dupState === 'loading' ? (
+                      {ai.dupState === 'loading' ? (
                         <><span className="aq-gen-spinner" />Checking…</>
                       ) : (
                         <><Sparkles size={12.5} /> Check for duplicates</>
@@ -668,21 +339,21 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
                   placeholder="e.g. What is the difference between let, const, and var?"
                   value={title} onChange={(e) => setTitle(e.target.value)}
                 />
-                {questionGen === 'error' && <div className="aq-gen-error">Couldn&apos;t generate a question — try again.</div>}
-                {dupState === 'error' && <div className="aq-gen-error">Couldn&apos;t check for duplicates — try again.</div>}
-                {dupState === 'done' && dupResult && (
-                  <div className={`aq-dup-card ${dupResult.isDuplicate ? 'is-dup' : 'is-clear'}`}>
+                {ai.questionGen === 'error' && <div className="aq-gen-error">Couldn&apos;t generate a question — try again.</div>}
+                {ai.dupState === 'error' && <div className="aq-gen-error">Couldn&apos;t check for duplicates — try again.</div>}
+                {ai.dupState === 'done' && ai.dupResult && (
+                  <div className={`aq-dup-card ${ai.dupResult.isDuplicate ? 'is-dup' : 'is-clear'}`}>
                     <div className="aq-dup-head">
-                      {dupResult.isDuplicate ? <AlertTriangle size={13} /> : <CheckCircle2 size={13} />}
-                      <span>{dupResult.isDuplicate ? 'Possible duplicate found' : 'No duplicate found'}</span>
+                      {ai.dupResult.isDuplicate ? <AlertTriangle size={13} /> : <CheckCircle2 size={13} />}
+                      <span>{ai.dupResult.isDuplicate ? 'Possible duplicate found' : 'No duplicate found'}</span>
                     </div>
-                    {dupResult.match && (
+                    {ai.dupResult.match && (
                       <>
                         <span className="aq-dup-label">Matched question</span>
-                        <p className="aq-dup-match">&ldquo;{dupResult.match}&rdquo;</p>
+                        <p className="aq-dup-match">&ldquo;{ai.dupResult.match}&rdquo;</p>
                       </>
                     )}
-                    {dupResult.reasoning && <p className="aq-suggest-reason">{dupResult.reasoning}</p>}
+                    {ai.dupResult.reasoning && <p className="aq-suggest-reason">{ai.dupResult.reasoning}</p>}
                   </div>
                 )}
               </div>
@@ -703,12 +374,12 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
                     <div className="aq-problem-gen-row">
                       <button
                         type="button"
-                        className={`aq-generate-btn ${problemGen === 'loading' ? 'loading' : ''}`}
-                        onClick={handleGenerateProblem}
+                        className={`aq-generate-btn ${ai.problemGen === 'loading' ? 'loading' : ''}`}
+                        onClick={ai.handleGenerateProblem}
                         disabled={!canGenerateProblem}
                         title={canGenerateProblem ? 'Generate a problem statement from the question above' : 'Add a question above first'}
                       >
-                        {problemGen === 'loading' ? (
+                        {ai.problemGen === 'loading' ? (
                           <><span className="aq-gen-spinner" />Generating…</>
                         ) : (
                           <><Sparkles size={12.5} /> Generate</>
@@ -722,7 +393,7 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
                       value={problem}
                       onChange={(e) => setProblem(e.target.value)}
                     />
-                    {problemGen === 'error' && <div className="aq-gen-error">Couldn&apos;t generate — try again.</div>}
+                    {ai.problemGen === 'error' && <div className="aq-gen-error">Couldn&apos;t generate — try again.</div>}
                   </>
                 )}
               </div>
@@ -755,12 +426,18 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
 
               <div className="aq-field">
                 <label>Answer {isImpl ? '(code only)' : '(Markdown)'}</label>
-                <div className="aq-md-wrap">
-                  <div className="aq-md-tabs">
-                    <div className="aq-md-tabbtns">
-                      <button type="button" className={`aq-md-tab ${tab === 'write' ? 'active' : ''}`} onClick={() => setTab('write')}>Write</button>
-                      <button type="button" className={`aq-md-tab ${tab === 'preview' ? 'active' : ''}`} onClick={() => setTab('preview')}>Preview</button>
-                    </div>
+                <MarkdownField
+                  tab={tab}
+                  onTabChange={setTab}
+                  value={markdown}
+                  onChange={handleMarkdownChange}
+                  readOnly={ai.genState === 'loading'}
+                  textareaClassName={ai.genState === 'loading' ? 'aq-gen-active' : ''}
+                  placeholder={isImpl
+                    ? 'Paste or write the solution code here — wrap it in a fenced code block, e.g. ```jsx ... ```. Keep this to code only; the problem statement above already covers the explanation. Or click Generate answer above to draft one.'
+                    : 'Write the answer in Markdown — any heading (#, ##, ###) renders as the app’s answer heading style, plus **bold**, `code`, lists, ```code blocks```, and tables. Or click Generate answer above to draft one from your question.'}
+                  emptyPreviewText="Live preview appears here as you type…"
+                  toolbar={
                     <div className="aq-gen-controls">
                       <button
                         type="button"
@@ -774,7 +451,7 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
                       <button
                         type="button"
                         className="aq-format-btn"
-                        onClick={handleFormat}
+                        onClick={ai.handleFormat}
                         disabled={!canFormat}
                         title={canFormat ? "Reformat the text below into the app's markdown answer style — keeps your content as-is" : 'Write or paste an answer below first'}
                       >
@@ -782,69 +459,53 @@ export default function AddQuestionModal({ defaultSection, editing, prefillTitle
                       </button>
                       <button
                         type="button"
-                        className={`aq-generate-btn ${genState === 'loading' ? 'loading' : ''}`}
-                        onClick={handleGenerate}
+                        className={`aq-generate-btn ${ai.genState === 'loading' ? 'loading' : ''}`}
+                        onClick={ai.handleGenerate}
                         disabled={!canGenerate}
                         title={canGenerate ? 'Generate an answer from the question above' : 'Add a question above first'}
                       >
-                        {genState === 'loading' ? (
+                        {ai.genState === 'loading' ? (
                           <><span className="aq-gen-spinner" />Generating…</>
-                        ) : genState === 'done' || genState === 'error' || genState === 'limited' ? (
+                        ) : ai.genState === 'done' || ai.genState === 'error' || ai.genState === 'limited' ? (
                           <><RefreshCw size={12.5} /> Regenerate</>
                         ) : (
                           <><Sparkles size={12.5} /> Generate answer</>
                         )}
                       </button>
                     </div>
-                  </div>
-                  {answerVersions.length >= 1 && (
-                    <div className="aq-version-row">
-                      <span className="aq-version-label">Drafts:</span>
-                      {answerVersions.map(v => (
-                        <button
-                          type="button"
-                          key={v.id}
-                          className={`aq-version-chip ${activeVersionId === v.id ? 'active' : ''}`}
-                          onClick={() => handleSelectAnswerVersion(v)}
-                          title={v.text.slice(0, 140)}
-                        >
-                          {v.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {genState === 'error' && genError && <div className="aq-gen-error">{genError}</div>}
-                  {genState === 'limited' && (
-                    <div className="aq-gen-error">
-                      {AQ_MODELS.find(m => m.id === model)?.label ?? 'This model'} looks rate-limited — open Instructions to switch models, or try again shortly.
-                    </div>
-                  )}
-                  <div className={`aq-md-panes single show-${tab === 'write' ? 'editor' : 'preview'}`}>
-                    <div className="aq-md-editor-pane">
-                      <textarea
-                        value={markdown}
-                        onChange={(e) => handleMarkdownChange(e.target.value)}
-                        readOnly={genState === 'loading'}
-                        className={genState === 'loading' ? 'aq-gen-active' : ''}
-                        placeholder={isImpl
-                          ? 'Paste or write the solution code here — wrap it in a fenced code block, e.g. ```jsx ... ```. Keep this to code only; the problem statement above already covers the explanation. Or click Generate answer above to draft one.'
-                          : 'Write the answer in Markdown — any heading (#, ##, ###) renders as the app’s answer heading style, plus **bold**, `code`, lists, ```code blocks```, and tables. Or click Generate answer above to draft one from your question.'}
-                      />
-                    </div>
-                    <div className="aq-md-preview-pane">
-                      {previewHtml ? (
-                        <div className="q-answer q-body prose prose-slate dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: previewHtml }} />
-                      ) : (
-                        <div className="aq-md-empty">Live preview appears here as you type…</div>
+                  }
+                  belowTabs={
+                    <>
+                      {answerVersions.length >= 1 && (
+                        <div className="aq-version-row">
+                          <span className="aq-version-label">Drafts:</span>
+                          {answerVersions.map(v => (
+                            <button
+                              type="button"
+                              key={v.id}
+                              className={`aq-version-chip ${activeVersionId === v.id ? 'active' : ''}`}
+                              onClick={() => handleSelectAnswerVersion(v)}
+                              title={v.text.slice(0, 140)}
+                            >
+                              {v.label}
+                            </button>
+                          ))}
+                        </div>
                       )}
-                    </div>
-                  </div>
-                  {genState === 'done' && <div className="aq-gen-note"><Sparkles size={11} />AI-drafted — review before saving.</div>}
-                </div>
+                      {ai.genState === 'error' && ai.genError && <div className="aq-gen-error">{ai.genError}</div>}
+                      {ai.genState === 'limited' && (
+                        <div className="aq-gen-error">
+                          {AQ_MODELS.find(m => m.id === model)?.label ?? 'This model'} looks rate-limited — open Instructions to switch models, or try again shortly.
+                        </div>
+                      )}
+                    </>
+                  }
+                  afterPanes={ai.genState === 'done' && <div className="aq-gen-note"><Sparkles size={11} />AI-drafted — review before saving.</div>}
+                />
               </div>
 
               {showInstructions && (
-                <AqInstructionsModal
+                <InstructionsModal
                   value={instructions}
                   model={model}
                   isImpl={isImpl}

@@ -2,12 +2,16 @@
 
 import { useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { Plus } from 'lucide-react'
 import { findSection, sectionUrl } from '@/lib/topics'
 import { useTopicGroups } from '@/lib/TopicsContext'
 import { useFabDrag } from '@/lib/useFabDrag'
-import AddQuestionModal from './AddQuestionModal'
-import AddTopicModal from './AddTopicModal'
+
+// Rarely opened relative to every other page view (Add Question/Topic pull in
+// marked + isomorphic-dompurify + AI action wiring) — load only when needed.
+const AddQuestionModal = dynamic(() => import('./AddQuestionModal'), { ssr: false })
+const AddTopicModal = dynamic(() => import('./AddTopicModal'), { ssr: false })
 
 export default function AddQuestionFab() {
   const pathname = usePathname()

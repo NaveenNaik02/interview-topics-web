@@ -8,7 +8,7 @@ const eslintConfig = [
   ...nextCoreWebVitals,
   ...nextTypescript,
   {
-    ignores: ['design/**', 'supabase/**', '.next-local/**'],
+    ignores: ['design/**', 'supabase/**', '.next-local/**', '.next-remote/**'],
   },
   {
     // Plain CommonJS files (run directly via `node`, or consumed by tools
@@ -16,6 +16,16 @@ const eslintConfig = [
     files: ['scripts/**/*.js', 'tailwind.config.ts'],
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+  {
+    // Line-count is a smell signal, not a hard cap — see "Component
+    // conventions" in CLAUDE.md for when a file crossing this actually
+    // warrants splitting. Warn-only so it surfaces in `npm run lint` without
+    // failing CI; a file over 200 lines isn't broken, just worth a look.
+    files: ['components/**/*.tsx', 'lib/actions/**/*.ts'],
+    rules: {
+      'max-lines': ['warn', { max: 200, skipBlankLines: true, skipComments: true }],
     },
   },
   {

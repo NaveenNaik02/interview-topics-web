@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { Send } from 'lucide-react'
 import { useProgress } from '@/lib/ProgressContext'
 import { useTopicGroups } from '@/lib/TopicsContext'
@@ -14,10 +15,13 @@ import { setAsideQuestion } from '@/lib/actions/setAside'
 import QuestionItem from './QuestionItem'
 import ConfirmDialog from './ConfirmDialog'
 import FilterSortToolbar, { type PriorityFilterKey, type StatusFilter, type SortMode } from './FilterSortToolbar'
-import AddQuestionModal, { type EditingQuestion } from './AddQuestionModal'
-import MoveQuestionModal from './MoveQuestionModal'
+import type { EditingQuestion } from './AddQuestionModal'
 import SaveToast from './SaveToast'
-import { htmlToMarkdown } from '@/lib/htmlToMarkdown'
+
+// Both only render once a question is actually being edited/moved — load on
+// demand instead of shipping marked/dompurify/turndown on every section page.
+const AddQuestionModal = dynamic(() => import('./AddQuestionModal'), { ssr: false })
+const MoveQuestionModal = dynamic(() => import('./MoveQuestionModal'), { ssr: false })
 
 // Movement below this (px) counts as a click, not a drag — mirrors
 // DRAG_THRESHOLD in lib/useFabDrag.ts.
@@ -378,19 +382,23 @@ export default function SectionClient({ section, group, questions: serverQuestio
               onSetPriority={(level) => handleSetPriority(q.id, level)}
               isStarred={isStarred(q.id)}
               onToggleStar={() => toggleStar(q.id)}
-              onEdit={canManage ? () => setEditingQuestion({
-                id: q.id,
-                title: q.title,
+              onEdit={canManage ? async () => {
                 // ETL-imported questions never had raw markdown persisted,
                 // only the pre-rendered HTML — fall back to a best-effort
-                // conversion so the edit form isn't blank.
-                markdown: q.markdown || htmlToMarkdown(q.bodyHtml),
-                section,
-                priority,
-                lang: q.lang,
-                tags: q.tags,
-                problem: q.problem,
-              }) : undefined}
+                // conversion (turndown, loaded on demand) so the edit form
+                // isn't blank.
+                const markdown = q.markdown || (await import('@/lib/htmlToMarkdown')).htmlToMarkdown(q.bodyHtml)
+                setEditingQuestion({
+                  id: q.id,
+                  title: q.title,
+                  markdown,
+                  section,
+                  priority,
+                  lang: q.lang,
+                  tags: q.tags,
+                  problem: q.problem,
+                })
+              } : undefined}
               onMove={canManage ? () => setMovingQuestion({ id: q.id, label: q.title }) : undefined}
               onSetAside={canManage ? async () => {
                 const item = await setAsideQuestion(q.id)
