@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import { Wifi, Send, Loader2, X, Check } from 'lucide-react'
-import { useProgress } from '@/lib/ProgressContext'
+import { useProgress } from '@/lib/context/ProgressContext'
 
 type ToastType = 'offline' | 'offline-nodl' | 'back-online' | 'syncing' | 'synced' | null
 

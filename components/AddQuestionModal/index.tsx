@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { X, Github, Loader2, Sparkles, RefreshCw, SlidersHorizontal, AlignLeft, AlertTriangle, CheckCircle2 } from 'lucide-react'
-import { useProgress } from '@/lib/ProgressContext'
-import { useTopicGroups } from '@/lib/TopicsContext'
+import { useProgress } from '@/lib/context/ProgressContext'
+import { useTopicGroups } from '@/lib/context/TopicsContext'
 import { addQuestion, updateQuestion } from '@/lib/actions/questions'
 import { addTopicGroup, addSection } from '@/lib/actions/topics'
 import { findGroupForSection, type SectionMeta } from '@/lib/topics'

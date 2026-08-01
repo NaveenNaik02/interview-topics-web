@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useProgress } from '@/lib/ProgressContext'
-import { useTheme } from '@/lib/ThemeContext'
+import { useProgress } from '@/lib/context/ProgressContext'
+import { useTheme } from '@/lib/context/ThemeContext'
 
 export default function ThemeSync() {
   const { settingsTheme } = useProgress()

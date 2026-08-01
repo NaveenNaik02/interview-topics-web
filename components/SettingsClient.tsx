@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { Sun, Moon, BookOpen, Download, X, Pencil, Trash2, Lock } from 'lucide-react'
-import { useTheme, Theme } from '@/lib/ThemeContext'
-import { useProgress } from '@/lib/ProgressContext'
+import { useTheme, Theme } from '@/lib/context/ThemeContext'
+import { useProgress } from '@/lib/context/ProgressContext'
 import ConfirmDialog from './ConfirmDialog'
 import type { SortMode } from './FilterSortToolbar'
 import type { PriorityLevel } from '@/lib/offlineSync'

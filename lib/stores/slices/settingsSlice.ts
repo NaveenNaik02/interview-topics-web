@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand'
 import type { SortMode } from '@/components/FilterSortToolbar'
-import type { Theme } from '@/lib/ThemeContext'
+import type { Theme } from '@/lib/context/ThemeContext'
 import * as settingsDb from '@/lib/db/settings'
 import { DEFAULT_SETTINGS } from '@/lib/db/settings'
 import * as settingsActions from '@/lib/actions/settings'

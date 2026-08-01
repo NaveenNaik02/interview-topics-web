@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { useProgress } from '@/lib/ProgressContext'
-import { useUI } from '@/lib/UIContext'
-import { useTopicGroups } from '@/lib/TopicsContext'
+import { useProgress } from '@/lib/context/ProgressContext'
+import { useSearch } from '@/lib/context/SearchContext'
+import { useTopicGroups } from '@/lib/context/TopicsContext'
 import { supabase } from '@/lib/supabase/client'
 
 interface SearchQuestion {
@@ -27,8 +27,12 @@ interface ResultItem {
 function stripHtml(html: string): string {
   return html
     .replace(/<[^>]*>/g, ' ')
-    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ')
-    .replace(/\s+/g, ' ').trim()
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 function escapeRe(str: string) {
@@ -42,7 +46,11 @@ function highlight(text: string, query: string) {
   return (
     <>
       {parts.map((part, i) =>
-        re.test(part) ? <mark key={i}>{part}</mark> : <React.Fragment key={i}>{part}</React.Fragment>
+        re.test(part) ? (
+          <mark key={i}>{part}</mark>
+        ) : (
+          <React.Fragment key={i}>{part}</React.Fragment>
+        ),
       )}
     </>
   )
@@ -54,23 +62,41 @@ function snippet(text: string, query: string, len = 160): string {
   if (at === -1) return text.slice(0, len) + (text.length > len ? '…' : '')
   const start = Math.max(0, at - 50)
   const end = Math.min(text.length, at + query.length + 110)
-  return (start > 0 ? '…' : '') + text.slice(start, end) + (end < text.length ? '…' : '')
+  return (
+    (start > 0 ? '…' : '') +
+    text.slice(start, end) +
+    (end < text.length ? '…' : '')
+  )
 }
 
 const ChevronDown = () => (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    viewBox="0 0 16 16"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <polyline points="4 6 8 10 12 6" />
   </svg>
 )
 
 const Check = () => (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    viewBox="0 0 16 16"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <polyline points="3.5 8.5 6.5 11.5 12.5 5" />
   </svg>
 )
 
 export default function SearchResults() {
-  const { query, setQuery } = useUI()
+  const { query, setQuery } = useSearch()
   const { isComplete, toggle } = useProgress()
   const groups = useTopicGroups()
   const router = useRouter()
@@ -85,13 +111,15 @@ export default function SearchResults() {
       .select('id, title, body_html, topic, file')
       .then(({ data }) => {
         if (data) {
-          setQuestions(data.map(r => ({
-            id: r.id,
-            title: r.title,
-            bodyHtml: r.body_html,
-            topic: r.topic,
-            file: r.file,
-          })))
+          setQuestions(
+            data.map((r) => ({
+              id: r.id,
+              title: r.title,
+              bodyHtml: r.body_html,
+              topic: r.topic,
+              file: r.file,
+            })),
+          )
         }
         setLoaded(true)
       })
@@ -103,7 +131,10 @@ export default function SearchResults() {
     const map: Record<string, { groupName: string; label: string }> = {}
     for (const group of groups) {
       for (const s of group.sections) {
-        map[`${s.topic}/${s.file}`] = { groupName: group.groupName, label: s.label }
+        map[`${s.topic}/${s.file}`] = {
+          groupName: group.groupName,
+          label: s.label,
+        }
       }
     }
     return map
@@ -122,12 +153,19 @@ export default function SearchResults() {
       const key = `${q.topic}/${q.file}`
       const meta = sectionMap[key] || { groupName: q.topic, label: q.file }
       scored.push({
-        item: { q, groupName: meta.groupName, sectionLabel: meta.label, sectionUrl: `/${q.topic}/${q.file}`, titleText, bodyText },
+        item: {
+          q,
+          groupName: meta.groupName,
+          sectionLabel: meta.label,
+          sectionUrl: `/${q.topic}/${q.file}`,
+          titleText,
+          bodyText,
+        },
         score: inTitle ? 0 : 1,
       })
     }
     scored.sort((a, b) => a.score - b.score)
-    return scored.map(s => s.item)
+    return scored.map((s) => s.item)
   }, [trimmedQuery, questions, sectionMap])
 
   const goto = (url: string) => {
@@ -154,63 +192,101 @@ export default function SearchResults() {
           {results.length} {results.length === 1 ? 'result' : 'results'}
         </h1>
         <div className="subtopic-meta">
-          <span className="meta-stat">for <strong>&ldquo;{trimmedQuery}&rdquo;</strong></span>
+          <span className="meta-stat">
+            for <strong>&ldquo;{trimmedQuery}&rdquo;</strong>
+          </span>
         </div>
       </div>
 
       {results.length === 0 ? (
         <div className="empty">
           <div className="empty-title">No matches</div>
-          <p>Nothing matched &ldquo;{trimmedQuery}&rdquo;. Try a different keyword — search looks across every loaded question and answer.</p>
+          <p>
+            Nothing matched &ldquo;{trimmedQuery}&rdquo;. Try a different
+            keyword — search looks across every loaded question and answer.
+          </p>
         </div>
       ) : (
         <div className="questions-list">
-          {results.map(({ q, groupName, sectionLabel, sectionUrl, titleText, bodyText }) => {
-            const isDone = isComplete(q.id)
-            const isOpen = openId === q.id
-            const inAnswer = !titleText.toLowerCase().includes(trimmedQuery.toLowerCase()) && bodyText.toLowerCase().includes(trimmedQuery.toLowerCase())
-            return (
-              <div className={`q-item ${isDone ? 'done' : ''} ${isOpen ? 'open' : ''}`} key={q.id}>
+          {results.map(
+            ({
+              q,
+              groupName,
+              sectionLabel,
+              sectionUrl,
+              titleText,
+              bodyText,
+            }) => {
+              const isDone = isComplete(q.id)
+              const isOpen = openId === q.id
+              const inAnswer =
+                !titleText.toLowerCase().includes(trimmedQuery.toLowerCase()) &&
+                bodyText.toLowerCase().includes(trimmedQuery.toLowerCase())
+              return (
                 <div
-                  className="q-head"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setOpenId(c => c === q.id ? null : q.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault()
-                      setOpenId(c => c === q.id ? null : q.id)
-                    }
-                  }}
+                  className={`q-item ${isDone ? 'done' : ''} ${isOpen ? 'open' : ''}`}
+                  key={q.id}
                 >
-                  <button
-                    className={`q-check ${isDone ? 'checked' : ''}`}
-                    onClick={(e) => { e.stopPropagation(); toggle(q.id) }}
-                    aria-label={isDone ? 'Mark as not done' : 'Mark as done'}
-                    aria-pressed={isDone}
+                  <div
+                    className="q-head"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setOpenId((c) => (c === q.id ? null : q.id))}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        setOpenId((c) => (c === q.id ? null : q.id))
+                      }
+                    }}
                   >
-                    <Check />
-                  </button>
-                  <div style={{ flex: 1, minWidth: 0 }}>
                     <button
-                      className="result-crumb"
-                      onClick={(e) => { e.stopPropagation(); goto(sectionUrl) }}
+                      className={`q-check ${isDone ? 'checked' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggle(q.id)
+                      }}
+                      aria-label={isDone ? 'Mark as not done' : 'Mark as done'}
+                      aria-pressed={isDone}
                     >
-                      {groupName} <span className="crumb-sep">/</span> {sectionLabel}
+                      <Check />
                     </button>
-                    <div className="q-text">{highlight(titleText, trimmedQuery)}</div>
-                    {inAnswer && (
-                      <div className="result-snippet">{highlight(snippet(bodyText, trimmedQuery), trimmedQuery)}</div>
-                    )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <button
+                        className="result-crumb"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          goto(sectionUrl)
+                        }}
+                      >
+                        {groupName} <span className="crumb-sep">/</span>{' '}
+                        {sectionLabel}
+                      </button>
+                      <div className="q-text">
+                        {highlight(titleText, trimmedQuery)}
+                      </div>
+                      {inAnswer && (
+                        <div className="result-snippet">
+                          {highlight(
+                            snippet(bodyText, trimmedQuery),
+                            trimmedQuery,
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <span className="q-toggle">
+                      <ChevronDown />
+                    </span>
                   </div>
-                  <span className="q-toggle"><ChevronDown /></span>
+                  {isOpen && (
+                    <div
+                      className="q-body prose prose-slate dark:prose-invert max-w-none"
+                      dangerouslySetInnerHTML={{ __html: q.bodyHtml }}
+                    />
+                  )}
                 </div>
-                {isOpen && (
-                  <div className="q-body prose prose-slate dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: q.bodyHtml }} />
-                )}
-              </div>
-            )
-          })}
+              )
+            },
+          )}
         </div>
       )}
     </div>

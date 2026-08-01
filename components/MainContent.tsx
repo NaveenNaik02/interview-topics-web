@@ -2,11 +2,15 @@
 
 import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
-import { useUI } from '@/lib/UIContext'
+import { useSearch } from '@/lib/context/SearchContext'
 import SearchResults from './SearchResults'
 
-export default function MainContent({ children }: { children: React.ReactNode }) {
-  const { query } = useUI()
+export default function MainContent({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const { query } = useSearch()
   const pathname = usePathname()
 
   // Every route (topics, subtopics, settings, priority-mix) is served by the

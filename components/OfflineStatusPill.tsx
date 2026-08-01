@@ -2,8 +2,8 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Wifi, Send, RefreshCw, Loader2, Download, CloudDownload } from 'lucide-react'
-import { useProgress } from '@/lib/ProgressContext'
-import { useTopicGroups } from '@/lib/TopicsContext'
+import { useProgress } from '@/lib/context/ProgressContext'
+import { useTopicGroups } from '@/lib/context/TopicsContext'
 
 function relativeTime(isoStr: string | null): string {
   if (!isoStr) return 'a while ago'

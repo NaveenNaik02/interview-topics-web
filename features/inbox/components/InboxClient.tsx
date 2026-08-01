@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { Trash2, Sparkles, Bookmark, BookOpen } from 'lucide-react'
-import { useProgress } from '@/lib/ProgressContext'
-import { useTopicGroups } from '@/lib/TopicsContext'
+import { useProgress } from '@/lib/context/ProgressContext'
+import { useTopicGroups } from '@/lib/context/TopicsContext'
 import { findGroupForSection } from '@/lib/topics'
 import type { SetAsideItem } from '@/lib/db/setAside'
 import AddQuestionModal from './AddQuestionModal'

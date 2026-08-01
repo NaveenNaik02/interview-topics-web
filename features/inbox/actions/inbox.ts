@@ -1,11 +1,13 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import type { InboxItem } from '@/lib/db/inbox'
+import type { InboxItem } from '../db'
 
 async function requireUser() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
   return { supabase, user }
 }
@@ -48,6 +50,10 @@ export async function addInboxItems(texts: string[]): Promise<InboxItem[]> {
 
 export async function deleteInboxItem(id: string): Promise<void> {
   const { supabase, user } = await requireUser()
-  const { error } = await supabase.from('inbox_items').delete().eq('id', id).eq('user_id', user.id)
+  const { error } = await supabase
+    .from('inbox_items')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id)
   if (error) throw error
 }

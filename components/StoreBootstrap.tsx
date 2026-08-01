@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useAppStore } from '@/lib/stores/appStore'
-import { useTopicGroups } from '@/lib/TopicsContext'
+import { useTopicGroups } from '@/lib/context/TopicsContext'
 
 // Replaces the old ProgressProvider. Zustand stores need no context wrapper —
 // this component just fires the one-time init effects that used to live

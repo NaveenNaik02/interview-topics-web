@@ -1,10 +1,10 @@
 import type { User } from '@supabase/supabase-js'
 import type { SortMode } from '@/components/FilterSortToolbar'
-import type { Theme } from '@/lib/ThemeContext'
+import type { Theme } from '@/lib/context/ThemeContext'
 import type { PriorityLevel } from '@/lib/offlineSync'
 import type { TopicGroup } from '@/lib/topics'
 import type { InstructionPreset } from '@/lib/instructionPresets'
-import type { InboxItem } from '@/lib/db/inbox'
+import type { InboxItem } from '@/features/inbox/db'
 import type { SetAsideItem } from '@/lib/db/setAside'
 import type { ProgressStats } from './progressSelectors'
 
@@ -68,7 +68,10 @@ export interface SettingsSlice {
   activeInstructionPresetId: string
   setActiveInstructionPresetId: (id: string) => void
   addInstructionPreset: (v: { name: string; text: string }) => InstructionPreset
-  updateInstructionPreset: (id: string, v: { name: string; text: string }) => void
+  updateInstructionPreset: (
+    id: string,
+    v: { name: string; text: string },
+  ) => void
   deleteInstructionPreset: (id: string) => void
   resetSettingsToDefaults: () => void
   loadSettings: (uid: string) => Promise<void>
@@ -127,4 +130,12 @@ export interface OfflineSlice {
   initOfflineState: () => () => void
 }
 
-export type AppState = AuthSlice & ProgressSlice & PrioritySlice & SettingsSlice & InboxSlice & SetAsideSlice & StarredSlice & OfflineSlice & QuestionOrderSlice
+export type AppState = AuthSlice &
+  ProgressSlice &
+  PrioritySlice &
+  SettingsSlice &
+  InboxSlice &
+  SetAsideSlice &
+  StarredSlice &
+  OfflineSlice &
+  QuestionOrderSlice

@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase/client'
 import type { SortMode } from '@/components/FilterSortToolbar'
-import type { Theme } from '@/lib/ThemeContext'
+import type { Theme } from '@/lib/context/ThemeContext'
 import type { PriorityLevel } from '@/lib/offlineSync'
 import { DEFAULT_PRESETS, type InstructionPreset } from '@/lib/instructionPresets'
 

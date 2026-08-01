@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useProgress } from '@/lib/ProgressContext'
+import { useProgress } from '@/lib/context/ProgressContext'
 import { TopicGroup, sectionUrl } from '@/lib/topics'
 import { deleteTopicGroup } from '@/lib/actions/topics'
 import ConfirmDialog from './ConfirmDialog'

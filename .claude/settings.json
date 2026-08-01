@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // empty' | { read -r f; case \"$f\" in /Users/naveennaik/Projects/interview/web/*.ts|/Users/naveennaik/Projects/interview/web/*.tsx|/Users/naveennaik/Projects/interview/web/*.js|/Users/naveennaik/Projects/interview/web/*.jsx) (cd /Users/naveennaik/Projects/interview/web && npx prettier --write \"$f\" && npx eslint --fix \"$f\") ;; /Users/naveennaik/Projects/interview/web/*.json|/Users/naveennaik/Projects/interview/web/*.css|/Users/naveennaik/Projects/interview/web/*.md) (cd /Users/naveennaik/Projects/interview/web && npx prettier --write \"$f\") ;; esac; } 2>/dev/null || true",
+            "statusMessage": "Running prettier + eslint..."
+          }
+        ]
+      }
+    ]
+  }
+}

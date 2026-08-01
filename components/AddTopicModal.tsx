@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { X, Github, Sparkles, Database, Loader2 } from 'lucide-react'
-import { useProgress } from '@/lib/ProgressContext'
-import { useTopicGroups } from '@/lib/TopicsContext'
+import { useProgress } from '@/lib/context/ProgressContext'
+import { useTopicGroups } from '@/lib/context/TopicsContext'
 import { addTopicGroup, addSection } from '@/lib/actions/topics'
 import { generateTopicBlurb } from '@/lib/actions/generateBlurb'
 import type { TopicGroup, SectionMeta } from '@/lib/topics'

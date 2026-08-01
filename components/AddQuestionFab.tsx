@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { Plus } from 'lucide-react'
 import { findSection, sectionUrl } from '@/lib/topics'
-import { useTopicGroups } from '@/lib/TopicsContext'
+import { useTopicGroups } from '@/lib/context/TopicsContext'
 import { useFabDrag } from '@/lib/useFabDrag'
 
 // Rarely opened relative to every other page view (Add Question/Topic pull in

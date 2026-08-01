@@ -1,6 +1,6 @@
 'use client'
 
-import { useProgress } from '@/lib/ProgressContext'
+import { useProgress } from '@/lib/context/ProgressContext'
 import { Button } from '@/components/ui/button'
 import { RotateCcw } from 'lucide-react'
 

@@ -1,8 +1,15 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from 'react'
+import { type Theme, themeClass } from '../theme'
 
-export type Theme = 'light' | 'dark' | 'sepia'
+export type { Theme }
 
 const CYCLE: Theme[] = ['light', 'sepia', 'dark']
 
@@ -17,22 +24,34 @@ const ThemeContext = createContext<ThemeContextType | null>(null)
 function applyTheme(t: Theme) {
   const cl = document.documentElement.classList
   cl.remove('dark', 'theme-sepia')
-  if (t === 'dark') cl.add('dark')
-  if (t === 'sepia') cl.add('theme-sepia')
+  const c = themeClass(t)
+  if (c) cl.add(c)
 }
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('light')
+export function ThemeProvider({
+  children,
+  initialTheme,
+}: {
+  children: React.ReactNode
+  initialTheme?: Theme
+}) {
+  const [theme, setTheme] = useState<Theme>(initialTheme ?? 'light')
 
   useEffect(() => {
+    // Skip when SSR already resolved and applied it.
+    if (initialTheme) return
     const stored = localStorage.getItem('theme') as Theme | null
-    const initial: Theme = stored ?? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    const initial: Theme =
+      stored ??
+      (window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? 'dark'
+        : 'light')
     setTheme(initial)
     applyTheme(initial)
-  }, [])
+  }, [initialTheme])
 
   const toggle = useCallback(() => {
-    setTheme(prev => {
+    setTheme((prev) => {
       const next = CYCLE[(CYCLE.indexOf(prev) + 1) % CYCLE.length]
       localStorage.setItem('theme', next)
       applyTheme(next)
@@ -47,7 +66,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <ThemeContext.Provider value={{ theme, toggle, setTheme: setThemeDirectly }}>
+    <ThemeContext.Provider
+      value={{ theme, toggle, setTheme: setThemeDirectly }}
+    >
       {children}
     </ThemeContext.Provider>
   )
