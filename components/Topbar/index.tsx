@@ -1,18 +1,19 @@
-'use client'
+'use client';
 
-import { useRef } from 'react'
-import dynamic from 'next/dynamic'
-import { Menu, Search, X } from 'lucide-react'
-import { useDrawer } from '@/lib/context/DrawerContext'
-import { useSearch } from '@/lib/context/SearchContext'
-import Breadcrumbs from './Breadcrumbs'
+import { useRef } from 'react';
+import dynamic from 'next/dynamic';
+import type { User } from '@supabase/supabase-js';
+import { Menu, Search, X } from 'lucide-react';
+import { useDrawer } from '@/lib/context/DrawerContext';
+import { useSearch } from '@/lib/context/SearchContext';
+import Breadcrumbs from './Breadcrumbs';
 
-const AccountMenu = dynamic(() => import('./AccountMenu'))
+const AccountMenu = dynamic(() => import('./AccountMenu'));
 
-export default function Topbar() {
-  const { setDrawerOpen } = useDrawer()
-  const { query, setQuery } = useSearch()
-  const inputRef = useRef<HTMLInputElement>(null)
+export default function Topbar({ user }: { user: User | null }) {
+  const { setDrawerOpen } = useDrawer();
+  const { query, setQuery } = useSearch();
+  const inputRef = useRef<HTMLInputElement>(null);
 
   return (
     <header className="topbar">
@@ -39,7 +40,7 @@ export default function Topbar() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Escape') setQuery('')
+              if (e.key === 'Escape') setQuery('');
             }}
             aria-label="Search questions"
           />
@@ -47,8 +48,8 @@ export default function Topbar() {
             <button
               className="search-clear"
               onClick={() => {
-                setQuery('')
-                inputRef.current?.focus()
+                setQuery('');
+                inputRef.current?.focus();
               }}
               aria-label="Clear search"
             >
@@ -57,8 +58,8 @@ export default function Topbar() {
           )}
         </div>
 
-        <AccountMenu />
+        <AccountMenu serverUser={user} />
       </div>
     </header>
-  )
+  );
 }

@@ -1,0 +1,22 @@
+# CLAUDE.md — components/
+
+Scoped conventions for everything under `components/`. See the root `web/CLAUDE.md` for architecture, state management, auth, and feature-specific notes.
+
+## UI primitives
+
+`components/ui/` contains shadcn/ui-style components (Accordion, Badge, Card, Progress, Button). Tailwind + `@tailwindcss/typography` for styling.
+
+## Component conventions
+
+**New code is organized feature-first, not file-type-first.** When building a new feature (a modal, a study-flow feature, a new authoring surface), start with a folder named for the feature under `components/` (or `lib/actions/` for its server actions) and put that feature's pieces inside it — don't default to dropping flat files alongside unrelated components just because that's `components/`'s existing shape. Within the feature folder, still split into standalone components/hooks per the rules below rather than one large file — the folder is the feature boundary, the files inside it are the actual units of reuse/testability. This is proactive (decide the shape up front for anything non-trivial), unlike the "when a component grows" trigger below, which is reactive cleanup for code that wasn't planned this way. See `components/AddQuestionModal/` (`index.tsx` orchestrator + `MarkdownField.tsx`, `InstructionsModal.tsx`, `useAnswerVersions.ts`, `useAiActions.ts`, `types.ts`, `markdownPreview.ts`) as the reference shape.
+
+`eslint.config.mjs` warns (doesn't fail CI) when a file under `components/**` or `lib/actions/**` exceeds 200 lines (`max-lines`) — a tripwire to catch drift, not the actual rule. Line count alone never decides whether to split a component; splitting only to hit a number produces meaningless bins (`Header.tsx`/`Body.tsx`/`Footer.tsx`) that just relocate the same coupling. Split when one of these is actually true:
+
+- **Mixed concerns** — data-fetching/business logic tangled with rendering. Extract the logic into a custom hook (`lib/use*.ts`, following `useFabDrag`/`useTypewriter`/`useProgress`), leave the component rendering only.
+- **A genuinely separable, reusable, or independently-testable subtree** — e.g. a modal's markdown editor or AI-actions toolbar deserves its own file; a component's header/body/footer usually doesn't.
+- **Repeated markup or logic** (3+ similar blocks) — extract a shared component or map over data instead.
+- **A conditionally-rendered heavy subtree** (modal body, rarely-used panel) — extract it **and** lazy-load it (`next/dynamic` or `import()`, per the FAB modals and `lib/highlight.ts`) so it's a bundle-size win, not just a readability one.
+
+When a component does grow siblings, colocate them in a folder (`components/AddQuestionModal/index.tsx`, `MarkdownEditor.tsx`, `AiToolbar.tsx`) instead of scattering flat files across `components/`.
+
+**Root-level `components/` must stay feature-independent.** Anything living directly under `components/` (not inside a feature folder) may not import from a specific feature's `actions`/`lib` — that's a feature reaching into another feature through a shared component, defeating the point of feature-first segregation. Instead the root component takes the feature-specific behavior (a server action, a callback, config) as a **prop**, and each feature passes its own in at the call site. Promote a component out of a feature folder to `components/` root only once a second feature needs the exact same UI/logic — don't pre-extract for a single caller. See `components/GoogleAuthButton.tsx` (takes an `action` prop typed to the state shape it needs, no import of any feature's actions) alongside `features/login/components/LoginForm.tsx` and `features/signup/components/SignupForm.tsx`, each passing in its own action (`loginWithGoogle` / `signUpWithGoogle`) — the second one re-exported from `features/signup/actions` rather than the component reaching across features itself.
