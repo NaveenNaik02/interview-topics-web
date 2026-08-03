@@ -1,27 +1,41 @@
-import { supabase } from '@/lib/supabase/client'
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase/client';
 
 export interface SetAsideItem {
-  id: string
-  title: string
-  markdown: string
-  bodyHtml: string
-  lang: string | null
-  tags: string | null
-  problem: string | null
-  topic: string
-  file: string
-  label: string
-  createdAt: string
+  id: string;
+  title: string;
+  markdown: string;
+  bodyHtml: string;
+  lang: string | null;
+  tags: string | null;
+  problem: string | null;
+  topic: string;
+  file: string;
+  label: string;
+  createdAt: string;
 }
 
 // Read-only. Mutations live in '@/lib/actions/setAside' (Server Actions).
-export async function fetchSetAsideItems(userId: string): Promise<SetAsideItem[]> {
-  const { data } = await supabase
+export async function fetchSetAsideItems(
+  userId: string,
+): Promise<SetAsideItem[]> {
+  return fetchSetAsideItemsWithClient(supabase, userId);
+}
+
+// Same read, but callable with a caller-supplied client (e.g. the
+// cookie-scoped server client) instead of the browser singleton.
+export async function fetchSetAsideItemsWithClient(
+  client: SupabaseClient,
+  userId: string,
+): Promise<SetAsideItem[]> {
+  const { data } = await client
     .from('set_aside_items')
-    .select('id, title, markdown, body_html, lang, tags, problem, topic, file, label, created_at')
+    .select(
+      'id, title, markdown, body_html, lang, tags, problem, topic, file, label, created_at',
+    )
     .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-  return (data ?? []).map(r => ({
+    .order('created_at', { ascending: false });
+  return (data ?? []).map((r) => ({
     id: r.id,
     title: r.title,
     markdown: r.markdown,
@@ -33,5 +47,5 @@ export async function fetchSetAsideItems(userId: string): Promise<SetAsideItem[]
     file: r.file,
     label: r.label,
     createdAt: r.created_at,
-  }))
+  }));
 }

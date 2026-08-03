@@ -8,7 +8,8 @@ import {
   sectionUrl,
 } from '@/lib/topics';
 import { getAllGroups } from '@/lib/topicsData';
-import { parseSection, countQuestions } from '@/lib/parser';
+import { parseSection } from '@/lib/parser';
+import { fetchInitialSectionOrder } from '@/lib/db/questionPosition';
 import SectionClient from '@/components/SectionClient';
 
 interface Props {
@@ -44,9 +45,21 @@ export default async function Page({ params }: Props) {
 
   const { prev, next } = findPrevNextSections(groups, section);
 
+  // Fetch this section's manual order server-side so the list renders
+  // pre-sorted on first paint — without it, the client store loads
+  // positions asynchronously and rows visibly jump into place.
+  const initialOrder = await fetchInitialSectionOrder(
+    questions.map((q) => q.id),
+  );
+
   return (
     <div className="space-y-12">
-      <SectionClient section={section} group={group} questions={questions} />
+      <SectionClient
+        section={section}
+        group={group}
+        questions={questions}
+        initialOrder={initialOrder}
+      />
 
       <div className="content-wrapper !pt-0">
         <div className="flex items-center justify-between pt-8 border-t border-[var(--border)]">
