@@ -1,11 +1,15 @@
 import GoogleAuthButton from '@/components/GoogleAuthButton';
-import { signUpWithGoogle } from '@/features/signup/actions';
+import GitHubAuthButton from '@/components/GitHubAuthButton';
+import { signUpWithGoogle, signUpWithGithub } from '@/features/signup/actions';
 import EmailSignupForm from './EmailSignupForm';
 
 export default function SignupForm() {
   return (
     <>
-      <GoogleAuthButton action={signUpWithGoogle} />
+      <div className="login-oauth-row">
+        <GoogleAuthButton action={signUpWithGoogle} />
+        <GitHubAuthButton action={signUpWithGithub} />
+      </div>
       <div className="login-divider">or</div>
       <EmailSignupForm />
     </>

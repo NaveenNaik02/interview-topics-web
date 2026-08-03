@@ -39,7 +39,7 @@ export default function GoogleAuthButton({
             d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.28 6.6l3.99 3.11C6.22 6.86 8.87 4.75 12 4.75z"
           />
         </svg>
-        {isPending ? 'Signing in with Google…' : 'Continue with Google'}
+        {isPending ? 'Signing in…' : 'Google'}
       </button>
     </form>
   );

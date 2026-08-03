@@ -36,28 +36,23 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Prod-only: dev keeps its zero-friction seeded-user auto-login (see
-  // authSlice.ts's initAuth), which is client-side JS that hasn't run yet on
-  // a cold server's first request — gating here too would strand dev on
-  // /login with nothing to navigate it away. In prod, no session is ever
-  // anonymous (the auto-provisioning fallback is gone), so `isAuthed` is a
-  // real "did this visitor actually log in" check.
-  if (process.env.NODE_ENV === 'production') {
-    const { pathname } = request.nextUrl;
-    const isAuthPage = pathname === '/login' || pathname === '/signup';
-    const isExempt = pathname === '/manifest.json' || pathname === '/sw.js';
-    const isAuthed = !!user && !user.is_anonymous;
+  // Same gate in dev and prod — there's no auto-provisioned session in
+  // either environment anymore, so `isAuthed` is always a real "did this
+  // visitor actually log in" check.
+  const { pathname } = request.nextUrl;
+  const isAuthPage = pathname === '/login' || pathname === '/signup';
+  const isExempt = pathname === '/manifest.json' || pathname === '/sw.js';
+  const isAuthed = !!user && !user.is_anonymous;
 
-    if (!isAuthed && !isAuthPage && !isExempt) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/login';
-      return NextResponse.redirect(url);
-    }
-    if (isAuthed && isAuthPage) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/';
-      return NextResponse.redirect(url);
-    }
+  if (!isAuthed && !isAuthPage && !isExempt) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    return NextResponse.redirect(url);
+  }
+  if (isAuthed && isAuthPage) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/';
+    return NextResponse.redirect(url);
   }
 
   return supabaseResponse;

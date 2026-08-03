@@ -1,6 +1,5 @@
 import type { StateCreator } from 'zustand';
 import { supabase } from '@/lib/supabase/client';
-import { DEV_USER } from '@/lib/devUser';
 import type { AppState, AuthSlice } from '../types';
 
 // Equivalent of the old loadedUserIdRef: a useRef persisted for the
@@ -32,14 +31,6 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (
     // session (event INITIAL_SESSION), so a separate getSession() call would
     // just race it and double every load — this listener alone covers both
     // the initial state and subsequent sign-in/out transitions.
-    let bootstrapping = false;
-    const isDev = process.env.NODE_ENV !== 'production';
-    const signInDevUser = () => {
-      supabase.auth.signInWithPassword(DEV_USER).then(({ error }) => {
-        if (error) supabase.auth.signUp(DEV_USER);
-      });
-    };
-
     const loadUserData = (uid: string) => {
       if (loadedUserId === uid) return;
       loadedUserId = uid;
@@ -65,17 +56,10 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (
             window.location.pathname + window.location.search,
           );
         }
-      } else if (!bootstrapping) {
-        // No session yet on first load. In dev, sign in as the seeded
-        // DEV_USER for a zero-friction local workflow — signing in triggers
-        // this same listener again with the new session, which is where
-        // user/loadUserData actually run. In prod, there's no auto sign-in:
-        // a signed-out visitor stays `user: null`, and the login-gate
-        // redirect (lib/supabase/middleware.ts) sends them to /login before
-        // any page/store code runs.
-        bootstrapping = true;
-        if (isDev) signInDevUser();
       } else {
+        // No session — a signed-out visitor stays `user: null`, same in dev
+        // and prod. The login-gate redirect (lib/supabase/middleware.ts)
+        // sends them to /login before any page/store code runs.
         loadedUserId = null;
         set({
           user: null,

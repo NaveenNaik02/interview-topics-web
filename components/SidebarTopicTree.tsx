@@ -1,80 +1,108 @@
-'use client'
+'use client';
 
-import React, { useState } from 'react'
-import { createPortal } from 'react-dom'
-import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { TopicGroup, sectionUrl } from '@/lib/topics'
-import { useProgress } from '@/lib/context/ProgressContext'
-import { useDrawer } from '@/lib/context/DrawerContext'
-import { deleteSection, deleteTopicGroup } from '@/lib/actions/topics'
-import ConfirmDialog from './ConfirmDialog'
-import AddTopicModal from './AddTopicModal'
-import { Icon } from './SidebarIcons'
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { TopicGroup, sectionUrl } from '@/lib/topics';
+import { useProgress } from '@/lib/context/ProgressContext';
+import { useDrawer } from '@/lib/context/DrawerContext';
+import { deleteSection, deleteTopicGroup } from '@/lib/actions/topics';
+import ConfirmDialog from './ConfirmDialog';
+import AddTopicModal from './AddTopicModal';
+import { Icon } from './SidebarIcons';
 
 type DeleteTarget =
   | { kind: 'group'; slug: string; label: string }
-  | { kind: 'section'; topic: string; file: string; label: string }
+  | { kind: 'section'; topic: string; file: string; label: string };
 
 export default function SidebarTopicTree({ groups }: { groups: TopicGroup[] }) {
-  const pathname = usePathname()
-  const router = useRouter()
-  const { stats } = useProgress()
-  const { setDrawerOpen } = useDrawer()
+  const pathname = usePathname();
+  const router = useRouter();
+  const { stats } = useProgress();
+  const { setDrawerOpen } = useDrawer();
   const [expanded, setExpanded] = useState<Set<string>>(
     new Set(['javascript', 'react']),
-  )
-  const [addTarget, setAddTarget] = useState<string | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null)
-  const [deleteError, setDeleteError] = useState<string | null>(null)
-  const [deleting, setDeleting] = useState(false)
+  );
+  const [addTarget, setAddTarget] = useState<string | null>(null);
+  const [addingTopic, setAddingTopic] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const requestDelete = (target: DeleteTarget) => {
-    setDeleteError(null)
-    setDeleteTarget(target)
-  }
+    setDeleteError(null);
+    setDeleteTarget(target);
+  };
 
   const handleDelete = async () => {
-    if (!deleteTarget) return
-    setDeleting(true)
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
       if (deleteTarget.kind === 'group')
-        await deleteTopicGroup(deleteTarget.slug)
-      else await deleteSection(deleteTarget.topic, deleteTarget.file)
-      setDeleteTarget(null)
-      router.refresh()
+        await deleteTopicGroup(deleteTarget.slug);
+      else await deleteSection(deleteTarget.topic, deleteTarget.file);
+      setDeleteTarget(null);
+      router.refresh();
     } catch (err) {
       setDeleteError(
         err instanceof Error ? err.message : 'Could not delete — try again.',
-      )
+      );
     } finally {
-      setDeleting(false)
+      setDeleting(false);
     }
-  }
+  };
 
   const toggleExpanded = (id: string) => {
     setExpanded((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  if (groups.length === 0) {
+    return (
+      <div className="sidebar-empty">
+        <div className="sidebar-empty-note">
+          No topics yet — everything you add lives here.
+        </div>
+        <button className="add-topic-row" onClick={() => setAddingTopic(true)}>
+          <Icon.Plus /> Add topic
+        </button>
+
+        {addingTopic &&
+          typeof document !== 'undefined' &&
+          createPortal(
+            <AddTopicModal
+              initialMode="topic"
+              onClose={() => setAddingTopic(false)}
+              onSaved={() => {
+                setAddingTopic(false);
+                router.refresh();
+              }}
+            />,
+            document.body,
+          )}
+      </div>
+    );
   }
 
   return (
     <>
       {groups.map((group) => {
-        const isExp = expanded.has(group.slug)
+        const isExp = expanded.has(group.slug);
 
-        let groupDone = 0
-        let groupTotal = 0
+        let groupDone = 0;
+        let groupTotal = 0;
         group.sections.forEach((s) => {
-          const sStats = stats.bySection[sectionUrl(s)]
+          const sStats = stats.bySection[sectionUrl(s)];
           if (sStats) {
-            groupDone += sStats.completed
-            groupTotal += sStats.total
+            groupDone += sStats.completed;
+            groupTotal += sStats.total;
           }
-        })
+        });
 
         return (
           <div className="topic-group" key={group.slug}>
@@ -120,14 +148,14 @@ export default function SidebarTopicTree({ groups }: { groups: TopicGroup[] }) {
             {isExp && (
               <ul className="subtopic-list">
                 {group.sections.map((s) => {
-                  const url = sectionUrl(s)
-                  const isActive = pathname === url
-                  const sStats = stats.bySection[url]
-                  const done = sStats?.completed || 0
-                  const total = sStats?.total || 0
-                  const pct = total ? (done / total) * 100 : 0
-                  const complete = total > 0 && done === total
-                  const hasQuestions = total > 0
+                  const url = sectionUrl(s);
+                  const isActive = pathname === url;
+                  const sStats = stats.bySection[url];
+                  const done = sStats?.completed || 0;
+                  const total = sStats?.total || 0;
+                  const pct = total ? (done / total) * 100 : 0;
+                  const complete = total > 0 && done === total;
+                  const hasQuestions = total > 0;
 
                   return (
                     <li key={url}>
@@ -173,12 +201,12 @@ export default function SidebarTopicTree({ groups }: { groups: TopicGroup[] }) {
                         )}
                       </div>
                     </li>
-                  )
+                  );
                 })}
               </ul>
             )}
           </div>
-        )
+        );
       })}
 
       {/* Portaled to body: this tree sits under .sidebar, which gets a mobile-drawer
@@ -207,8 +235,8 @@ export default function SidebarTopicTree({ groups }: { groups: TopicGroup[] }) {
                 initialGroupSlug={addTarget}
                 onClose={() => setAddTarget(null)}
                 onSaved={() => {
-                  setAddTarget(null)
-                  router.refresh()
+                  setAddTarget(null);
+                  router.refresh();
                 }}
               />
             )}
@@ -216,5 +244,5 @@ export default function SidebarTopicTree({ groups }: { groups: TopicGroup[] }) {
           document.body,
         )}
     </>
-  )
+  );
 }

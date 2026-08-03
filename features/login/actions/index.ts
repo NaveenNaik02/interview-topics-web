@@ -1,2 +1,7 @@
-export { loginWithEmailPassword, loginWithGoogle, exchangeCode } from './auth'
-export type { ActionState } from './auth'
+export {
+  loginWithEmailPassword,
+  loginWithGoogle,
+  loginWithGithub,
+  exchangeCode,
+} from './auth';
+export type { ActionState } from './auth';

@@ -2,7 +2,8 @@
 
 import { useSearchParams } from 'next/navigation';
 import GoogleAuthButton from '@/components/GoogleAuthButton';
-import { loginWithGoogle } from '@/features/login/actions';
+import GitHubAuthButton from '@/components/GitHubAuthButton';
+import { loginWithGoogle, loginWithGithub } from '@/features/login/actions';
 import EmailLoginForm from './EmailLoginForm';
 
 export default function LoginForm() {
@@ -12,7 +13,10 @@ export default function LoginForm() {
   return (
     <>
       {oauthError && <div className="login-error">{oauthError}</div>}
-      <GoogleAuthButton action={loginWithGoogle} />
+      <div className="login-oauth-row">
+        <GoogleAuthButton action={loginWithGoogle} />
+        <GitHubAuthButton action={loginWithGithub} />
+      </div>
       <div className="login-divider">or</div>
       <EmailLoginForm />
     </>
