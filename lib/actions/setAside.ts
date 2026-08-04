@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { requireAuthor } from '@/lib/supabase/user';
 import type { SetAsideItem } from '@/lib/db/setAside';
 
 // Section pages are ISR-cached — see the same helper in actions/questions.ts.
@@ -10,23 +10,13 @@ function revalidateSection(topic: string, file: string) {
   revalidatePath(`/${topic}`);
 }
 
-async function requireUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-  if (user.is_anonymous) throw new Error('Sign in to set questions aside');
-  return { supabase, user };
-}
-
 // Kebab menu's "Set aside" — a softer sibling of deleteQuestion. Removes the
 // row from `questions` the same way, but captures its full content into
 // set_aside_items first (before deleting) so a failure in between leaves the
 // question intact rather than losing it — the opposite ordering (delete then
 // insert) would silently discard the content for good if the insert failed.
 export async function setAsideQuestion(id: string): Promise<SetAsideItem> {
-  const { supabase, user } = await requireUser();
+  const { supabase, user } = await requireAuthor('Sign in to set questions aside');
 
   const { data: existing } = await supabase
     .from('questions')
@@ -108,7 +98,7 @@ export async function setAsideQuestion(id: string): Promise<SetAsideItem> {
 }
 
 export async function discardSetAsideItem(id: string): Promise<void> {
-  const { supabase, user } = await requireUser();
+  const { supabase, user } = await requireAuthor('Sign in to set questions aside');
   const { error } = await supabase
     .from('set_aside_items')
     .delete()

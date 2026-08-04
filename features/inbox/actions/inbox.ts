@@ -1,17 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { requireUser } from '@/lib/supabase/user';
 import type { InboxItem } from '../db';
-
-async function requireUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-  return { supabase, user };
-}
 
 // Deliberately allows anonymous users (unlike addQuestion/addTopicGroup) —
 // inbox items are private per-user scratch notes, not shared authored

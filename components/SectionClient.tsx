@@ -24,6 +24,11 @@ import {
 import { getCachedQuestions } from '@/lib/offlineSync';
 import { deleteQuestion } from '@/lib/actions/questions';
 import { setAsideQuestion } from '@/lib/actions/setAside';
+import {
+  setStarred,
+  setPriority as setPriorityAction,
+} from '@/lib/actions/questionFlags';
+import { computePriorityStats } from '@/lib/stores/progressSelectors';
 import QuestionItem from './QuestionItem';
 import ConfirmDialog from './ConfirmDialog';
 import FilterSortToolbar, {
@@ -69,20 +74,14 @@ export default function SectionClient({
     mounted,
     isOnline,
     offlineModeEnabled,
-    getPriority,
-    setPriority,
-    priorityStats,
     defaultSort,
     rememberFilters,
     settingsLoaded,
     navigateAfterMove,
     user,
     renameProgressId,
-    renamePriorityId,
-    renameStarId,
     appendSetAsideItem,
-    isStarred,
-    toggleStar,
+    bumpStarredCount,
     getOrderPosition,
     setQuestionOrder,
     renameOrderId,
@@ -156,17 +155,27 @@ export default function SectionClient({
   const noneDone = !mounted || stats.done === 0;
   const ids = questions.map((q) => q.id);
 
-  const priCounts = priorityStats(
-    section.topic,
-    section.file,
-    questions.length,
-  );
+  // Priority now lives on the question row itself (see ParsedQuestion),
+  // fetched with the rest of the section — no need to wait on a global
+  // store fetch, so this is available (and correct) on first paint.
+  const priCounts = useMemo(() => {
+    const map: Record<string, PriorityLevel> = {};
+    questions.forEach((q) => {
+      if (q.priority) map[q.id] = q.priority;
+    });
+    return computePriorityStats(
+      map,
+      section.topic,
+      section.file,
+      questions.length,
+    );
+  }, [questions, section.topic, section.file]);
 
   const processed = useMemo(() => {
     let list = questions.map((q, i) => ({
       q,
       origIdx: i,
-      priority: getPriority(q.id),
+      priority: q.priority ?? null,
     }));
     if (filterSet.size)
       list = list.filter((x) => filterSet.has(x.priority ?? 'none'));
@@ -202,7 +211,6 @@ export default function SectionClient({
     statusFilter,
     sortMode,
     isComplete,
-    getPriority,
     getOrderPosition,
     initialOrder,
   ]);
@@ -223,9 +231,27 @@ export default function SectionClient({
   const handleSetPriority = useCallback(
     (id: string, level: PriorityLevel | null) => {
       savedScrollYRef.current = window.scrollY;
-      setPriority(id, level);
+      setQuestions((prev) =>
+        prev.map((q) => (q.id === id ? { ...q, priority: level } : q)),
+      );
+      setPriorityAction(id, level).catch((err) =>
+        console.error('[priority] write failed:', err),
+      );
     },
-    [setPriority],
+    [],
+  );
+
+  const handleToggleStar = useCallback(
+    (id: string, wasStarred: boolean) => {
+      setQuestions((prev) =>
+        prev.map((q) => (q.id === id ? { ...q, starred: !wasStarred } : q)),
+      );
+      bumpStarredCount(wasStarred ? -1 : 1);
+      setStarred(id, !wasStarred).catch((err) =>
+        console.error('[starred] write failed:', err),
+      );
+    },
+    [bumpStarredCount],
   );
 
   useLayoutEffect(() => {
@@ -518,8 +544,8 @@ export default function SectionClient({
                   toggle(q.id);
                 }}
                 onSetPriority={(level) => handleSetPriority(q.id, level)}
-                isStarred={isStarred(q.id)}
-                onToggleStar={() => toggleStar(q.id)}
+                isStarred={!!q.starred}
+                onToggleStar={() => handleToggleStar(q.id, !!q.starred)}
                 onEdit={
                   canManage
                     ? async () => {
@@ -594,8 +620,6 @@ export default function SectionClient({
               destination.file !== section.file;
             if (changedSection) {
               renameProgressId(movingQuestion.id, newId);
-              renamePriorityId(movingQuestion.id, newId);
-              renameStarId(movingQuestion.id, newId);
               renameOrderId(movingQuestion.id, newId);
             }
             setMovingQuestion(null);
@@ -637,8 +661,6 @@ export default function SectionClient({
               newSection.file !== section.file;
             if (changedSection && editingQuestion) {
               renameProgressId(editingQuestion.id, question.id);
-              renamePriorityId(editingQuestion.id, question.id);
-              renameStarId(editingQuestion.id, question.id);
               renameOrderId(editingQuestion.id, question.id);
             }
             setEditingQuestion(null);

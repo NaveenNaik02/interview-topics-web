@@ -2,7 +2,7 @@ import Sidebar from '@/components/Sidebar';
 import Topbar from '@/components/Topbar';
 import MainContent from '@/components/MainContent';
 import StoreBootstrap from '@/components/StoreBootstrap';
-import { createClient } from '@/lib/supabase/server';
+import { getUser } from '@/lib/supabase/user';
 import { TopicsProvider } from '@/lib/context/TopicsContext';
 import { TotalsProvider } from '@/lib/context/TotalsContext';
 import { getAllGroups } from '@/lib/topicsData';
@@ -19,17 +19,10 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const [
-    initialTotals,
-    groups,
-    {
-      data: { user },
-    },
-  ] = await Promise.all([
+  const [initialTotals, groups, { user }] = await Promise.all([
     fetchAllCounts(),
     getAllGroups(),
-    supabase.auth.getUser(),
+    getUser(),
   ]);
 
   return (

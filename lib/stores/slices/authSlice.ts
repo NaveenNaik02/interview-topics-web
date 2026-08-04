@@ -35,11 +35,10 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (
       if (loadedUserId === uid) return;
       loadedUserId = uid;
       get().loadProgress(uid);
-      get().loadPriority(uid);
       get().loadSettings(uid);
       get().loadInboxCount(uid);
       get().loadSetAsideCount(uid);
-      get().loadStarred(uid);
+      get().loadStarredCount(uid);
       get().loadQuestionOrder(uid);
     };
 
@@ -64,10 +63,9 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (
         set({
           user: null,
           store: {},
-          priorityStore: {},
           inboxCount: 0,
           setAsideCount: 0,
-          starredStore: {},
+          starredCount: 0,
         });
       }
     });

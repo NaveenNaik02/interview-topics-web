@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { requireAuthor as requireAuthorUser } from '@/lib/supabase/user';
 import { getAllGroups } from '@/lib/topicsData';
 import {
   slugify,
@@ -10,14 +10,8 @@ import {
   type SectionMeta,
 } from '@/lib/topics';
 
-async function requireAuthor(action: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-  if (user.is_anonymous) throw new Error(`Sign in to ${action}`);
-  return { supabase, user };
+function requireAuthor(action: string) {
+  return requireAuthorUser(`Sign in to ${action}`);
 }
 
 export interface AddTopicGroupInput {

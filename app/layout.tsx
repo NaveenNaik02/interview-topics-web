@@ -3,7 +3,7 @@ import { IBM_Plex_Sans, IBM_Plex_Serif, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/lib/context/ThemeContext';
 import { themeClass, resolveServerTheme } from '@/lib/theme';
-import { createClient } from '@/lib/supabase/server';
+import { getUser } from '@/lib/supabase/user';
 import { FontSizeProvider } from '@/lib/context/FontSizeContext';
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
 
@@ -40,10 +40,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getUser();
 
   const initialTheme = await resolveServerTheme(supabase, user?.id);
 

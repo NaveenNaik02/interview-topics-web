@@ -9,7 +9,7 @@ import SidebarNavLink from './SidebarNavLink';
 import SidebarTopicTree from './SidebarTopicTree';
 
 export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
-  const { stats, inboxCount, setAsideCount, starredStore } = useProgress();
+  const { stats, inboxCount, setAsideCount, starredCount } = useProgress();
   const { drawerOpen, setDrawerOpen } = useDrawer();
 
   const totalCount = stats.total;
@@ -57,7 +57,7 @@ export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
             href="/starred"
             icon={<Icon.Star />}
             label="Starred"
-            badge={Object.keys(starredStore).length}
+            badge={starredCount}
             onClick={closeDrawer}
           />
           <SidebarNavLink

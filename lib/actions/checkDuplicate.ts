@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { requireAuthor } from '@/lib/supabase/user';
 import { AQ_MODELS, type AqModelId } from '@/lib/aiModels';
 
 const DEFAULT_MODEL: AqModelId = AQ_MODELS[0].id;
@@ -28,12 +28,7 @@ export interface DuplicateCheckResult {
 export async function checkDuplicateQuestion(
   input: CheckDuplicateInput,
 ): Promise<DuplicateCheckResult> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-  if (user.is_anonymous) throw new Error('Sign in to check for duplicates');
+  const { supabase } = await requireAuthor('Sign in to check for duplicates');
 
   const apiKey = process.env.FREE_GEM_API_KEY;
   if (!apiKey) throw new Error('AI generation is not configured');

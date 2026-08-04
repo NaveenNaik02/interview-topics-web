@@ -14,13 +14,13 @@ const { createClient } = require('@supabase/supabase-js');
 
 // user_settings is deliberately excluded — treated as fresh per-account
 // preferences, not prep content, so the destination account keeps its own.
+// starred/priority are no longer separate tables (folded into columns on
+// questions) — reassigning the questions row already carries them over.
 const TABLES = [
   ['questions', 'created_by'],
   ['topic_groups', 'created_by'],
   ['sections', 'created_by'],
   ['progress', 'user_id'],
-  ['priority', 'user_id'],
-  ['starred_questions', 'user_id'],
   ['question_position', 'user_id'],
   ['inbox_items', 'user_id'],
   ['set_aside_items', 'user_id'],

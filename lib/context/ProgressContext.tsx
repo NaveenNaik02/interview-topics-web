@@ -13,11 +13,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '../stores/appStore';
 import { useTopicGroups } from './TopicsContext';
 import { useInitialTotals } from './TotalsContext';
-import {
-  computeStats,
-  computeSectionStats,
-  computePriorityStats,
-} from '../stores/progressSelectors';
+import { computeStats, computeSectionStats } from '../stores/progressSelectors';
 
 export function useProgress() {
   const state = useAppStore(
@@ -30,10 +26,6 @@ export function useProgress() {
       setMany: s.setMany,
       resetAll: s.resetAll,
       renameProgressId: s.renameProgressId,
-      // Priority
-      priorityStore: s.priorityStore,
-      setPriority: s.setPriority,
-      renamePriorityId: s.renamePriorityId,
       // Inbox
       inboxCount: s.inboxCount,
       appendInboxItem: s.appendInboxItem,
@@ -44,9 +36,8 @@ export function useProgress() {
       appendSetAsideItem: s.appendSetAsideItem,
       removeSetAsideItem: s.removeSetAsideItem,
       // Starred
-      starredStore: s.starredStore,
-      toggleStar: s.toggleStar,
-      renameStarId: s.renameStarId,
+      starredCount: s.starredCount,
+      bumpStarredCount: s.bumpStarredCount,
       // Question order
       orderStore: s.orderStore,
       setQuestionOrder: s.setQuestionOrder,
@@ -89,7 +80,7 @@ export function useProgress() {
     })),
   );
 
-  const { store, priorityStore, starredStore, orderStore, mounted } = state;
+  const { store, orderStore, mounted } = state;
 
   // Computed here (not read from the store's own `stats`/groups/totals
   // fields) so it stays correct synchronously during render — groups and
@@ -116,10 +107,6 @@ export function useProgress() {
     (id: string) => mounted && !!store[id],
     [store, mounted],
   );
-  const isStarred = useCallback(
-    (id: string) => mounted && !!starredStore[id],
-    [starredStore, mounted],
-  );
 
   const sectionStats = useCallback(
     (topic: string, file: string, total: number) => {
@@ -143,22 +130,9 @@ export function useProgress() {
     [sectionStats],
   );
 
-  const getPriority = useCallback(
-    (id: string) => (mounted ? (priorityStore[id] ?? null) : null),
-    [priorityStore, mounted],
-  );
-
   const getOrderPosition = useCallback(
     (id: string) => (mounted ? (orderStore[id] ?? null) : null),
     [orderStore, mounted],
-  );
-
-  const priorityStats = useCallback(
-    (topic: string, file: string, total: number) => {
-      if (!mounted) return { high: 0, med: 0, low: 0, none: 0 };
-      return computePriorityStats(priorityStore, topic, file, total);
-    },
-    [priorityStore, mounted],
   );
 
   // Omit the store's raw (unmerged) `totals` from the public return value —
@@ -170,11 +144,8 @@ export function useProgress() {
     ...rest,
     stats,
     isComplete,
-    isStarred,
     sectionStats,
     allStats,
-    getPriority,
-    priorityStats,
     getOrderPosition,
   };
 }

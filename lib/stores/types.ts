@@ -9,7 +9,6 @@ import type { SetAsideItem } from '@/lib/db/setAside';
 import type { ProgressStats } from './progressSelectors';
 
 export type ProgressStore = Record<string, boolean>;
-export type PriorityStore = Record<string, PriorityLevel>;
 
 export interface AuthSlice {
   user: User | null;
@@ -41,14 +40,6 @@ export interface ProgressSlice {
   // wait for a full reload to stop reading the question as "not done".
   renameProgressId: (oldId: string, newId: string) => void;
   loadProgress: (uid: string) => Promise<void>;
-}
-
-export interface PrioritySlice {
-  priorityStore: PriorityStore;
-  setPriority: (id: string, level: PriorityLevel | null) => void;
-  // Sibling of renameProgressId, for the priority store.
-  renamePriorityId: (oldId: string, newId: string) => void;
-  loadPriority: (uid: string) => Promise<void>;
 }
 
 export interface SettingsSlice {
@@ -101,23 +92,24 @@ export interface SetAsideSlice {
 }
 
 export interface StarredSlice {
-  starredStore: Record<string, boolean>;
-  toggleStar: (id: string) => void;
-  // Sibling of renameProgressId/renamePriorityId, for the starred store.
-  renameStarId: (oldId: string, newId: string) => void;
-  loadStarred: (uid: string) => Promise<void>;
+  // Count only — see InboxSlice.inboxCount for the same reasoning. Full
+  // starred/priority state now lives on the questions row itself, read
+  // directly off whatever list of questions a page already fetched.
+  starredCount: number;
+  bumpStarredCount: (delta: number) => void;
+  loadStarredCount: (uid: string) => Promise<void>;
 }
 
 export interface QuestionOrderSlice {
   // Personal manual-order position, keyed by question id. Only ever compared
   // between questions already scoped to one section by the caller, so a flat
-  // map (like priorityStore/starredStore) is enough — no per-section keying.
+  // map is enough — no per-section keying.
   orderStore: Record<string, number>;
   // Rewrites the full position for every id in the given order (0..N-1) —
   // a drag-drop always reorders the whole visible list, so there's no
   // single-item variant.
   setQuestionOrder: (ids: string[]) => void;
-  // Sibling of renameProgressId/renamePriorityId/renameStarId, for the order store.
+  // Sibling of renameProgressId, for the order store.
   renameOrderId: (oldId: string, newId: string) => void;
   loadQuestionOrder: (uid: string) => Promise<void>;
 }
@@ -139,7 +131,6 @@ export interface OfflineSlice {
 
 export type AppState = AuthSlice &
   ProgressSlice &
-  PrioritySlice &
   SettingsSlice &
   InboxSlice &
   SetAsideSlice &

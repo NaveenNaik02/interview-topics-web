@@ -1,6 +1,7 @@
 import 'server-only';
 import { createClient } from './supabase/server';
 import type { SectionMeta } from './topics';
+import type { PriorityLevel } from './offlineSync';
 
 export interface ParsedQuestion {
   id: string;
@@ -12,6 +13,8 @@ export interface ParsedQuestion {
   lang?: string | null;
   tags?: string | null;
   problem?: string | null;
+  starred?: boolean;
+  priority?: PriorityLevel | null;
 }
 
 export async function countQuestions(section: SectionMeta): Promise<number> {
@@ -49,7 +52,7 @@ export async function parseSection(
   const { data } = await supabase
     .from('questions')
     .select(
-      'id, number, title, body_html, markdown, created_by, lang, tags, problem',
+      'id, number, title, body_html, markdown, created_by, lang, tags, problem, starred, priority',
     )
     .eq('topic', section.topic)
     .eq('file', section.file)
@@ -64,5 +67,7 @@ export async function parseSection(
     lang: r.lang,
     tags: r.tags,
     problem: r.problem,
+    starred: r.starred,
+    priority: r.priority,
   }));
 }

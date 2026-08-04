@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
 import type { PriorityLevel } from '@/lib/offlineSync';
 
-export interface PriorityMixQuestion {
+export interface StarredQuestion {
   id: string;
   number: number;
   title: string;
@@ -17,13 +17,12 @@ export interface PriorityMixQuestion {
   tags?: string | null;
   problem?: string | null;
   priority: PriorityLevel | null;
-  starred: boolean;
 }
 
-const PRIORITY_COLUMNS =
-  'id, number, title, body_html, markdown, created_by, topic, file, label, group_slug, lang, tags, problem, priority, starred';
+const STARRED_COLUMNS =
+  'id, number, title, body_html, markdown, created_by, topic, file, label, group_slug, lang, tags, problem, priority';
 
-function mapRow(r: Record<string, unknown>): PriorityMixQuestion {
+function mapRow(r: Record<string, unknown>): StarredQuestion {
   return {
     id: r.id as string,
     number: r.number as number,
@@ -39,24 +38,34 @@ function mapRow(r: Record<string, unknown>): PriorityMixQuestion {
     tags: r.tags as string | null,
     problem: r.problem as string | null,
     priority: r.priority as PriorityLevel | null,
-    starred: r.starred as boolean,
   };
 }
 
 // Read-only. Mutations live in '@/lib/actions/questionFlags' (Server Actions).
-export async function fetchPriorityQuestions(): Promise<PriorityMixQuestion[]> {
-  return fetchPriorityQuestionsWithClient(supabase);
+export async function fetchStarredQuestions(): Promise<StarredQuestion[]> {
+  return fetchStarredQuestionsWithClient(supabase);
 }
 
 // Same read, but callable with a caller-supplied client (e.g. the
 // cookie-scoped server client) instead of the browser singleton — RLS scopes
 // this to the caller's own questions, so no userId param is needed.
-export async function fetchPriorityQuestionsWithClient(
+export async function fetchStarredQuestionsWithClient(
   client: SupabaseClient,
-): Promise<PriorityMixQuestion[]> {
+): Promise<StarredQuestion[]> {
   const { data } = await client
     .from('questions')
-    .select(PRIORITY_COLUMNS)
-    .not('priority', 'is', null);
+    .select(STARRED_COLUMNS)
+    .eq('starred', true);
   return (data ?? []).map(mapRow);
+}
+
+// Badge-only read: row count, no bodies. Used by the global store so every
+// page pays for a number instead of every starred question's full content.
+export async function fetchStarredCount(userId: string): Promise<number> {
+  const { count } = await supabase
+    .from('questions')
+    .select('id', { count: 'exact', head: true })
+    .eq('created_by', userId)
+    .eq('starred', true);
+  return count ?? 0;
 }

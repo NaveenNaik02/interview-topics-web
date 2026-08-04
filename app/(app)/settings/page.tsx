@@ -1,14 +1,11 @@
-import { createClient } from '@/lib/supabase/server';
+import { getUser } from '@/lib/supabase/user';
 import { DEFAULT_SETTINGS } from '@/lib/db/settings';
 import SettingsClient from '@/components/SettingsClient';
 
 export const metadata = { title: 'Settings — Prep Tracker' };
 
 export default async function SettingsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getUser();
 
   let settings = DEFAULT_SETTINGS;
 

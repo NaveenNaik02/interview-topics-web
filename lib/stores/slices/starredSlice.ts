@@ -1,36 +1,25 @@
-import type { StateCreator } from 'zustand'
-import * as starredDb from '@/lib/db/starred'
-import * as starredActions from '@/lib/actions/starred'
-import type { AppState, StarredSlice } from '../types'
+import type { StateCreator } from 'zustand';
+import * as starredDb from '@/features/starred/db';
+import type { AppState, StarredSlice } from '../types';
 
-// Row-presence-as-state, same shape as progressSlice — but no offline queue
-// (see plan notes): starring is a hand-curation action, not something
-// toggled constantly during an offline study session, so writes just
-// require being online while the in-memory store still updates optimistically.
-export const createStarredSlice: StateCreator<AppState, [], [], StarredSlice> = (set, get) => ({
-  starredStore: {},
+// Count only — the Sidebar badge is the only thing that reads this
+// globally. Full starred questions live page-side, fetched by the Starred
+// page itself (see fetchStarredQuestionsWithClient) only when that page
+// renders. Mirrors InboxSlice/SetAsideSlice.
+export const createStarredSlice: StateCreator<
+  AppState,
+  [],
+  [],
+  StarredSlice
+> = (set, get) => ({
+  starredCount: 0,
 
-  toggleStar: (id: string) => {
-    const { user, starredStore } = get()
-    if (!user) return
-    const isAdd = !starredStore[id]
-    set({ starredStore: { ...starredStore, [id]: isAdd } })
-
-    const write = isAdd ? starredActions.upsertStarred(id) : starredActions.deleteStarred(id)
-    write.catch(err => console.error('[starred] write failed:', err))
+  bumpStarredCount: (delta: number) => {
+    set({ starredCount: Math.max(0, get().starredCount + delta) });
   },
 
-  renameStarId: (oldId: string, newId: string) => {
-    const { starredStore } = get()
-    if (!(oldId in starredStore)) return
-    const { [oldId]: value, ...rest } = starredStore
-    set({ starredStore: { ...rest, [newId]: value } })
+  loadStarredCount: async (uid: string) => {
+    const count = await starredDb.fetchStarredCount(uid);
+    set({ starredCount: count });
   },
-
-  loadStarred: async (uid: string) => {
-    const ids = await starredDb.fetchStarred(uid)
-    const store: Record<string, boolean> = {}
-    ids.forEach(id => { store[id] = true })
-    set({ starredStore: store })
-  },
-})
+});
