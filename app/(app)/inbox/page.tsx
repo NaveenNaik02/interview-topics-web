@@ -1,5 +1,5 @@
 import { InboxClient, InboxCaptureButton } from '@/features/inbox/components';
-import { fetchInitialInboxPageData } from '@/features/inbox/db';
+import { fetchInitialInboxPageData } from '@/features/inbox/dbServer';
 
 export default async function InboxPage() {
   const { inboxItems, setAsideItems } = await fetchInitialInboxPageData();

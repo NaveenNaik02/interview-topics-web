@@ -1,19 +1,19 @@
-'use client'
+'use client';
 
-import Link from 'next/link'
-import { TopicGroup } from '@/lib/topics'
-import { useProgress } from '@/lib/context/ProgressContext'
-import { useDrawer } from '@/lib/context/DrawerContext'
-import { Icon } from './SidebarIcons'
-import SidebarNavLink from './SidebarNavLink'
-import SidebarTopicTree from './SidebarTopicTree'
+import Link from 'next/link';
+import { TopicGroup } from '@/lib/topics';
+import { useProgress } from '@/lib/context/ProgressContext';
+import { useDrawer } from '@/lib/context/DrawerContext';
+import { Icon } from './SidebarIcons';
+import SidebarNavLink from './SidebarNavLink';
+import SidebarTopicTree from './SidebarTopicTree';
 
 export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
-  const { stats, inboxItems, setAsideItems, starredStore } = useProgress()
-  const { drawerOpen, setDrawerOpen } = useDrawer()
+  const { stats, inboxCount, setAsideCount, starredStore } = useProgress();
+  const { drawerOpen, setDrawerOpen } = useDrawer();
 
-  const totalCount = stats.total
-  const closeDrawer = () => setDrawerOpen(false)
+  const totalCount = stats.total;
+  const closeDrawer = () => setDrawerOpen(false);
 
   return (
     <>
@@ -50,7 +50,7 @@ export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
             href="/inbox"
             icon={<Icon.Inbox />}
             label="Inbox"
-            badge={inboxItems.length + setAsideItems.length}
+            badge={inboxCount + setAsideCount}
             onClick={closeDrawer}
           />
           <SidebarNavLink
@@ -79,5 +79,5 @@ export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
         </nav>
       </aside>
     </>
-  )
+  );
 }

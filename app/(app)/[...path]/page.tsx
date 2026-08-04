@@ -9,7 +9,7 @@ import {
 } from '@/lib/topics';
 import { getAllGroups } from '@/lib/topicsData';
 import { parseSection } from '@/lib/parser';
-import { fetchInitialSectionOrder } from '@/lib/db/questionPosition';
+import { fetchInitialSectionOrder } from '@/lib/db/questionPositionServer';
 import SectionClient from '@/components/SectionClient';
 
 interface Props {

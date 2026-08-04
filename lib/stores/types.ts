@@ -82,18 +82,22 @@ export interface SettingsSlice {
 }
 
 export interface InboxSlice {
-  inboxItems: InboxItem[];
+  // Count only — the Sidebar badge is the only thing that reads this
+  // globally. Full item bodies are fetched page-side (see
+  // fetchInitialInboxPageData) only when the Inbox page itself renders.
+  inboxCount: number;
   appendInboxItem: (item: InboxItem) => void;
   appendInboxItems: (items: InboxItem[]) => void;
   removeInboxItem: (id: string) => void;
-  loadInbox: (uid: string) => Promise<void>;
+  loadInboxCount: (uid: string) => Promise<void>;
 }
 
 export interface SetAsideSlice {
-  setAsideItems: SetAsideItem[];
+  // Same reasoning as InboxSlice.inboxCount.
+  setAsideCount: number;
   appendSetAsideItem: (item: SetAsideItem) => void;
   removeSetAsideItem: (id: string) => void;
-  loadSetAside: (uid: string) => Promise<void>;
+  loadSetAsideCount: (uid: string) => Promise<void>;
 }
 
 export interface StarredSlice {

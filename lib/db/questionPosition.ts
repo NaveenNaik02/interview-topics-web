@@ -1,6 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
-import { createClient } from '@/lib/supabase/server';
 
 // Read-only. Mutations live in '@/lib/actions/questionPosition' (Server Actions).
 export async function fetchQuestionPositions(
@@ -34,20 +33,4 @@ export async function fetchQuestionPositionsForIds(
     store[r.question_id] = r.position;
   });
   return store;
-}
-
-// Server-only: resolves the caller's own cookie-scoped client + user, so
-// section pages can seed manual order without touching Supabase directly.
-export async function fetchInitialSectionOrder(
-  questionIds: string[],
-): Promise<Record<string, number>> {
-  if (questionIds.length === 0) return {};
-
-  const client = await createClient();
-  const {
-    data: { user },
-  } = await client.auth.getUser();
-  if (!user) return {};
-
-  return fetchQuestionPositionsForIds(client, user.id, questionIds);
 }

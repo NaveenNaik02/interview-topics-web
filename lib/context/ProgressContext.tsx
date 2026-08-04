@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 // Thin compatibility layer over the Zustand store (lib/stores/appStore.ts) —
 // every consumer still does `import { useProgress } from '@/lib/context/ProgressContext'`
@@ -8,16 +8,16 @@
 // hook's returned object referentially stable across renders where nothing
 // selected here actually changed, matching the old Context's re-render
 // characteristics rather than making them worse.
-import { useCallback, useMemo } from 'react'
-import { useShallow } from 'zustand/react/shallow'
-import { useAppStore } from '../stores/appStore'
-import { useTopicGroups } from './TopicsContext'
-import { useInitialTotals } from './TotalsContext'
+import { useCallback, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import { useAppStore } from '../stores/appStore';
+import { useTopicGroups } from './TopicsContext';
+import { useInitialTotals } from './TotalsContext';
 import {
   computeStats,
   computeSectionStats,
   computePriorityStats,
-} from '../stores/progressSelectors'
+} from '../stores/progressSelectors';
 
 export function useProgress() {
   const state = useAppStore(
@@ -35,12 +35,12 @@ export function useProgress() {
       setPriority: s.setPriority,
       renamePriorityId: s.renamePriorityId,
       // Inbox
-      inboxItems: s.inboxItems,
+      inboxCount: s.inboxCount,
       appendInboxItem: s.appendInboxItem,
       appendInboxItems: s.appendInboxItems,
       removeInboxItem: s.removeInboxItem,
       // Set aside
-      setAsideItems: s.setAsideItems,
+      setAsideCount: s.setAsideCount,
       appendSetAsideItem: s.appendSetAsideItem,
       removeSetAsideItem: s.removeSetAsideItem,
       // Starred
@@ -87,9 +87,9 @@ export function useProgress() {
       disableOfflineMode: s.disableOfflineMode,
       syncNow: s.syncNow,
     })),
-  )
+  );
 
-  const { store, priorityStore, starredStore, orderStore, mounted } = state
+  const { store, priorityStore, starredStore, orderStore, mounted } = state;
 
   // Computed here (not read from the store's own `stats`/groups/totals
   // fields) so it stays correct synchronously during render — groups and
@@ -101,71 +101,71 @@ export function useProgress() {
   // setSectionTotal (seeded from '' and merged on top of initialTotals here)
   // plus, once StoreBootstrap's effect runs, a full copy of initialTotals
   // itself — so this merge is stable (harmlessly redundant) after mount.
-  const groups = useTopicGroups()
-  const initialTotals = useInitialTotals()
+  const groups = useTopicGroups();
+  const initialTotals = useInitialTotals();
   const totals = useMemo(
     () => ({ ...initialTotals, ...state.totals }),
     [initialTotals, state.totals],
-  )
+  );
   const stats = useMemo(
     () => computeStats(store, totals, groups),
     [store, totals, groups],
-  )
+  );
 
   const isComplete = useCallback(
     (id: string) => mounted && !!store[id],
     [store, mounted],
-  )
+  );
   const isStarred = useCallback(
     (id: string) => mounted && !!starredStore[id],
     [starredStore, mounted],
-  )
+  );
 
   const sectionStats = useCallback(
     (topic: string, file: string, total: number) => {
-      if (!mounted) return { done: 0, total }
-      return computeSectionStats(store, topic, file, total)
+      if (!mounted) return { done: 0, total };
+      return computeSectionStats(store, topic, file, total);
     },
     [store, mounted],
-  )
+  );
 
   const allStats = useCallback(
     (sections: { topic: string; file: string; total: number }[]) => {
-      let totalQ = 0
-      let doneQ = 0
+      let totalQ = 0;
+      let doneQ = 0;
       for (const s of sections) {
-        const st = sectionStats(s.topic, s.file, s.total)
-        totalQ += s.total
-        doneQ += st.done
+        const st = sectionStats(s.topic, s.file, s.total);
+        totalQ += s.total;
+        doneQ += st.done;
       }
-      return { done: doneQ, total: totalQ }
+      return { done: doneQ, total: totalQ };
     },
     [sectionStats],
-  )
+  );
 
   const getPriority = useCallback(
     (id: string) => (mounted ? (priorityStore[id] ?? null) : null),
     [priorityStore, mounted],
-  )
+  );
 
   const getOrderPosition = useCallback(
     (id: string) => (mounted ? (orderStore[id] ?? null) : null),
     [orderStore, mounted],
-  )
+  );
 
   const priorityStats = useCallback(
     (topic: string, file: string, total: number) => {
-      if (!mounted) return { high: 0, med: 0, low: 0, none: 0 }
-      return computePriorityStats(priorityStore, topic, file, total)
+      if (!mounted) return { high: 0, med: 0, low: 0, none: 0 };
+      return computePriorityStats(priorityStore, topic, file, total);
     },
     [priorityStore, mounted],
-  )
+  );
 
   // Omit the store's raw (unmerged) `totals` from the public return value —
   // `stats` above is the merged, render-safe aggregate every consumer wants;
   // nothing has ever read `totals` directly off this hook.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { totals: _rawTotals, ...rest } = state
+  const { totals: _rawTotals, ...rest } = state;
   return {
     ...rest,
     stats,
@@ -176,5 +176,5 @@ export function useProgress() {
     getPriority,
     priorityStats,
     getOrderPosition,
-  }
+  };
 }

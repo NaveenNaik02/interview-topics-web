@@ -1,10 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
-import { createClient } from '@/lib/supabase/server';
-import {
-  fetchSetAsideItemsWithClient,
-  type SetAsideItem,
-} from '@/lib/db/setAside';
 
 export interface InboxItem {
   id: string;
@@ -35,21 +30,12 @@ export async function fetchInboxItemsWithClient(
   }));
 }
 
-// Server-only: resolves the caller's own cookie-scoped client + user, so
-// the Inbox page can seed both its lists without touching Supabase directly.
-export async function fetchInitialInboxPageData(): Promise<{
-  inboxItems: InboxItem[];
-  setAsideItems: SetAsideItem[];
-}> {
-  const client = await createClient();
-  const {
-    data: { user },
-  } = await client.auth.getUser();
-  if (!user) return { inboxItems: [], setAsideItems: [] };
-
-  const [inboxItems, setAsideItems] = await Promise.all([
-    fetchInboxItemsWithClient(client, user.id),
-    fetchSetAsideItemsWithClient(client, user.id),
-  ]);
-  return { inboxItems, setAsideItems };
+// Badge-only read: row count, no text bodies. Used by the global store so
+// every page pays for a number instead of every captured item's full text.
+export async function fetchInboxCount(userId: string): Promise<number> {
+  const { count } = await supabase
+    .from('inbox_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId);
+  return count ?? 0;
 }

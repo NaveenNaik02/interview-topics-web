@@ -37,8 +37,8 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (
       get().loadProgress(uid);
       get().loadPriority(uid);
       get().loadSettings(uid);
-      get().loadInbox(uid);
-      get().loadSetAside(uid);
+      get().loadInboxCount(uid);
+      get().loadSetAsideCount(uid);
       get().loadStarred(uid);
       get().loadQuestionOrder(uid);
     };
@@ -65,8 +65,8 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (
           user: null,
           store: {},
           priorityStore: {},
-          inboxItems: [],
-          setAsideItems: [],
+          inboxCount: 0,
+          setAsideCount: 0,
           starredStore: {},
         });
       }

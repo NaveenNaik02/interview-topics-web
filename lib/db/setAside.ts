@@ -49,3 +49,13 @@ export async function fetchSetAsideItemsWithClient(
     createdAt: r.created_at,
   }));
 }
+
+// Badge-only read: row count, no bodies. Used by the global store so every
+// page pays for a number instead of every set-aside item's full markdown.
+export async function fetchSetAsideCount(userId: string): Promise<number> {
+  const { count } = await supabase
+    .from('set_aside_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId);
+  return count ?? 0;
+}
