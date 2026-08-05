@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useProgress } from '@/lib/context/ProgressContext';
+import { useAppStore } from '@/lib/stores/appStore';
 import { useTopicGroups } from '@/lib/context/TopicsContext';
 import {
   sectionUrl,
@@ -28,7 +28,8 @@ interface Props {
 // the user personally starred. Mirrors PriorityMixClient's question-list
 // wiring (edit/move/delete/set-aside) minus its builder UI.
 export default function StarredClient({ questions }: Props) {
-  const { navigateAfterMove, appendSetAsideItem } = useProgress();
+  const navigateAfterMove = useAppStore((s) => s.navigateAfterMove);
+  const appendSetAsideItem = useAppStore((s) => s.appendSetAsideItem);
   const groups = useTopicGroups();
   const router = useRouter();
   const [editingQuestion, setEditingQuestion] =
@@ -41,7 +42,7 @@ export default function StarredClient({ questions }: Props) {
   const [moveToast, setMoveToast] = useState<string | null>(null);
   const [asideToast, setAsideToast] = useState(false);
 
-  const handleEdit = ({ q, section }: StarredRow) =>
+  const handleEdit = useCallback(({ q, section }: StarredRow) =>
     setEditingQuestion({
       id: q.id,
       title: q.title,
@@ -51,18 +52,18 @@ export default function StarredClient({ questions }: Props) {
       lang: q.lang,
       tags: q.tags,
       problem: q.problem,
-    });
+    }), []);
 
-  const handleMove = ({ q, section }: StarredRow) =>
-    setMovingQuestion({ id: q.id, label: q.title, section });
+  const handleMove = useCallback(({ q, section }: StarredRow) =>
+    setMovingQuestion({ id: q.id, label: q.title, section }), []);
 
-  const handleSetAside = async ({ q }: StarredRow) => {
+  const handleSetAside = useCallback(async ({ q }: StarredRow) => {
     const item = await setAsideQuestion(q.id);
     appendSetAsideItem(item);
     setAsideToast(true);
     setTimeout(() => setAsideToast(false), 3600);
     router.refresh();
-  };
+  }, [appendSetAsideItem, router]);
 
   return (
     <>

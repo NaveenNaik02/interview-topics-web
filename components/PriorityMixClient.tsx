@@ -18,7 +18,13 @@ import {
 } from '@/lib/actions/questionFlags';
 import type { PriorityMixQuestion } from '@/lib/db/priority';
 import type { PriorityLevel } from '@/lib/offlineSync';
-import QuestionItem from './QuestionItem';
+import QuestionItem, {
+  QuestionAnswerBody,
+  QuestionCrumb,
+  StarButton,
+  stripHtml,
+} from './QuestionItem';
+import RowActions from './RowActions';
 import AddQuestionModal, { type EditingQuestion } from './AddQuestionModal';
 import MoveQuestionModal from './MoveQuestionModal';
 import SaveToast from './SaveToast';
@@ -519,13 +525,8 @@ export default function PriorityMixClient({
             return (
               <QuestionItem
                 key={r.q.id}
-                q={{
-                  id: r.q.id,
-                  number: r.q.number,
-                  title: r.q.title,
-                  bodyHtml: r.q.bodyHtml,
-                  problem: r.q.problem,
-                }}
+                id={r.q.id}
+                title={r.q.title}
                 isDone={isComplete(r.q.id)}
                 isOpen={openId === r.q.id}
                 priority={r.priority}
@@ -537,63 +538,81 @@ export default function PriorityMixClient({
                   if (requireOnline()) return;
                   toggle(r.q.id);
                 }}
-                onSetPriority={(level) => handleSetPriority(r.q.id, level)}
-                crumb={{
-                  topicLabel: group?.groupName ?? r.q.groupSlug,
-                  subLabel: r.q.label,
-                  href: r.subKey,
-                }}
-                isStarred={r.q.starred}
-                onToggleStar={() => handleToggleStar(r.q.id, r.q.starred)}
-                onEdit={
-                  canManage
-                    ? () =>
-                        setEditingQuestion({
-                          id: r.q.id,
-                          title: r.q.title,
-                          // ETL-imported questions never had raw markdown persisted,
-                          // only the pre-rendered HTML — fall back to a best-effort
-                          // conversion so the edit form isn't blank.
-                          markdown:
-                            r.q.markdown || htmlToMarkdown(r.q.bodyHtml),
-                          section,
-                          priority: r.priority,
-                          lang: r.q.lang,
-                          tags: r.q.tags,
-                          problem: r.q.problem,
-                        })
-                    : undefined
+                subtitle={
+                  <QuestionCrumb
+                    topicLabel={group?.groupName ?? r.q.groupSlug}
+                    subLabel={r.q.label}
+                    href={r.subKey}
+                  />
                 }
-                onMove={
-                  canManage
-                    ? () =>
-                        setMovingQuestion({
-                          id: r.q.id,
-                          label: r.q.title,
-                          section,
-                        })
-                    : undefined
-                }
-                onSetAside={
-                  canManage
-                    ? async () => {
-                        const item = await setAsideQuestion(r.q.id);
-                        appendSetAsideItem(item);
-                        setAsideToast(true);
-                        setTimeout(() => setAsideToast(false), 3600);
-                        router.refresh();
+                actions={
+                  <>
+                    <StarButton
+                      isStarred={r.q.starred}
+                      onToggle={() => handleToggleStar(r.q.id, r.q.starred)}
+                    />
+                    <RowActions
+                      getText={() => stripHtml(r.q.title)}
+                      isStarred={r.q.starred}
+                      onToggleStar={() => handleToggleStar(r.q.id, r.q.starred)}
+                      priority={r.priority}
+                      onSetPriority={(level) =>
+                        handleSetPriority(r.q.id, level)
                       }
-                    : undefined
-                }
-                onDelete={
-                  canManage
-                    ? async () => {
-                        await deleteQuestion(r.q.id);
-                        router.refresh();
+                      onEdit={
+                        canManage
+                          ? () =>
+                              setEditingQuestion({
+                                id: r.q.id,
+                                title: r.q.title,
+                                // ETL-imported questions never had raw markdown persisted,
+                                // only the pre-rendered HTML — fall back to a best-effort
+                                // conversion so the edit form isn't blank.
+                                markdown:
+                                  r.q.markdown || htmlToMarkdown(r.q.bodyHtml),
+                                section,
+                                priority: r.priority,
+                                lang: r.q.lang,
+                                tags: r.q.tags,
+                                problem: r.q.problem,
+                              })
+                          : undefined
                       }
-                    : undefined
+                      onMove={
+                        canManage
+                          ? () =>
+                              setMovingQuestion({
+                                id: r.q.id,
+                                label: r.q.title,
+                                section,
+                              })
+                          : undefined
+                      }
+                      onSetAside={
+                        canManage
+                          ? async () => {
+                              const item = await setAsideQuestion(r.q.id);
+                              appendSetAsideItem(item);
+                              setAsideToast(true);
+                              setTimeout(() => setAsideToast(false), 3600);
+                              router.refresh();
+                            }
+                          : undefined
+                      }
+                      onDelete={
+                        canManage
+                          ? async () => {
+                              await deleteQuestion(r.q.id);
+                              router.refresh();
+                            }
+                          : undefined
+                      }
+                    />
+                  </>
                 }
-              />
+              >
+                <QuestionAnswerBody q={r.q} />
+              </QuestionItem>
             );
           })}
         </div>

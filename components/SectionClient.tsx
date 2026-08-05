@@ -29,7 +29,12 @@ import {
   setPriority as setPriorityAction,
 } from '@/lib/actions/questionFlags';
 import { computePriorityStats } from '@/lib/stores/progressSelectors';
-import QuestionItem from './QuestionItem';
+import QuestionItem, {
+  QuestionAnswerBody,
+  StarButton,
+  stripHtml,
+} from './QuestionItem';
+import RowActions from './RowActions';
 import ConfirmDialog from './ConfirmDialog';
 import FilterSortToolbar, {
   type PriorityFilterKey,
@@ -523,7 +528,8 @@ export default function SectionClient({
             return (
               <QuestionItem
                 key={q.id}
-                q={q}
+                id={q.id}
+                title={q.title}
                 isDone={isComplete(q.id)}
                 isOpen={openId === q.id}
                 priority={priority}
@@ -543,59 +549,74 @@ export default function SectionClient({
                   }
                   toggle(q.id);
                 }}
-                onSetPriority={(level) => handleSetPriority(q.id, level)}
-                isStarred={!!q.starred}
-                onToggleStar={() => handleToggleStar(q.id, !!q.starred)}
-                onEdit={
-                  canManage
-                    ? async () => {
-                        // ETL-imported questions never had raw markdown persisted,
-                        // only the pre-rendered HTML — fall back to a best-effort
-                        // conversion (turndown, loaded on demand) so the edit form
-                        // isn't blank.
-                        const markdown =
-                          q.markdown ||
-                          (await import('@/lib/htmlToMarkdown')).htmlToMarkdown(
-                            q.bodyHtml,
-                          );
-                        setEditingQuestion({
-                          id: q.id,
-                          title: q.title,
-                          markdown,
-                          section,
-                          priority,
-                          lang: q.lang,
-                          tags: q.tags,
-                          problem: q.problem,
-                        });
+                actions={
+                  <>
+                    <StarButton
+                      isStarred={!!q.starred}
+                      onToggle={() => handleToggleStar(q.id, !!q.starred)}
+                    />
+                    <RowActions
+                      getText={() => stripHtml(q.title)}
+                      isStarred={!!q.starred}
+                      onToggleStar={() => handleToggleStar(q.id, !!q.starred)}
+                      priority={priority}
+                      onSetPriority={(level) => handleSetPriority(q.id, level)}
+                      onEdit={
+                        canManage
+                          ? async () => {
+                              // ETL-imported questions never had raw markdown persisted,
+                              // only the pre-rendered HTML — fall back to a best-effort
+                              // conversion (turndown, loaded on demand) so the edit form
+                              // isn't blank.
+                              const markdown =
+                                q.markdown ||
+                                (
+                                  await import('@/lib/htmlToMarkdown')
+                                ).htmlToMarkdown(q.bodyHtml);
+                              setEditingQuestion({
+                                id: q.id,
+                                title: q.title,
+                                markdown,
+                                section,
+                                priority,
+                                lang: q.lang,
+                                tags: q.tags,
+                                problem: q.problem,
+                              });
+                            }
+                          : undefined
                       }
-                    : undefined
-                }
-                onMove={
-                  canManage
-                    ? () => setMovingQuestion({ id: q.id, label: q.title })
-                    : undefined
-                }
-                onSetAside={
-                  canManage
-                    ? async () => {
-                        const item = await setAsideQuestion(q.id);
-                        appendSetAsideItem(item);
-                        setAsideToast(true);
-                        setTimeout(() => setAsideToast(false), 3600);
-                        router.refresh();
+                      onMove={
+                        canManage
+                          ? () =>
+                              setMovingQuestion({ id: q.id, label: q.title })
+                          : undefined
                       }
-                    : undefined
-                }
-                onDelete={
-                  canManage
-                    ? async () => {
-                        await deleteQuestion(q.id);
-                        router.refresh();
+                      onSetAside={
+                        canManage
+                          ? async () => {
+                              const item = await setAsideQuestion(q.id);
+                              appendSetAsideItem(item);
+                              setAsideToast(true);
+                              setTimeout(() => setAsideToast(false), 3600);
+                              router.refresh();
+                            }
+                          : undefined
                       }
-                    : undefined
+                      onDelete={
+                        canManage
+                          ? async () => {
+                              await deleteQuestion(q.id);
+                              router.refresh();
+                            }
+                          : undefined
+                      }
+                    />
+                  </>
                 }
-              />
+              >
+                <QuestionAnswerBody q={q} />
+              </QuestionItem>
             );
           })
         )}

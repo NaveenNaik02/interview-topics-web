@@ -1,8 +1,14 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import {
+  useMemo,
+  useState,
+  useCallback,
+  useOptimistic,
+  useTransition,
+} from 'react';
 import { useRouter } from 'next/navigation';
-import { useProgress } from '@/lib/context/ProgressContext';
+import { useAppStore } from '@/lib/stores/appStore';
 import { useTopicGroups } from '@/lib/context/TopicsContext';
 import { deleteQuestion } from '@/lib/actions/questions';
 import {
@@ -11,8 +17,9 @@ import {
 } from '@/lib/actions/questionFlags';
 import type { StarredQuestion } from '@/features/starred/db';
 import type { PriorityLevel } from '@/lib/offlineSync';
-import QuestionItem from '@/components/QuestionItem';
+import SaveToast from '@/components/SaveToast';
 import { buildStarredRows, type StarredRow } from './starredRows';
+import StarredQuestionRow from './StarredQuestionRow';
 
 export type { StarredRow };
 
@@ -29,67 +36,96 @@ export default function StarredQuestionList({
   onMove,
   onSetAside,
 }: Props) {
-  // mounted/user/isComplete/toggle and groups are read straight from their
-  // providers here rather than threaded down as props from StarredClient —
-  // they're globally available, not something the parent owns.
-  const { isComplete, toggle, mounted, user, bumpStarredCount } = useProgress();
+  const mounted = useAppStore((s) => s.mounted);
+  const user = useAppStore((s) => s.user);
+  const bumpStarredCount = useAppStore((s) => s.bumpStarredCount);
+
   const groups = useTopicGroups();
   const router = useRouter();
   const [openId, setOpenId] = useState<string | null>(null);
+  const [errorToast, setErrorToast] = useState<{
+    title: string;
+    detail: string;
+  } | null>(null);
+  const [, startTransition] = useTransition();
 
-  const rows = useMemo(
-    () => buildStarredRows(questions, groups, mounted, user),
-    [questions, groups, mounted, user],
+  const [optimisticQuestions, setOptimisticQuestions] = useOptimistic(
+    questions,
+    (state, unstarId: string) => state.filter((q) => q.id !== unstarId),
   );
 
-  // These three are pure list-row actions — no dependency on any modal
-  // state, which lives up in StarredClient (edit/move/set-aside do).
-  const unstar = async (id: string) => {
-    await setStarred(id, false);
-    bumpStarredCount(-1);
-    router.refresh();
-  };
+  const rows = useMemo(
+    () => buildStarredRows(optimisticQuestions, groups, mounted, user),
+    [optimisticQuestions, groups, mounted, user],
+  );
 
-  const handleSetPriority = async (id: string, level: PriorityLevel | null) => {
-    await setPriorityAction(id, level);
-    router.refresh();
-  };
+  const handleToggleOpen = useCallback((id: string) => {
+    setOpenId((prev) => (prev === id ? null : id));
+  }, []);
 
-  const handleDelete = async (id: string) => {
-    await deleteQuestion(id);
-    router.refresh();
-  };
+  const unstar = useCallback(
+    async (id: string) => {
+      startTransition(async () => {
+        setOptimisticQuestions(id);
+        try {
+          await setStarred(id, false);
+          bumpStarredCount(-1);
+          router.refresh();
+        } catch (error) {
+          console.error('Failed to unstar question:', error);
+          setErrorToast({
+            title: 'Action failed',
+            detail: 'Failed to unstar the question. Reverting changes...',
+          });
+          setTimeout(() => {
+            setErrorToast(null);
+          }, 3600);
+        }
+      });
+    },
+    [bumpStarredCount, router, setOptimisticQuestions],
+  );
+
+  const handleSetPriority = useCallback(
+    async (id: string, level: PriorityLevel | null) => {
+      await setPriorityAction(id, level);
+      router.refresh();
+    },
+    [router],
+  );
+
+  const handleDelete = useCallback(
+    async (id: string) => {
+      await deleteQuestion(id);
+      router.refresh();
+    },
+    [router],
+  );
 
   return (
     <div className="questions-list">
-      {rows.map((row) => {
-        const { q, subKey, topicLabel, canManage } = row;
-        return (
-          <QuestionItem
-            key={q.id}
-            q={{
-              id: q.id,
-              number: q.number,
-              title: q.title,
-              bodyHtml: q.bodyHtml,
-              problem: q.problem,
-            }}
-            isDone={isComplete(q.id)}
-            isOpen={openId === q.id}
-            priority={q.priority}
-            onToggleOpen={() => setOpenId(openId === q.id ? null : q.id)}
-            onToggleDone={() => toggle(q.id)}
-            onSetPriority={(level) => handleSetPriority(q.id, level)}
-            crumb={{ topicLabel, subLabel: q.label, href: subKey }}
-            isStarred
-            onToggleStar={() => unstar(q.id)}
-            onEdit={canManage ? () => onEdit(row) : undefined}
-            onMove={canManage ? () => onMove(row) : undefined}
-            onSetAside={canManage ? () => onSetAside(row) : undefined}
-            onDelete={canManage ? () => handleDelete(q.id) : undefined}
-          />
-        );
-      })}
+      {rows.map((row, index) => (
+        <StarredQuestionRow
+          key={row.q.id}
+          row={row}
+          isOpen={openId === row.q.id}
+          index={index}
+          onToggleOpen={handleToggleOpen}
+          onUnstar={unstar}
+          onSetPriority={handleSetPriority}
+          onEdit={onEdit}
+          onMove={onMove}
+          onSetAside={onSetAside}
+          onDelete={handleDelete}
+        />
+      ))}
+      {errorToast && (
+        <SaveToast
+          title={errorToast.title}
+          detail={errorToast.detail}
+          variant="error"
+        />
+      )}
     </div>
   );
 }

@@ -5571,3 +5571,23 @@ div.drag-shadow.drag-shadow {
     display: none;
   }
 }
+
+/* Optimization: Defer layout and rendering of off-screen question cards */
+.content-visibility-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 64px; /* Estimated height of a closed question card */
+}
+
+@supports not (content-visibility: auto) {
+  .content-visibility-auto {
+    contain: layout style paint;
+  }
+}
+
+/* Optimization: Error toast theme override */
+.save-toast.error .ic {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+
