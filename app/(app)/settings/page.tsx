@@ -1,6 +1,6 @@
 import { getUser } from '@/lib/supabase/user';
-import { DEFAULT_SETTINGS } from '@/lib/db/settings';
-import SettingsClient from '@/components/SettingsClient';
+import { DEFAULT_SETTINGS } from '@/features/settings/db';
+import { SettingsClient } from '@/features/settings/components';
 
 export const metadata = { title: 'Settings — Prep Tracker' };
 

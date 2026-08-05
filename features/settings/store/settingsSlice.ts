@@ -1,9 +1,9 @@
 import type { StateCreator } from 'zustand';
 import type { SortMode } from '@/components/FilterSortToolbar';
 import type { Theme } from '@/lib/context/ThemeContext';
-import * as settingsDb from '@/lib/db/settings';
-import { DEFAULT_SETTINGS } from '@/lib/db/settings';
-import * as settingsActions from '@/lib/actions/settings';
+import * as settingsDb from '../db';
+import { DEFAULT_SETTINGS } from '../db';
+import * as settingsActions from '../actions';
 import {
   type InstructionPreset,
   presetUid,
@@ -13,7 +13,7 @@ import {
   saveActivePresetId,
   migratePresets,
 } from '@/lib/instructionPresets';
-import type { AppState, SettingsSlice } from '../types';
+import type { AppState, SettingsSlice } from '@/lib/stores/types';
 
 export const createSettingsSlice: StateCreator<
   AppState,

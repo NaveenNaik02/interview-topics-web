@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { createAuthSlice } from './slices/authSlice';
 import { createProgressSlice } from './slices/progressSlice';
-import { createSettingsSlice } from './slices/settingsSlice';
+import { createSettingsSlice } from '@/features/settings/store/settingsSlice';
 import { createInboxSlice } from '@/features/inbox/store/inboxSlice';
 import { createSetAsideSlice } from './slices/setAsideSlice';
 import { createStarredSlice } from './slices/starredSlice';
