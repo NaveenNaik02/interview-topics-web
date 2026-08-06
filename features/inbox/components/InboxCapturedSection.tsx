@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useProgress } from '@/lib/context/ProgressContext';
+import { useAppStore } from '@/lib/stores/appStore';
 import AddQuestionModal from '@/components/AddQuestionModal';
 import type { InboxItem } from '../db';
 import InboxCapturedList from './InboxCapturedList';
@@ -15,7 +15,7 @@ interface Props {
 }
 
 export default function InboxCapturedSection({ items, onRemoveItem }: Props) {
-  const { removeInboxItem } = useProgress();
+  const removeInboxItem = useAppStore((s) => s.removeInboxItem);
   const [assigning, setAssigning] = useState<InboxItem | null>(null);
 
   const handleDiscard = (id: string) => {

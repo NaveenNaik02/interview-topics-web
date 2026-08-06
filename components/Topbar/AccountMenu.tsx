@@ -15,7 +15,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { useTheme, type Theme } from '@/lib/context/ThemeContext';
-import { useProgress } from '@/lib/context/ProgressContext';
+import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '@/lib/stores/appStore';
 import OfflineStatusPill from '../OfflineStatusPill';
 
@@ -39,7 +39,18 @@ export default function AccountMenu({
     isSyncing,
     isCaching,
     pendingOpsCount,
-  } = useProgress();
+  } = useAppStore(
+    useShallow((s) => ({
+      user: s.user,
+      signOut: s.signOut,
+      mounted: s.mounted,
+      isOnline: s.isOnline,
+      offlineModeEnabled: s.offlineModeEnabled,
+      isSyncing: s.isSyncing,
+      isCaching: s.isCaching,
+      pendingOpsCount: s.pendingOpsCount,
+    })),
+  );
 
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);

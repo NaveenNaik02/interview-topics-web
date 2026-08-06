@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useProgress } from '@/lib/context/ProgressContext';
+import { useAppStore } from '@/lib/stores/appStore';
 import { useTopicGroups } from '@/lib/context/TopicsContext';
 import AddQuestionModal from '@/components/AddQuestionModal';
 import type { SetAsideItem } from '@/lib/db/setAside';
@@ -16,7 +16,7 @@ interface Props {
 }
 
 export default function InboxSetAsideSection({ items, onRemoveItem }: Props) {
-  const { removeSetAsideItem } = useProgress();
+  const removeSetAsideItem = useAppStore((s) => s.removeSetAsideItem);
   const groups = useTopicGroups();
   const [assigningAside, setAssigningAside] = useState<SetAsideItem | null>(
     null,

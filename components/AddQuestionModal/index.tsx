@@ -12,7 +12,7 @@ import {
   AlertTriangle,
   CheckCircle2,
 } from 'lucide-react';
-import { useProgress } from '@/lib/context/ProgressContext';
+import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '@/lib/stores/appStore';
 import { useTopicGroups } from '@/lib/context/TopicsContext';
 import { addQuestion, updateQuestion } from '@/lib/actions/questions';
@@ -61,7 +61,15 @@ export default function AddQuestionModal({
     signInWithGitHub,
     removeInboxItem,
     removeSetAsideItem,
-  } = useProgress();
+  } = useAppStore(
+    useShallow((s) => ({
+      user: s.user,
+      mounted: s.mounted,
+      signInWithGitHub: s.signInWithGitHub,
+      removeInboxItem: s.removeInboxItem,
+      removeSetAsideItem: s.removeSetAsideItem,
+    })),
+  );
   const defaultPriority = useAppStore((s) => s.defaultPriority);
   const isEdit = !!editing;
 

@@ -1,96 +1,142 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
-import { X, Github, Sparkles, Database, Loader2 } from 'lucide-react'
-import { useProgress } from '@/lib/context/ProgressContext'
-import { useTopicGroups } from '@/lib/context/TopicsContext'
-import { addTopicGroup, addSection } from '@/lib/actions/topics'
-import { generateTopicBlurb } from '@/lib/actions/generateBlurb'
-import type { TopicGroup, SectionMeta } from '@/lib/topics'
-import { useTypewriter } from '@/lib/useTypewriter'
-import AqSelect from './AqSelect'
+import { useEffect, useState } from 'react';
+import { X, Github, Sparkles, Database, Loader2 } from 'lucide-react';
+import { useShallow } from 'zustand/react/shallow';
+import { useAppStore } from '@/lib/stores/appStore';
+import { useTopicGroups } from '@/lib/context/TopicsContext';
+import { addTopicGroup, addSection } from '@/lib/actions/topics';
+import { generateTopicBlurb } from '@/lib/actions/generateBlurb';
+import type { TopicGroup, SectionMeta } from '@/lib/topics';
+import { useTypewriter } from '@/lib/useTypewriter';
+import AqSelect from './AqSelect';
 
-type Mode = 'topic' | 'subtopic'
+type Mode = 'topic' | 'subtopic';
 
 export type AddTopicSaved =
   | { kind: 'topic'; group: TopicGroup }
-  | { kind: 'subtopic'; section: SectionMeta; group: TopicGroup }
+  | { kind: 'subtopic'; section: SectionMeta; group: TopicGroup };
 
 interface Props {
-  initialMode?: Mode
-  initialGroupSlug?: string
-  onClose: () => void
-  onSaved: (result: AddTopicSaved) => void
+  initialMode?: Mode;
+  initialGroupSlug?: string;
+  onClose: () => void;
+  onSaved: (result: AddTopicSaved) => void;
 }
 
-export default function AddTopicModal({ initialMode = 'topic', initialGroupSlug, onClose, onSaved }: Props) {
-  const { user, mounted, signInWithGitHub } = useProgress()
-  const groups = useTopicGroups()
+export default function AddTopicModal({
+  initialMode = 'topic',
+  initialGroupSlug,
+  onClose,
+  onSaved,
+}: Props) {
+  const { user, mounted, signInWithGitHub } = useAppStore(
+    useShallow((s) => ({
+      user: s.user,
+      mounted: s.mounted,
+      signInWithGitHub: s.signInWithGitHub,
+    })),
+  );
+  const groups = useTopicGroups();
 
-  const [mode, setMode] = useState<Mode>(initialMode)
-  const [groupSlug, setGroupSlug] = useState(initialGroupSlug ?? groups[0]?.slug ?? '')
-  const [topicName, setTopicName] = useState('')
-  const [blurb, setBlurb] = useState('')
-  const [subLabel, setSubLabel] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [blurbGen, setBlurbGen] = useState<'idle' | 'loading' | 'error'>('idle')
-  const typewriteBlurb = useTypewriter(setBlurb)
+  const [mode, setMode] = useState<Mode>(initialMode);
+  const [groupSlug, setGroupSlug] = useState(
+    initialGroupSlug ?? groups[0]?.slug ?? '',
+  );
+  const [topicName, setTopicName] = useState('');
+  const [blurb, setBlurb] = useState('');
+  const [subLabel, setSubLabel] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [blurbGen, setBlurbGen] = useState<'idle' | 'loading' | 'error'>(
+    'idle',
+  );
+  const typewriteBlurb = useTypewriter(setBlurb);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
 
-  const isAnonymous = mounted && !!user?.is_anonymous
+  const isAnonymous = mounted && !!user?.is_anonymous;
 
-  const canGenerateBlurb = topicName.trim().length > 1 && blurbGen !== 'loading'
+  const canGenerateBlurb =
+    topicName.trim().length > 1 && blurbGen !== 'loading';
   const handleGenerateBlurb = async () => {
-    if (!canGenerateBlurb) return
-    setBlurbGen('loading')
+    if (!canGenerateBlurb) return;
+    setBlurbGen('loading');
     try {
-      const text = await generateTopicBlurb(topicName)
-      typewriteBlurb(text)
-      setBlurbGen('idle')
+      const text = await generateTopicBlurb(topicName);
+      typewriteBlurb(text);
+      setBlurbGen('idle');
     } catch {
-      setBlurbGen('error')
+      setBlurbGen('error');
     }
-  }
+  };
 
-  const canSave = mode === 'topic'
-    ? topicName.trim().length > 1
-    : subLabel.trim().length > 1 && !!groupSlug
+  const canSave =
+    mode === 'topic'
+      ? topicName.trim().length > 1
+      : subLabel.trim().length > 1 && !!groupSlug;
 
   const handleSave = async () => {
-    if (!canSave || saving) return
-    setSaving(true)
-    setError(null)
+    if (!canSave || saving) return;
+    setSaving(true);
+    setError(null);
     try {
       if (mode === 'topic') {
-        const group = await addTopicGroup({ groupName: topicName, blurb })
-        onSaved({ kind: 'topic', group })
+        const group = await addTopicGroup({ groupName: topicName, blurb });
+        onSaved({ kind: 'topic', group });
       } else {
-        const { section, group } = await addSection({ groupSlug, label: subLabel })
-        onSaved({ kind: 'subtopic', section, group })
+        const { section, group } = await addSection({
+          groupSlug,
+          label: subLabel,
+        });
+        onSaved({ kind: 'subtopic', section, group });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save — try again.')
-      setSaving(false)
+      setError(
+        err instanceof Error ? err.message : 'Could not save — try again.',
+      );
+      setSaving(false);
     }
-  }
+  };
 
   return (
-    <div className="modal-scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="aq-modal" style={{ maxWidth: 560 }} role="dialog" aria-modal="true" aria-label="Add topic or subtopic">
+    <div
+      className="modal-scrim"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        className="aq-modal"
+        style={{ maxWidth: 560 }}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Add topic or subtopic"
+      >
         <div className="aq-head">
           <h2>{mode === 'topic' ? 'Add topic' : 'Add subtopic'}</h2>
-          <button className="aq-close" onClick={onClose} aria-label="Close" title="Close"><X size={15} /></button>
+          <button
+            className="aq-close"
+            onClick={onClose}
+            aria-label="Close"
+            title="Close"
+          >
+            <X size={15} />
+          </button>
         </div>
 
         {isAnonymous ? (
           <div className="aq-body">
-            <p className="aq-signin-msg">Sign in with GitHub to add your own topics — this keeps authorship attached to your account.</p>
+            <p className="aq-signin-msg">
+              Sign in with GitHub to add your own topics — this keeps authorship
+              attached to your account.
+            </p>
             <button className="btn btn-primary" onClick={signInWithGitHub}>
               <Github size={14} /> Sign in with GitHub
             </button>
@@ -101,10 +147,22 @@ export default function AddTopicModal({ initialMode = 'topic', initialGroupSlug,
               <div className="aq-field">
                 <label>What are you adding?</label>
                 <div className="aq-mode-toggle" role="tablist">
-                  <button type="button" role="tab" aria-selected={mode === 'topic'} className={`aq-mode-btn ${mode === 'topic' ? 'on' : ''}`} onClick={() => setMode('topic')}>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={mode === 'topic'}
+                    className={`aq-mode-btn ${mode === 'topic' ? 'on' : ''}`}
+                    onClick={() => setMode('topic')}
+                  >
                     New topic
                   </button>
-                  <button type="button" role="tab" aria-selected={mode === 'subtopic'} className={`aq-mode-btn ${mode === 'subtopic' ? 'on' : ''}`} onClick={() => setMode('subtopic')}>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={mode === 'subtopic'}
+                    className={`aq-mode-btn ${mode === 'subtopic' ? 'on' : ''}`}
+                    onClick={() => setMode('subtopic')}
+                  >
                     New subtopic
                   </button>
                 </div>
@@ -115,36 +173,66 @@ export default function AddTopicModal({ initialMode = 'topic', initialGroupSlug,
                   <div className="aq-field">
                     <label htmlFor="at-name">Topic name</label>
                     <input
-                      id="at-name" className="aq-input" type="text"
+                      id="at-name"
+                      className="aq-input"
+                      type="text"
                       placeholder="e.g. System Design"
-                      value={topicName} onChange={(e) => setTopicName(e.target.value)}
+                      value={topicName}
+                      onChange={(e) => setTopicName(e.target.value)}
                     />
                   </div>
                   <div className="aq-field">
                     <div className="aq-label-row">
-                      <label htmlFor="at-blurb">Blurb <span className="aq-customize-sub">(shows on the topic&apos;s dashboard card)</span></label>
+                      <label htmlFor="at-blurb">
+                        Blurb{' '}
+                        <span className="aq-customize-sub">
+                          (shows on the topic&apos;s dashboard card)
+                        </span>
+                      </label>
                       <button
                         type="button"
                         className={`aq-generate-btn ${blurbGen === 'loading' ? 'loading' : ''}`}
                         onClick={handleGenerateBlurb}
                         disabled={!canGenerateBlurb}
-                        title={canGenerateBlurb ? 'Generate a blurb from the topic name' : 'Add a topic name first'}
+                        title={
+                          canGenerateBlurb
+                            ? 'Generate a blurb from the topic name'
+                            : 'Add a topic name first'
+                        }
                       >
                         {blurbGen === 'loading' ? (
-                          <><span className="aq-gen-spinner" />Generating…</>
+                          <>
+                            <span className="aq-gen-spinner" />
+                            Generating…
+                          </>
                         ) : (
-                          <><Sparkles size={12.5} /> Generate</>
+                          <>
+                            <Sparkles size={12.5} /> Generate
+                          </>
                         )}
                       </button>
                     </div>
                     <input
-                      id="at-blurb" className="aq-input" type="text"
+                      id="at-blurb"
+                      className="aq-input"
+                      type="text"
                       placeholder="e.g. Scalability, tradeoffs, and high-level architecture."
-                      value={blurb} onChange={(e) => setBlurb(e.target.value)}
+                      value={blurb}
+                      onChange={(e) => setBlurb(e.target.value)}
                     />
-                    {blurbGen === 'error' && <div className="aq-gen-error" style={{ padding: '6px 0 0', background: 'none' }}>Couldn&apos;t generate — try again.</div>}
+                    {blurbGen === 'error' && (
+                      <div
+                        className="aq-gen-error"
+                        style={{ padding: '6px 0 0', background: 'none' }}
+                      >
+                        Couldn&apos;t generate — try again.
+                      </div>
+                    )}
                   </div>
-                  <p className="aq-hint">A new topic starts empty — you&apos;ll add subtopics to it next.</p>
+                  <p className="aq-hint">
+                    A new topic starts empty — you&apos;ll add subtopics to it
+                    next.
+                  </p>
                 </>
               ) : (
                 <>
@@ -154,18 +242,27 @@ export default function AddTopicModal({ initialMode = 'topic', initialGroupSlug,
                       id="as-topic"
                       value={groupSlug}
                       onChange={setGroupSlug}
-                      options={groups.map(g => ({ value: g.slug, label: g.groupName }))}
+                      options={groups.map((g) => ({
+                        value: g.slug,
+                        label: g.groupName,
+                      }))}
                     />
                   </div>
                   <div className="aq-field">
                     <label htmlFor="as-name">Subtopic name</label>
                     <input
-                      id="as-name" className="aq-input" type="text"
+                      id="as-name"
+                      className="aq-input"
+                      type="text"
                       placeholder="e.g. Closures"
-                      value={subLabel} onChange={(e) => setSubLabel(e.target.value)}
+                      value={subLabel}
+                      onChange={(e) => setSubLabel(e.target.value)}
                     />
                   </div>
-                  <p className="aq-hint">Starts with no questions — click the + button again once you&apos;re on its page to add the first one.</p>
+                  <p className="aq-hint">
+                    Starts with no questions — click the + button again once
+                    you&apos;re on its page to add the first one.
+                  </p>
                 </>
               )}
 
@@ -175,13 +272,25 @@ export default function AddTopicModal({ initialMode = 'topic', initialGroupSlug,
             <div className="aq-foot">
               <span className="aq-foot-left">
                 <Database size={13} />
-                {mode === 'topic' ? 'Creates a new top-level topic immediately — no file editing needed.' : 'Adds this subtopic to the curriculum immediately.'}
+                {mode === 'topic'
+                  ? 'Creates a new top-level topic immediately — no file editing needed.'
+                  : 'Adds this subtopic to the curriculum immediately.'}
               </span>
               <div className="aq-foot-actions">
-                <button className="btn-cancel" onClick={onClose}>Cancel</button>
-                <button className={`btn-primary btn-save ${saving ? 'saving' : ''}`} disabled={!canSave} onClick={handleSave}>
+                <button className="btn-cancel" onClick={onClose}>
+                  Cancel
+                </button>
+                <button
+                  className={`btn-primary btn-save ${saving ? 'saving' : ''}`}
+                  disabled={!canSave}
+                  onClick={handleSave}
+                >
                   {saving ? <Loader2 size={14} className="aq-spin" /> : null}
-                  {saving ? 'Saving…' : mode === 'topic' ? 'Create topic' : 'Create subtopic'}
+                  {saving
+                    ? 'Saving…'
+                    : mode === 'topic'
+                      ? 'Create topic'
+                      : 'Create subtopic'}
                 </button>
               </div>
             </div>
@@ -189,5 +298,5 @@ export default function AddTopicModal({ initialMode = 'topic', initialGroupSlug,
         )}
       </div>
     </div>
-  )
+  );
 }

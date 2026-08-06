@@ -1,22 +1,22 @@
-'use client'
+'use client';
 
-import { useProgress } from '@/lib/context/ProgressContext'
-import { Button } from '@/components/ui/button'
-import { RotateCcw } from 'lucide-react'
+import { useAppStore } from '@/lib/stores/appStore';
+import { Button } from '@/components/ui/button';
+import { RotateCcw } from 'lucide-react';
 
 export default function ResetButton() {
-  const { resetAll } = useProgress()
+  const resetAll = useAppStore((s) => s.resetAll);
 
   const handleReset = () => {
     if (window.confirm('Reset all progress? This cannot be undone.')) {
-      resetAll()
+      resetAll();
     }
-  }
+  };
 
   return (
     <Button variant="outline" size="sm" onClick={handleReset}>
       <RotateCcw className="h-4 w-4 mr-2" />
       Reset All
     </Button>
-  )
+  );
 }

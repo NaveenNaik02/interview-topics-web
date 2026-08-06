@@ -26,26 +26,19 @@ export function useProgress() {
       setMany: s.setMany,
       resetAll: s.resetAll,
       renameProgressId: s.renameProgressId,
-      // Inbox
+      // Counts only — the inbox/set-aside/starred *mutators* are read straight
+      // off the store by the components that call them.
       inboxCount: s.inboxCount,
-      appendInboxItem: s.appendInboxItem,
-      appendInboxItems: s.appendInboxItems,
-      removeInboxItem: s.removeInboxItem,
-      // Set aside
       setAsideCount: s.setAsideCount,
       appendSetAsideItem: s.appendSetAsideItem,
-      removeSetAsideItem: s.removeSetAsideItem,
-      // Starred
       starredCount: s.starredCount,
       bumpStarredCount: s.bumpStarredCount,
       // Question order
       orderStore: s.orderStore,
       setQuestionOrder: s.setQuestionOrder,
       renameOrderId: s.renameOrderId,
-      // Auth
+      // Auth — `user` only; signInWithGitHub/signOut are read off the store.
       user: s.user,
-      signInWithGitHub: s.signInWithGitHub,
-      signOut: s.signOut,
       // Settings are NOT exposed here — read them straight off the store with
       // `useAppStore((s) => s.defaultSort)` etc. (see features/settings/store/settingsSlice.ts).
       // Offline mode
@@ -98,36 +91,22 @@ export function useProgress() {
     [store, mounted],
   );
 
-  const allStats = useCallback(
-    (sections: { topic: string; file: string; total: number }[]) => {
-      let totalQ = 0;
-      let doneQ = 0;
-      for (const s of sections) {
-        const st = sectionStats(s.topic, s.file, s.total);
-        totalQ += s.total;
-        doneQ += st.done;
-      }
-      return { done: doneQ, total: totalQ };
-    },
-    [sectionStats],
-  );
-
   const getOrderPosition = useCallback(
     (id: string) => (mounted ? (orderStore[id] ?? null) : null),
     [orderStore, mounted],
   );
 
-  // Omit the store's raw (unmerged) `totals` from the public return value —
-  // `stats` above is the merged, render-safe aggregate every consumer wants;
-  // nothing has ever read `totals` directly off this hook.
+  // The three raw maps stay private — they're inputs to the derived values
+  // below (`stats`, `isComplete`, `getOrderPosition`), and no consumer has
+  // ever read them directly. `totals` in particular is the store's unmerged
+  // copy, so exposing it would hand out the wrong numbers.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { totals: _rawTotals, ...rest } = state;
+  const { store: _s, totals: _t, orderStore: _o, ...rest } = state;
   return {
     ...rest,
     stats,
     isComplete,
     sectionStats,
-    allStats,
     getOrderPosition,
   };
 }
