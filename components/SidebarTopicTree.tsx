@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { TopicGroup, sectionUrl } from '@/lib/topics';
-import { useProgress } from '@/lib/context/ProgressContext';
+import { useProgressStats } from '@/lib/useProgressStats';
 import { useDrawer } from '@/lib/context/DrawerContext';
 import { deleteSection, deleteTopicGroup } from '@/lib/actions/topics';
 import ConfirmDialog from './ConfirmDialog';
@@ -19,7 +19,8 @@ type DeleteTarget =
 export default function SidebarTopicTree({ groups }: { groups: TopicGroup[] }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { stats } = useProgress();
+  const stats = useProgressStats();
+
   const { setDrawerOpen } = useDrawer();
   const [expanded, setExpanded] = useState<Set<string>>(
     new Set(['javascript', 'react']),

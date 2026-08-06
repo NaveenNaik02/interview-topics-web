@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import type { SetAsideItem } from '@/lib/db/setAside';
-import type { InboxItem } from '../db';
-import { useServerSyncedList } from '../hooks/useServerSyncedList';
-import InboxCapturedSection from './InboxCapturedSection';
-import InboxSetAsideSection from './InboxSetAsideSection';
+import type { InboxItem } from './db/db';
+import { useServerSyncedList } from './hooks/useServerSyncedList';
+import InboxCapturedSection from './components/InboxCapturedSection';
+import InboxSetAsideSection from './components/InboxSetAsideSection';
 
 type Tab = 'captured' | 'aside';
 

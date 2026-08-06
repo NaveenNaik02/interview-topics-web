@@ -1,7 +1,7 @@
 'use server';
 
 import { requireUser } from '@/lib/supabase/user';
-import type { UserSettings } from '../db';
+import type { UserSettings } from '../db/db';
 
 export async function insertSettings(settings: UserSettings): Promise<void> {
   const { supabase, user } = await requireUser();

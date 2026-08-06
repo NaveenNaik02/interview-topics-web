@@ -1,7 +1,9 @@
 'use client';
 
 import { Download, X } from 'lucide-react';
-import { useProgress } from '@/lib/context/ProgressContext';
+import { useProgressStats } from '@/lib/useProgressStats';
+import { useAppStore } from '@/lib/stores/appStore';
+import { useShallow } from 'zustand/react/shallow';
 
 function relativeTime(isoStr: string | null) {
   if (!isoStr) return 'a while ago';
@@ -15,16 +17,26 @@ function relativeTime(isoStr: string | null) {
 // the other settings rows — so it owns its own settings-row-text/label
 // rather than splitting the static label out into the server-rendered parent.
 export default function OfflineAccessControl() {
+  const stats = useProgressStats();
   const {
     isOnline,
     offlineModeEnabled,
     isCaching,
     cachingProgress,
     cachedAt,
-    stats,
     enableOfflineMode,
     disableOfflineMode,
-  } = useProgress();
+  } = useAppStore(
+    useShallow((s) => ({
+      isOnline: s.isOnline,
+      offlineModeEnabled: s.offlineModeEnabled,
+      isCaching: s.isCaching,
+      cachingProgress: s.cachingProgress,
+      cachedAt: s.cachedAt,
+      enableOfflineMode: s.enableOfflineMode,
+      disableOfflineMode: s.disableOfflineMode,
+    })),
+  );
 
   const pct = cachingProgress
     ? Math.round((cachingProgress.done / cachingProgress.total) * 100)

@@ -2,7 +2,9 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Wifi, Send, RefreshCw, Loader2, Download, CloudDownload } from 'lucide-react'
-import { useProgress } from '@/lib/context/ProgressContext'
+import { useProgressStats } from '@/lib/useProgressStats'
+import { useAppStore } from '@/lib/stores/appStore'
+import { useShallow } from 'zustand/react/shallow'
 import { useTopicGroups } from '@/lib/context/TopicsContext'
 
 function relativeTime(isoStr: string | null): string {
@@ -14,11 +16,32 @@ function relativeTime(isoStr: string | null): string {
 }
 
 export default function OfflineStatusPill() {
+  const stats = useProgressStats()
   const {
-    isOnline, offlineModeEnabled, isCaching, cachingProgress,
-    pendingOpsCount, isSyncing, cachedAt, stats,
-    enableOfflineMode, disableOfflineMode, syncNow,
-  } = useProgress()
+    isOnline,
+    offlineModeEnabled,
+    isCaching,
+    cachingProgress,
+    pendingOpsCount,
+    isSyncing,
+    cachedAt,
+    enableOfflineMode,
+    disableOfflineMode,
+    syncNow,
+  } = useAppStore(
+    useShallow((s) => ({
+      isOnline: s.isOnline,
+      offlineModeEnabled: s.offlineModeEnabled,
+      isCaching: s.isCaching,
+      cachingProgress: s.cachingProgress,
+      pendingOpsCount: s.pendingOpsCount,
+      isSyncing: s.isSyncing,
+      cachedAt: s.cachedAt,
+      enableOfflineMode: s.enableOfflineMode,
+      disableOfflineMode: s.disableOfflineMode,
+      syncNow: s.syncNow,
+    })),
+  )
   const groups = useTopicGroups()
   const totalUrls = useMemo(() => 1 + groups.flatMap(g => g.sections).length, [groups]) // dashboard + all sections
   const estMb = Math.round(totalUrls * 80 / 1024 * 10) / 10

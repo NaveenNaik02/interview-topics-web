@@ -4,7 +4,7 @@ import type { Theme } from '@/lib/context/ThemeContext';
 import type { PriorityLevel } from '@/lib/offlineSync';
 import type { TopicGroup } from '@/lib/topics';
 import type { InstructionPreset } from '@/lib/instructionPresets';
-import type { InboxItem } from '@/features/inbox/db';
+import type { InboxItem } from '@/features/inbox';
 import type { SetAsideItem } from '@/lib/db/setAside';
 import type { ProgressStats } from './progressSelectors';
 

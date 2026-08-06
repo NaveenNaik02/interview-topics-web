@@ -4,7 +4,7 @@ import {
   fetchSetAsideItemsWithClient,
   type SetAsideItem,
 } from '@/lib/db/setAside';
-import { fetchInboxItemsWithClient, type InboxItem } from '@/features/inbox/db';
+import { fetchInboxItemsWithClient, type InboxItem } from '@/features/inbox/db/db';
 
 // Server-only: seeds the Inbox page's both lists without touching Supabase
 // directly. Split out of db.ts because that file is also imported by the

@@ -11,8 +11,9 @@ import React, {
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Send } from 'lucide-react';
-import { useProgress } from '@/lib/context/ProgressContext';
 import { useAppStore } from '@/lib/stores/appStore';
+import { useShallow } from 'zustand/react/shallow';
+import { computeSectionStats } from '@/lib/stores/progressSelectors';
 import { useTopicGroups } from '@/lib/context/TopicsContext';
 import type { ParsedQuestion } from '@/lib/parser';
 import type { PriorityLevel } from '@/lib/offlineSync';
@@ -72,10 +73,8 @@ export default function SectionClient({
   initialOrder = {},
 }: Props) {
   const {
-    isComplete,
     toggle,
     setMany,
-    sectionStats,
     setSectionTotal,
     mounted,
     isOnline,
@@ -84,10 +83,47 @@ export default function SectionClient({
     renameProgressId,
     appendSetAsideItem,
     bumpStarredCount,
-    getOrderPosition,
     setQuestionOrder,
     renameOrderId,
-  } = useProgress();
+    store,
+    orderStore,
+  } = useAppStore(
+    useShallow((s) => ({
+      toggle: s.toggle,
+      setMany: s.setMany,
+      setSectionTotal: s.setSectionTotal,
+      mounted: s.mounted,
+      isOnline: s.isOnline,
+      offlineModeEnabled: s.offlineModeEnabled,
+      user: s.user,
+      renameProgressId: s.renameProgressId,
+      appendSetAsideItem: s.appendSetAsideItem,
+      bumpStarredCount: s.bumpStarredCount,
+      setQuestionOrder: s.setQuestionOrder,
+      renameOrderId: s.renameOrderId,
+      store: s.store,
+      orderStore: s.orderStore,
+    })),
+  );
+
+  const isComplete = useCallback(
+    (id: string) => mounted && !!store[id],
+    [store, mounted],
+  );
+
+  const getOrderPosition = useCallback(
+    (id: string) => (mounted ? (orderStore[id] ?? null) : null),
+    [orderStore, mounted],
+  );
+
+  const sectionStats = useCallback(
+    (topic: string, file: string, total: number) => {
+      if (!mounted) return { done: 0, total };
+      return computeSectionStats(store, topic, file, total);
+    },
+    [store, mounted],
+  );
+
   const settingsLoaded = useAppStore((s) => s.settingsLoaded);
   const defaultSort = useAppStore((s) => s.defaultSort);
   const rememberFilters = useAppStore((s) => s.rememberFilters);

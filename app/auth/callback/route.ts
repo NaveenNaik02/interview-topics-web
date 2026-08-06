@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { exchangeCode } from '@/features/login/actions'
+import { exchangeCode } from '@/features/login'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)

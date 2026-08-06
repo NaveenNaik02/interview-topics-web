@@ -10,8 +10,8 @@ import {
   type SectionMeta,
 } from '@/lib/topics';
 import { setAsideQuestion } from '@/lib/actions/setAside';
-import type { StarredQuestion } from '@/features/starred/db';
-import StarredQuestionList, { type StarredRow } from './StarredQuestionList';
+import type { StarredQuestion } from '@/features/starred/db/db';
+import StarredQuestionList, { type StarredRow } from './components/StarredQuestionList';
 import AddQuestionModal, {
   type EditingQuestion,
 } from '@/components/AddQuestionModal';

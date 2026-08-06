@@ -12,7 +12,7 @@ import { fetchAllCounts } from '@/lib/parser';
 import OfflineToast from '@/components/OfflineToast';
 import ThemeSync from '@/components/ThemeSync';
 import AddQuestionFab from '@/components/AddQuestionFab';
-import { InboxFab } from '@/features/inbox/components';
+import { InboxFab } from '@/features/inbox';
 
 export default async function AppLayout({
   children,

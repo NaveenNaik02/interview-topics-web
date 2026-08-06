@@ -1,12 +1,12 @@
-import type { UserSettings } from '../db';
-import ThemePicker from './ThemePicker';
-import SortOrderPicker from './SortOrderPicker';
-import RememberFiltersToggle from './RememberFiltersToggle';
-import DefaultPriorityPicker from './DefaultPriorityPicker';
-import NavigateAfterMoveToggle from './NavigateAfterMoveToggle';
-import InstructionPresetsEditor from './InstructionPresetsEditor';
-import OfflineAccessControl from './OfflineAccessControl';
-import ResetSettingsControl from './ResetSettingsControl';
+import type { UserSettings } from './db/db';
+import ThemePicker from './components/ThemePicker';
+import SortOrderPicker from './components/SortOrderPicker';
+import RememberFiltersToggle from './components/RememberFiltersToggle';
+import DefaultPriorityPicker from './components/DefaultPriorityPicker';
+import NavigateAfterMoveToggle from './components/NavigateAfterMoveToggle';
+import InstructionPresetsEditor from './components/InstructionPresetsEditor';
+import OfflineAccessControl from './components/OfflineAccessControl';
+import ResetSettingsControl from './components/ResetSettingsControl';
 
 // Server component: everything here (headings, labels, hint copy) renders
 // as static HTML. Each row's actual control is a small 'use client' island

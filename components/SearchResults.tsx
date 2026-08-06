@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { useProgress } from '@/lib/context/ProgressContext'
+import { useAppStore } from '@/lib/stores/appStore'
 import { useSearch } from '@/lib/context/SearchContext'
 import { useTopicGroups } from '@/lib/context/TopicsContext'
 import { supabase } from '@/lib/supabase/client'
@@ -97,7 +97,13 @@ const Check = () => (
 
 export default function SearchResults() {
   const { query, setQuery } = useSearch()
-  const { isComplete, toggle } = useProgress()
+  const toggle = useAppStore((s) => s.toggle)
+  const store = useAppStore((s) => s.store)
+  const mounted = useAppStore((s) => s.mounted)
+  const isComplete = useCallback(
+    (id: string) => mounted && !!store[id],
+    [store, mounted]
+  )
   const groups = useTopicGroups()
   const router = useRouter()
   const [questions, setQuestions] = useState<SearchQuestion[]>([])

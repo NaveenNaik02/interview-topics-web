@@ -14,14 +14,16 @@ Execution will proceed one feature at a time: move files, repoint imports (mover
 
 ```
 features/<name>/
-  components/     # feature-private components (only if the feature has any)
-  actions.ts | actions/    # 'use server' functions — flat file if 1, dir if 3+
-  db.ts | db/               # supabase query layer — flat if 1 file
+  index.ts                  # Root barrel export file (export public components, actions, db queries)
+  BaseClient.tsx            # The main page/client component at the root of the feature
+  components/               # Feature-private sub-components (topic card, list items, forms, etc.)
+  actions.ts | actions/     # 'use server' functions — flat file if 1, dir if 3+
+  db/                       # supabase query layer and database helper files
   store/                    # zustand slice(s) + feature-local selectors
   types.ts                  # only if the feature has a domain type worth naming
 ```
 
-Single-file layers stay flat (no `actions/index.ts` for one file). `features/` sits as a peer to `components/` (shared UI shell + `ui/` primitives only) and `lib/` (true cross-cutting infra only) — it does not replace either, because real shared/composition code exists and forcing it into a feature folder would just relocate the coupling.
+Every feature folder MUST have a root `index.ts` file that acts as a barrel export, re-exporting only the feature's public API. External consumers must import from the feature root path (`@/features/<name>`) rather than deep file paths. Single-file layers stay flat (no `actions/index.ts` for one file). `features/` sits as a peer to `components/` (shared UI shell + `ui/` primitives only) and `lib/` (true cross-cutting infra only) — it does not replace either, because real shared/composition code exists and forcing it into a feature folder would just relocate the coupling.
 
 ```
 app/                                  # unchanged paths — imports repointed only

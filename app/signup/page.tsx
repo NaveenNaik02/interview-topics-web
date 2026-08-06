@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import AuthSidebar from '@/components/AuthSidebar';
-import { SignupForm } from '@/features/signup/components';
+import { SignupForm } from '@/features/signup';
 
 export const metadata = { title: 'Sign up — Prep Tracker' };
 

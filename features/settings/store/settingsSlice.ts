@@ -1,8 +1,8 @@
 import type { StateCreator } from 'zustand';
 import type { SortMode } from '@/components/FilterSortToolbar';
 import type { Theme } from '@/lib/context/ThemeContext';
-import * as settingsDb from '../db';
-import { DEFAULT_SETTINGS } from '../db';
+import * as settingsDb from '../db/db';
+import { DEFAULT_SETTINGS } from '../db/db';
 import * as settingsActions from '../actions';
 import {
   type InstructionPreset,

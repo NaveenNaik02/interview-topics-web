@@ -15,7 +15,7 @@ import {
   setStarred,
   setPriority as setPriorityAction,
 } from '@/lib/actions/questionFlags';
-import type { StarredQuestion } from '@/features/starred/db';
+import type { StarredQuestion } from '@/features/starred/db/db';
 import type { PriorityLevel } from '@/lib/offlineSync';
 import SaveToast from '@/components/SaveToast';
 import { buildStarredRows, type StarredRow } from './starredRows';

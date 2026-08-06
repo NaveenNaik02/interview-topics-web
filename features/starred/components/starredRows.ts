@@ -1,5 +1,5 @@
 import type { User } from '@supabase/supabase-js';
-import type { StarredQuestion } from '@/features/starred/db';
+import type { StarredQuestion } from '@/features/starred/db/db';
 import {
   sectionUrl,
   findGroupForSection,

@@ -1,7 +1,7 @@
 import GoogleAuthButton from '@/components/GoogleAuthButton';
 import GitHubAuthButton from '@/components/GitHubAuthButton';
 import { signUpWithGoogle, signUpWithGithub } from '@/features/signup/actions';
-import EmailSignupForm from './EmailSignupForm';
+import EmailSignupForm from './components/EmailSignupForm';
 
 export default function SignupForm() {
   return (

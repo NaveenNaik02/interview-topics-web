@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, X, Send } from 'lucide-react';
-import { useProgress } from '@/lib/context/ProgressContext';
 import { useAppStore } from '@/lib/stores/appStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useTopicGroups } from '@/lib/context/TopicsContext';
 import {
   sectionUrl,
@@ -245,7 +245,6 @@ export default function PriorityMixClient({
   questions: serverQuestions,
 }: Props) {
   const {
-    isComplete,
     toggle,
     isOnline,
     offlineModeEnabled,
@@ -253,7 +252,25 @@ export default function PriorityMixClient({
     user,
     appendSetAsideItem,
     bumpStarredCount,
-  } = useProgress();
+    store,
+  } = useAppStore(
+    useShallow((s) => ({
+      toggle: s.toggle,
+      isOnline: s.isOnline,
+      offlineModeEnabled: s.offlineModeEnabled,
+      mounted: s.mounted,
+      user: s.user,
+      appendSetAsideItem: s.appendSetAsideItem,
+      bumpStarredCount: s.bumpStarredCount,
+      store: s.store,
+    })),
+  );
+
+  const isComplete = useCallback(
+    (id: string) => mounted && !!store[id],
+    [store, mounted],
+  );
+
   const navigateAfterMove = useAppStore((s) => s.navigateAfterMove);
   const [questions, setQuestions] = useState(serverQuestions);
   const groups = useTopicGroups();

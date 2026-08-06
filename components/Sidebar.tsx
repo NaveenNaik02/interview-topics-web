@@ -2,15 +2,20 @@
 
 import Link from 'next/link';
 import { TopicGroup } from '@/lib/topics';
-import { useProgress } from '@/lib/context/ProgressContext';
+import { useProgressStats } from '@/lib/useProgressStats';
+import { useAppStore } from '@/lib/stores/appStore';
 import { useDrawer } from '@/lib/context/DrawerContext';
 import { Icon } from './SidebarIcons';
 import SidebarNavLink from './SidebarNavLink';
 import SidebarTopicTree from './SidebarTopicTree';
 
 export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
-  const { stats, inboxCount, setAsideCount, starredCount } = useProgress();
+  const stats = useProgressStats();
+  const inboxCount = useAppStore((s) => s.inboxCount);
+  const setAsideCount = useAppStore((s) => s.setAsideCount);
+  const starredCount = useAppStore((s) => s.starredCount);
   const { drawerOpen, setDrawerOpen } = useDrawer();
+
 
   const totalCount = stats.total;
   const closeDrawer = () => setDrawerOpen(false);

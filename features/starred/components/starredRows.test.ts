@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildStarredRows } from './starredRows';
-import type { StarredQuestion } from '@/features/starred/db';
+import type { StarredQuestion } from '@/features/starred/db/db';
 import type { TopicGroup } from '@/lib/topics';
 
 function makeQuestion(

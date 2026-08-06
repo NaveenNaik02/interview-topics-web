@@ -4,7 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import GoogleAuthButton from '@/components/GoogleAuthButton';
 import GitHubAuthButton from '@/components/GitHubAuthButton';
 import { loginWithGoogle, loginWithGithub } from '@/features/login/actions';
-import EmailLoginForm from './EmailLoginForm';
+import EmailLoginForm from './components/EmailLoginForm';
 
 export default function LoginForm() {
   const searchParams = useSearchParams();

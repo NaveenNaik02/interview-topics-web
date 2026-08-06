@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import AddTopicModal from './AddTopicModal';
+import AddTopicModal from '@/components/AddTopicModal';
 
 export default function DashboardEmptyState() {
   const router = useRouter();

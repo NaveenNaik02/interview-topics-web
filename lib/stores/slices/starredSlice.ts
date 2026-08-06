@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import * as starredDb from '@/features/starred/db';
+import * as starredDb from '@/features/starred';
 import type { AppState, StarredSlice } from '../types';
 
 // Count only — the Sidebar badge is the only thing that reads this
