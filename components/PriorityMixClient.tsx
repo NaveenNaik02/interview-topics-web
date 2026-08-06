@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, X, Send } from 'lucide-react';
 import { useProgress } from '@/lib/context/ProgressContext';
+import { useAppStore } from '@/lib/stores/appStore';
 import { useTopicGroups } from '@/lib/context/TopicsContext';
 import {
   sectionUrl,
@@ -249,11 +250,11 @@ export default function PriorityMixClient({
     isOnline,
     offlineModeEnabled,
     mounted,
-    navigateAfterMove,
     user,
     appendSetAsideItem,
     bumpStarredCount,
   } = useProgress();
+  const navigateAfterMove = useAppStore((s) => s.navigateAfterMove);
   const [questions, setQuestions] = useState(serverQuestions);
   const groups = useTopicGroups();
   const flatSubs = useMemo(

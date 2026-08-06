@@ -1,18 +1,21 @@
 'use client';
 
-import { useProgress } from '@/lib/context/ProgressContext';
+import { useAppStore } from '@/lib/stores/appStore';
 import type { SortMode } from '@/components/FilterSortToolbar';
-import { SORT_OPTIONS } from './constants';
+
+const SORT_OPTIONS: { k: SortMode; label: string }[] = [
+  { k: 'manual', label: 'Manual (curriculum order)' },
+  { k: 'high', label: 'High priority first' },
+  { k: 'low', label: 'Low priority first' },
+];
 
 // `initial` is the server-fetched value, rendered until the store finishes
 // hydrating (see SettingsClient) so returning users don't see a flash of
 // the wrong pill selected.
 export default function SortOrderPicker({ initial }: { initial: SortMode }) {
-  const {
-    settingsLoaded,
-    defaultSort: liveDefaultSort,
-    setDefaultSort,
-  } = useProgress();
+  const settingsLoaded = useAppStore((s) => s.settingsLoaded);
+  const liveDefaultSort = useAppStore((s) => s.defaultSort);
+  const setDefaultSort = useAppStore((s) => s.setDefaultSort);
   const defaultSort = settingsLoaded ? liveDefaultSort : initial;
 
   return (

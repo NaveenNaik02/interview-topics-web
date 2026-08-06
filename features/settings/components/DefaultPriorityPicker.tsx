@@ -1,19 +1,23 @@
 'use client';
 
-import { useProgress } from '@/lib/context/ProgressContext';
+import { useAppStore } from '@/lib/stores/appStore';
 import type { PriorityLevel } from '@/lib/offlineSync';
-import { PRIORITY_OPTIONS } from './constants';
+
+const PRIORITY_OPTIONS: { k: PriorityLevel | null; label: string }[] = [
+  { k: 'high', label: 'High' },
+  { k: 'med', label: 'Med' },
+  { k: 'low', label: 'Low' },
+  { k: null, label: 'None' },
+];
 
 export default function DefaultPriorityPicker({
   initial,
 }: {
   initial: PriorityLevel | null;
 }) {
-  const {
-    settingsLoaded,
-    defaultPriority: liveDefaultPriority,
-    setDefaultPriority,
-  } = useProgress();
+  const settingsLoaded = useAppStore((s) => s.settingsLoaded);
+  const liveDefaultPriority = useAppStore((s) => s.defaultPriority);
+  const setDefaultPriority = useAppStore((s) => s.setDefaultPriority);
   const defaultPriority = settingsLoaded ? liveDefaultPriority : initial;
 
   return (

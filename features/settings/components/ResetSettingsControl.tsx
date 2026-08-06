@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useProgress } from '@/lib/context/ProgressContext';
+import { useAppStore } from '@/lib/stores/appStore';
 import ConfirmDialog from '@/components/ConfirmDialog';
 
 export default function ResetSettingsControl() {
-  const { resetSettingsToDefaults } = useProgress();
+  const resetSettingsToDefaults = useAppStore((s) => s.resetSettingsToDefaults);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
 
   return (

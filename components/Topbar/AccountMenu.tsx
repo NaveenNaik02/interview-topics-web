@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useTheme, type Theme } from '@/lib/context/ThemeContext';
 import { useProgress } from '@/lib/context/ProgressContext';
+import { useAppStore } from '@/lib/stores/appStore';
 import OfflineStatusPill from '../OfflineStatusPill';
 
 const THEME_ICONS = { light: Book, sepia: Moon, dark: Sun };
@@ -28,8 +29,8 @@ export default function AccountMenu({
 }) {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
+  const setThemeSetting = useAppStore((s) => s.setThemeSetting);
   const {
-    setThemeSetting,
     user,
     signOut,
     mounted,

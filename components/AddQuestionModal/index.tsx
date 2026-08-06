@@ -13,6 +13,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { useProgress } from '@/lib/context/ProgressContext';
+import { useAppStore } from '@/lib/stores/appStore';
 import { useTopicGroups } from '@/lib/context/TopicsContext';
 import { addQuestion, updateQuestion } from '@/lib/actions/questions';
 import { addTopicGroup, addSection } from '@/lib/actions/topics';
@@ -60,8 +61,8 @@ export default function AddQuestionModal({
     signInWithGitHub,
     removeInboxItem,
     removeSetAsideItem,
-    defaultPriority,
   } = useProgress();
+  const defaultPriority = useAppStore((s) => s.defaultPriority);
   const isEdit = !!editing;
 
   // A freshly-added topic with no subtopics yet has nowhere to attach a

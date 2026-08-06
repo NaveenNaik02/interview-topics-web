@@ -1,6 +1,6 @@
 'use client';
 
-import { useProgress } from '@/lib/context/ProgressContext';
+import { useAppStore } from '@/lib/stores/appStore';
 import ToggleSwitch from './ToggleSwitch';
 
 export default function RememberFiltersToggle({
@@ -8,11 +8,9 @@ export default function RememberFiltersToggle({
 }: {
   initial: boolean;
 }) {
-  const {
-    settingsLoaded,
-    rememberFilters: liveRememberFilters,
-    setRememberFilters,
-  } = useProgress();
+  const settingsLoaded = useAppStore((s) => s.settingsLoaded);
+  const liveRememberFilters = useAppStore((s) => s.rememberFilters);
+  const setRememberFilters = useAppStore((s) => s.setRememberFilters);
   const rememberFilters = settingsLoaded ? liveRememberFilters : initial;
 
   return (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useProgress } from '@/lib/context/ProgressContext';
+import { useAppStore } from '@/lib/stores/appStore';
 import ToggleSwitch from './ToggleSwitch';
 
 export default function NavigateAfterMoveToggle({
@@ -8,11 +8,9 @@ export default function NavigateAfterMoveToggle({
 }: {
   initial: boolean;
 }) {
-  const {
-    settingsLoaded,
-    navigateAfterMove: liveNavigateAfterMove,
-    setNavigateAfterMove,
-  } = useProgress();
+  const settingsLoaded = useAppStore((s) => s.settingsLoaded);
+  const liveNavigateAfterMove = useAppStore((s) => s.navigateAfterMove);
+  const setNavigateAfterMove = useAppStore((s) => s.setNavigateAfterMove);
   const navigateAfterMove = settingsLoaded ? liveNavigateAfterMove : initial;
 
   return (

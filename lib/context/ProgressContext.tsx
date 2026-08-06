@@ -46,26 +46,8 @@ export function useProgress() {
       user: s.user,
       signInWithGitHub: s.signInWithGitHub,
       signOut: s.signOut,
-      // Settings
-      settingsLoaded: s.settingsLoaded,
-      defaultSort: s.defaultSort,
-      rememberFilters: s.rememberFilters,
-      settingsTheme: s.settingsTheme,
-      setDefaultSort: s.setDefaultSort,
-      setRememberFilters: s.setRememberFilters,
-      setThemeSetting: s.setThemeSetting,
-      navigateAfterMove: s.navigateAfterMove,
-      setNavigateAfterMove: s.setNavigateAfterMove,
-      defaultPriority: s.defaultPriority,
-      setDefaultPriority: s.setDefaultPriority,
-      // Instruction presets
-      instructionPresets: s.instructionPresets,
-      activeInstructionPresetId: s.activeInstructionPresetId,
-      setActiveInstructionPresetId: s.setActiveInstructionPresetId,
-      addInstructionPreset: s.addInstructionPreset,
-      updateInstructionPreset: s.updateInstructionPreset,
-      deleteInstructionPreset: s.deleteInstructionPreset,
-      resetSettingsToDefaults: s.resetSettingsToDefaults,
+      // Settings are NOT exposed here — read them straight off the store with
+      // `useAppStore((s) => s.defaultSort)` etc. (see features/settings/store/settingsSlice.ts).
       // Offline mode
       isOnline: s.isOnline,
       offlineModeEnabled: s.offlineModeEnabled,

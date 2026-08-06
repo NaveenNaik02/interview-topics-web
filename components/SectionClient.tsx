@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Send } from 'lucide-react';
 import { useProgress } from '@/lib/context/ProgressContext';
+import { useAppStore } from '@/lib/stores/appStore';
 import { useTopicGroups } from '@/lib/context/TopicsContext';
 import type { ParsedQuestion } from '@/lib/parser';
 import type { PriorityLevel } from '@/lib/offlineSync';
@@ -79,10 +80,6 @@ export default function SectionClient({
     mounted,
     isOnline,
     offlineModeEnabled,
-    defaultSort,
-    rememberFilters,
-    settingsLoaded,
-    navigateAfterMove,
     user,
     renameProgressId,
     appendSetAsideItem,
@@ -91,6 +88,10 @@ export default function SectionClient({
     setQuestionOrder,
     renameOrderId,
   } = useProgress();
+  const settingsLoaded = useAppStore((s) => s.settingsLoaded);
+  const defaultSort = useAppStore((s) => s.defaultSort);
+  const rememberFilters = useAppStore((s) => s.rememberFilters);
+  const navigateAfterMove = useAppStore((s) => s.navigateAfterMove);
   const groups = useTopicGroups();
   const router = useRouter();
   const [openId, setOpenId] = useState<string | null>(null);
