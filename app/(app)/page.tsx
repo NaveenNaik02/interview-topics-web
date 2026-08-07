@@ -1,22 +1,34 @@
-import { getAllGroups } from '@/lib/topicsData'
-import { fetchAllCounts } from '@/lib/parser'
-import { DashboardClient, DashboardEmptyState } from '@/features/dashboard'
+import { getAllGroups } from '@/lib/topicsData';
+import { fetchAllCounts } from '@/lib/parser';
+import { Dashboard, DashboardEmptyState } from '@/features/dashboard';
 
-export default async function Home() {
-  const groups = await getAllGroups()
+interface HomeProps {
+  searchParams: Promise<{
+    'add-topic'?: string;
+    'add-subtopic'?: string;
+    'delete-topic'?: string;
+    label?: string;
+  }>;
+}
+
+export default async function Home({ searchParams }: HomeProps) {
+  const [groups, resolvedSearchParams] = await Promise.all([
+    getAllGroups(),
+    searchParams,
+  ]);
 
   if (groups.length === 0) {
-    return <DashboardEmptyState />
+    return <DashboardEmptyState searchParams={resolvedSearchParams} />;
   }
 
-  const counts = await fetchAllCounts()
-  const totalCount = Object.values(counts).reduce((a, b) => a + b, 0)
+  const counts = await fetchAllCounts();
+  const totalCount = Object.values(counts).reduce((a, b) => a + b, 0);
 
   const today = new Date().toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
-  })
+  });
 
   return (
     <div className="dashboard-view">
@@ -30,7 +42,7 @@ export default async function Home() {
           </p>
         </div>
       </header>
-      <DashboardClient groups={groups} />
+      <Dashboard groups={groups} searchParams={resolvedSearchParams} />
     </div>
-  )
+  );
 }

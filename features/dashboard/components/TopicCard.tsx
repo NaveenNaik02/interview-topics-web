@@ -1,66 +1,26 @@
-'use client';
-
-import React from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { TopicGroup, sectionUrl } from '@/lib/topics';
 import { Icon } from '@/components/SidebarIcons';
+import TopicCardProgress from './TopicCardProgress';
 
 interface TopicCardProps {
   group: TopicGroup;
-  stats: {
-    completed: number;
-    total: number;
-    bySection: Record<string, { completed: number; total: number }>;
-  };
-  mounted: boolean;
-  onAddSubtopic: (slug: string) => void;
-  onDeleteTopic: (slug: string, label: string) => void;
 }
 
-export default function TopicCard({
-  group,
-  stats,
-  mounted,
-  onAddSubtopic,
-  onDeleteTopic,
-}: TopicCardProps) {
-  const router = useRouter();
-
-  let groupDone = 0;
-  let groupTotal = 0;
-  group.sections.forEach((s) => {
-    const sUrl = sectionUrl(s);
-    const sStats = stats.bySection[sUrl];
-    if (sStats) {
-      groupDone += sStats.completed;
-      groupTotal += sStats.total;
-    }
-  });
-
-  const pct = groupTotal ? Math.round((groupDone / groupTotal) * 100) : 0;
+export default function TopicCard({ group }: TopicCardProps) {
   const firstSection = group.sections[0];
 
-  // A just-created topic (see AddTopicModal) has no subtopics yet —
-  // nothing to navigate to, so render it as a static, non-clickable card.
   const tcMain = (
     <>
       <div className="tc-head">
         <span className="tc-name">{group.groupName}</span>
-        <span className="tc-count">{groupTotal} Q</span>
+        {firstSection && (
+          <span className="tc-count">{group.sections.length} sections</span>
+        )}
       </div>
       <p className="tc-blurb">{group.blurb}</p>
       {firstSection ? (
-        <div className="tc-progress">
-          <div className="bar">
-            <div
-              className="bar-fill"
-              style={{ width: `${mounted ? pct : 0}%` }}
-            />
-          </div>
-          <span>
-            {mounted ? groupDone : 0}/{groupTotal}
-          </span>
-        </div>
+        <TopicCardProgress group={group} />
       ) : (
         <p className="tc-blurb" style={{ opacity: 0.7 }}>
           No subtopics yet
@@ -72,30 +32,34 @@ export default function TopicCard({
   return (
     <div className="topic-card">
       {firstSection ? (
-        <button
-          className="tc-main"
-          onClick={() => router.push(sectionUrl(firstSection))}
-        >
+        <Link href={sectionUrl(firstSection)} className="tc-main">
           {tcMain}
-        </button>
+        </Link>
       ) : (
         <div className="tc-main" style={{ cursor: 'default' }}>
           {tcMain}
         </div>
       )}
       <div className="tc-tools">
-        <button className="tc-tool" onClick={() => onAddSubtopic(group.slug)}>
+        <Link
+          href={`/?add-subtopic=${group.slug}`}
+          className="tc-tool"
+          scroll={false}
+        >
           <Icon.Plus />
           <span>Add subtopic</span>
-        </button>
+        </Link>
         {group.custom && (
-          <button
+          <Link
+            href={`/?delete-topic=${group.slug}&label=${encodeURIComponent(
+              group.groupName,
+            )}`}
             className="tc-tool"
-            onClick={() => onDeleteTopic(group.slug, group.groupName)}
+            scroll={false}
           >
             <Icon.Trash />
             <span>Delete topic</span>
-          </button>
+          </Link>
         )}
       </div>
     </div>

@@ -1,2 +1,2 @@
-export { default as DashboardClient } from './DashboardClient';
+export { default as Dashboard } from './Dashboard';
 export { DashboardEmptyState } from './components';

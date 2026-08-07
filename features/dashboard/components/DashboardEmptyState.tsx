@@ -1,12 +1,17 @@
-'use client';
+import Link from 'next/link';
+import AddTopicModalClient from './AddTopicModalClient';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import AddTopicModal from '@/components/AddTopicModal';
+interface Props {
+  searchParams?: {
+    'add-topic'?: string;
+    'add-subtopic'?: string;
+    'delete-topic'?: string;
+    label?: string;
+  };
+}
 
-export default function DashboardEmptyState() {
-  const router = useRouter();
-  const [showNewTopic, setShowNewTopic] = useState(false);
+export default function DashboardEmptyState({ searchParams }: Props) {
+  const showNewTopic = searchParams?.['add-topic'] === 'true';
 
   return (
     <div className="dashboard-view">
@@ -28,19 +33,22 @@ export default function DashboardEmptyState() {
           Create a topic, add the questions you actually want to practice, and
           track progress your way. No preset curriculum — just what you put in.
         </p>
-        <button
+        <Link
           className="btn btn-primary"
-          style={{ marginTop: 'var(--s-2)' }}
-          onClick={() => setShowNewTopic(true)}
+          style={{ marginTop: 'var(--s-2)', textDecoration: 'none' }}
+          href="/?add-topic=true"
+          scroll={false}
         >
           + Create your first topic
-        </button>
+        </Link>
       </div>
 
       <div className="dash-grid">
-        <button
+        <Link
           className="topic-card empty-new-topic"
-          onClick={() => setShowNewTopic(true)}
+          href="/?add-topic=true"
+          scroll={false}
+          style={{ textDecoration: 'none', textAlign: 'left' }}
         >
           <div className="tc-main">
             <span className="tc-name" style={{ color: 'var(--text-subtle)' }}>
@@ -51,18 +59,10 @@ export default function DashboardEmptyState() {
               &ldquo;Behavioral&rdquo;
             </p>
           </div>
-        </button>
+        </Link>
       </div>
 
-      {showNewTopic && (
-        <AddTopicModal
-          onClose={() => setShowNewTopic(false)}
-          onSaved={() => {
-            setShowNewTopic(false);
-            router.refresh();
-          }}
-        />
-      )}
+      {showNewTopic && <AddTopicModalClient />}
     </div>
   );
 }

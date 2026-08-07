@@ -116,6 +116,7 @@ Question ids are namespaced by section (`"{topic}/{file}/u-{uuid}"`), and progre
 
 ### Misc
 
+- **React Imports**: The codebase uses the automatic JSX runtime (`"jsx": "react-jsx"` in `tsconfig.json`). Do **NOT** import `React` (e.g., `import React from 'react'`) in `.tsx` files unless explicitly using `React` functions or types directly. Import hooks (like `useState`, `useEffect`, etc.) directly from `'react'`.
 - **Syntax highlighting** — `lib/highlight.ts` wraps Prism.js, highlighting the `<pre><code class="language-xxx">` DOM that `marked` already produces (no re-render needed).
 - **HTML→Markdown fallback** — `lib/htmlToMarkdown.ts` (via `turndown`) best-effort reconstructs Markdown for editing ETL-imported questions that predate the `markdown` column; explicitly lossy.
 - **FAB drag** — `lib/useFabDrag.ts` uses its own small Zustand store (`useFabOffsetStore`, separate from `useAppStore` — pure client UI concern, and the FABs render outside `UIProvider` in `layout.tsx`) so dragging any one FAB moves the whole bottom-right cluster together; resets on route change.
