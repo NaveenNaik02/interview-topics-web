@@ -14,7 +14,6 @@ import {
 } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '@/lib/stores/appStore';
-import { useTopicGroups } from '@/lib/context/TopicsContext';
 import { addQuestion, updateQuestion } from '@/lib/actions/questions';
 import { addTopicGroup, addSection } from '@/lib/actions/topics';
 import { findGroupForSection, type SectionMeta } from '@/lib/topics';
@@ -75,7 +74,7 @@ export default function AddQuestionModal({
 
   // A freshly-added topic with no subtopics yet has nowhere to attach a
   // question — exclude it from the picker until it has at least one section.
-  const groups = useTopicGroups().filter((g) => g.sections.length > 0);
+  const groups = useAppStore((s) => s.groups).filter((g) => g.sections.length > 0);
 
   const initialSection = editing?.section ?? defaultSection;
   const initialGroup = initialSection

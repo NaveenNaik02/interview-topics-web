@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { Plus } from 'lucide-react'
 import { findSection, sectionUrl } from '@/lib/topics'
-import { useTopicGroups } from '@/lib/context/TopicsContext'
+import { useAppStore } from '@/lib/stores/appStore';
 import { useFabDrag } from '@/lib/useFabDrag'
 
 // Rarely opened relative to every other page view (Add Question/Topic pull in
@@ -16,7 +16,7 @@ const AddTopicModal = dynamic(() => import('./AddTopicModal'), { ssr: false })
 export default function AddQuestionFab() {
   const pathname = usePathname()
   const router = useRouter()
-  const groups = useTopicGroups()
+  const groups = useAppStore((s) => s.groups)
   const [open, setOpen] = useState(false)
   const { style, handlers } = useFabDrag()
 

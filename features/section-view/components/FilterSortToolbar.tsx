@@ -1,10 +1,10 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
+import type { SortMode } from '@/features/settings'
 
 export type PriorityFilterKey = 'high' | 'med' | 'low' | 'none'
 export type StatusFilter = 'done' | 'notdone' | null
-export type SortMode = 'manual' | 'high' | 'low'
 
 const PRI_MC: { k: PriorityFilterKey; label: string }[] = [
   { k: 'high', label: 'High' },

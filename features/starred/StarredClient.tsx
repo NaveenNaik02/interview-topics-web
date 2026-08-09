@@ -3,7 +3,6 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/stores/appStore';
-import { useTopicGroups } from '@/lib/context/TopicsContext';
 import {
   sectionUrl,
   findGroupForSection,
@@ -30,7 +29,7 @@ interface Props {
 export default function StarredClient({ questions }: Props) {
   const navigateAfterMove = useAppStore((s) => s.navigateAfterMove);
   const appendSetAsideItem = useAppStore((s) => s.appendSetAsideItem);
-  const groups = useTopicGroups();
+  const groups = useAppStore((s) => s.groups);
   const router = useRouter();
   const [editingQuestion, setEditingQuestion] =
     useState<EditingQuestion | null>(null);

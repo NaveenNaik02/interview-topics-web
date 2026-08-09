@@ -1,7 +1,7 @@
 'use client';
 
 import { useAppStore } from '@/lib/stores/appStore';
-import type { SortMode } from '@/components/FilterSortToolbar';
+import type { SortMode } from '../types';
 
 const SORT_OPTIONS: { k: SortMode; label: string }[] = [
   { k: 'manual', label: 'Manual (curriculum order)' },

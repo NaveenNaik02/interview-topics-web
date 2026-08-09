@@ -5,7 +5,6 @@ import { Wifi, Send, RefreshCw, Loader2, Download, CloudDownload } from 'lucide-
 import { useProgressStats } from '@/lib/useProgressStats'
 import { useAppStore } from '@/lib/stores/appStore'
 import { useShallow } from 'zustand/react/shallow'
-import { useTopicGroups } from '@/lib/context/TopicsContext'
 
 function relativeTime(isoStr: string | null): string {
   if (!isoStr) return 'a while ago'
@@ -42,7 +41,7 @@ export default function OfflineStatusPill() {
       syncNow: s.syncNow,
     })),
   )
-  const groups = useTopicGroups()
+  const groups = useAppStore((s) => s.groups)
   const totalUrls = useMemo(() => 1 + groups.flatMap(g => g.sections).length, [groups]) // dashboard + all sections
   const estMb = Math.round(totalUrls * 80 / 1024 * 10) / 10
 

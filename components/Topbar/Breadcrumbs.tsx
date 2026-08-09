@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSearch } from '@/lib/context/SearchContext'
-import { useTopicGroups } from '@/lib/context/TopicsContext'
+import { useAppStore } from '@/lib/stores/appStore';
 import { findSection, findGroupForSection } from '@/lib/topics'
 
 // isSettings/isPriorityMix must be checked before the generic section lookup
@@ -13,7 +13,7 @@ import { findSection, findGroupForSection } from '@/lib/topics'
 export default function Breadcrumbs() {
   const pathname = usePathname()
   const { query } = useSearch()
-  const groups = useTopicGroups()
+  const groups = useAppStore((s) => s.groups)
 
   const searching = query.trim().length >= 2
   const isHome = pathname === '/'

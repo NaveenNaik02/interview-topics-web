@@ -10,7 +10,7 @@ import {
 import { getAllGroups } from '@/lib/topicsData';
 import { parseSection } from '@/lib/parser';
 import { fetchInitialSectionOrder } from '@/lib/db/questionPositionServer';
-import SectionClient from '@/components/SectionClient';
+import { SectionClient } from '@/features/section-view';
 
 interface Props {
   params: Promise<{ path: string[] }>;

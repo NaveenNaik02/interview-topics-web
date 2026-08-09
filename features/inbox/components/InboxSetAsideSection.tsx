@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useAppStore } from '@/lib/stores/appStore';
-import { useTopicGroups } from '@/lib/context/TopicsContext';
 import AddQuestionModal from '@/components/AddQuestionModal';
 import type { SetAsideItem } from '@/lib/db/setAside';
 import InboxSetAsideList from './InboxSetAsideList';
@@ -17,7 +16,7 @@ interface Props {
 
 export default function InboxSetAsideSection({ items, onRemoveItem }: Props) {
   const removeSetAsideItem = useAppStore((s) => s.removeSetAsideItem);
-  const groups = useTopicGroups();
+  const groups = useAppStore((s) => s.groups);
   const [assigningAside, setAssigningAside] = useState<SetAsideItem | null>(
     null,
   );

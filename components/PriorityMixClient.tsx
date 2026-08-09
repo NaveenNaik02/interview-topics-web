@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Search, X, Send } from 'lucide-react';
 import { useAppStore } from '@/lib/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
-import { useTopicGroups } from '@/lib/context/TopicsContext';
 import {
   sectionUrl,
   findGroupForSection,
@@ -273,7 +272,7 @@ export default function PriorityMixClient({
 
   const navigateAfterMove = useAppStore((s) => s.navigateAfterMove);
   const [questions, setQuestions] = useState(serverQuestions);
-  const groups = useTopicGroups();
+  const groups = useAppStore((s) => s.groups);
   const flatSubs = useMemo(
     () =>
       groups.flatMap((g) =>

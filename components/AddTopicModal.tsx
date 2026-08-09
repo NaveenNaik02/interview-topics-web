@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { X, Github, Sparkles, Database, Loader2 } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '@/lib/stores/appStore';
-import { useTopicGroups } from '@/lib/context/TopicsContext';
 import { addTopicGroup, addSection } from '@/lib/actions/topics';
 import { generateTopicBlurb } from '@/lib/actions/generateBlurb';
 import type { TopicGroup, SectionMeta } from '@/lib/topics';
@@ -37,7 +36,7 @@ export default function AddTopicModal({
       signInWithGitHub: s.signInWithGitHub,
     })),
   );
-  const groups = useTopicGroups();
+  const groups = useAppStore((s) => s.groups);
 
   const [mode, setMode] = useState<Mode>(initialMode);
   const [groupSlug, setGroupSlug] = useState(

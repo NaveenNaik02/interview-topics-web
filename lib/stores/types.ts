@@ -1,5 +1,5 @@
 import type { User } from '@supabase/supabase-js';
-import type { SortMode } from '@/components/FilterSortToolbar';
+import type { SortMode } from '@/features/settings';
 import type { Theme } from '@/lib/context/ThemeContext';
 import type { PriorityLevel } from '@/lib/offlineSync';
 import type { TopicGroup } from '@/lib/topics';
@@ -21,10 +21,10 @@ export interface AuthSlice {
 export interface ProgressSlice {
   store: ProgressStore;
   totals: Record<string, number>;
-  // Merged static + DB-backed topic tree, kept in sync from TopicsContext by
-  // StoreBootstrap (a plain store action can't call the useTopicGroups()
-  // hook itself) — needed here so stats/offline caching reflect dynamically
-  // added topics/subtopics, not just the static curriculum.
+  // Merged static + DB-backed topic tree. Seeded from the server at store
+  // construction (see createAppStore) and re-synced by StoreProvider on
+  // router.refresh(), so stats/offline caching reflect dynamically added
+  // topics/subtopics, not just the static curriculum.
   groups: TopicGroup[];
   stats: ProgressStats;
   mounted: boolean;

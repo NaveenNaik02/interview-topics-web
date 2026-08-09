@@ -1,4 +1,4 @@
-import SectionSkeleton from '@/components/SectionSkeleton'
+import { SectionSkeleton } from '@/features/section-view'
 
 export default function Loading() {
   // On the dashboard we could have a different skeleton, 

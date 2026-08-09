@@ -9,7 +9,6 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/stores/appStore';
-import { useTopicGroups } from '@/lib/context/TopicsContext';
 import { deleteQuestion } from '@/lib/actions/questions';
 import {
   setStarred,
@@ -40,7 +39,7 @@ export default function StarredQuestionList({
   const user = useAppStore((s) => s.user);
   const bumpStarredCount = useAppStore((s) => s.bumpStarredCount);
 
-  const groups = useTopicGroups();
+  const groups = useAppStore((s) => s.groups);
   const router = useRouter();
   const [openId, setOpenId] = useState<string | null>(null);
   const [errorToast, setErrorToast] = useState<{

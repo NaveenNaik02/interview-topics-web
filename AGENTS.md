@@ -54,16 +54,17 @@ This is a **Next.js 16 App Router** application (React 19) backed by **Supabase*
 - **Nothing is prerendered.** Content is per-account (see "Owner-scoped content"), so `generateStaticParams()` returns `[]` and every path renders on demand. `getAllGroups()` reads `cookies()` via `createClient()`, which both forces dynamic rendering (so there's no shared cache entry that could serve one account's topics to another) and makes build-time evaluation impossible. Don't add `export const revalidate` to these routes. Server actions that mutate content (`lib/actions/questions.ts`, `topics.ts`, `setAside.ts`) still `revalidatePath` the section and its topic overview.
 - Four extra top-level routes sit alongside the catch-all, each a small server component: `app/inbox/page.tsx` and `app/settings/page.tsx` do no server fetch (their data lives client-side in the Zustand store); `app/priority-mix/page.tsx` and `app/starred/page.tsx` fetch the user's rows + a `questions` join server-side before handing assembled data to their client component.
 
-### State management: Zustand store + Context (different jobs, not layers)
+### State management: one store per request tree
 
-State that used to live in `ProgressProvider`'s component body now lives in a single Zustand store, `useAppStore` (`lib/stores/appStore.ts`), composed from 9 slices (`lib/stores/slices/*.ts`: auth, progress, priority, settings, inbox, setAside, starred, offline, questionOrder — types in `lib/stores/types.ts`).
+App state lives in a single Zustand store composed from 9 slices (`lib/stores/slices/*.ts`: auth, progress, priority, settings, inbox, setAside, starred, offline, questionOrder — types in `lib/stores/types.ts`).
 
-- **`lib/ProgressContext.tsx` is now a thin compatibility shim, not a real provider** — it's a hook that reads the Zustand store via `useShallow` selectors and reshapes it into the same object every existing consumer already destructures, so call sites didn't need to change. It also merges in `groups`/`initialTotals` from the separate `TopicsContext`/`TotalsContext` to compute `stats` synchronously on first render.
-- **`components/StoreBootstrap.tsx`** (render-null client component) replaces the old always-mounted provider: fires one-time bootstrap effects (`setInitialTotals`, mirroring `useTopicGroups()` into the store, `initSettingsFromLocalStorage`, `initOfflineState`, `initAuth`).
-- **Context and Zustand coexist for genuinely different concerns**:
-  - `TopicsContext`/`TotalsContext` remain plain Context — they tunnel **server-computed, request-scoped** values (`getAllGroups()`, `fetchAllCounts()`, both computed once in `app/(app)/layout.tsx`) down the tree synchronously.
-  - `UIContext` (drawer/search), `ThemeContext`, `FontSizeContext` remain plain, self-contained Context+`useState` — pure client-only UI state with no server dependency.
-  - Anything needing to be read outside React rendering (server-action side effects, offline caching reading `groups`/totals via `get()`) or shared across components without a common provider lives in the Zustand store.
+- **The store is NOT a module singleton.** `lib/stores/appStore.ts` exports `createAppStore(init)` (`createStore` from `zustand/vanilla`) plus a `StoreContext`; `lib/stores/StoreProvider.tsx` constructs one per tree via a `useState` lazy initializer and provides it. A module-level `create()` in a Next server process is shared across every request — with owner-scoped content that's a cross-account leak waiting for the first render-phase write.
+- **Server data is seeded at construction, not by an effect.** `app/(app)/layout.tsx` passes `getAllGroups()` + `fetchAllCounts()` into `<StoreProvider groups totals>`, so `groups`/`totals`/`stats` are correct on the very first render. This is why the old `TopicsContext`/`TotalsContext`/`StoreBootstrap` trio is gone — they existed only to paper over the store being one render behind.
+  - `totals` is deliberately seeded once and never re-synced: `setSectionTotal()` refines it as sections mount, and re-seeding from the server value would wipe those refinements.
+  - `groups` _is_ re-synced by a `StoreProvider` effect — it's a fresh server value on every `router.refresh()`, which is how a newly added topic/subtopic reaches the tree.
+  - `initAuth`/`initOfflineState`/`initSettingsFromLocalStorage` stay in effects — they read `localStorage` and register subscriptions, which are effects on their own merits, not hydration workarounds.
+- **Consuming it**: `useAppStore(selector)` (same signature as the old singleton hook, `useShallow` works unchanged), or `useAppStoreApi()` for imperative `getState`/`subscribe` outside render. There is no importable store instance — slices reach their own state via `get()`.
+- **Plain Context still owns client-only UI state**: `UIContext` (drawer/search), `ThemeContext`, `FontSizeContext` — self-contained Context+`useState`, no server dependency, no reason to be in the store.
 
 ### Auth & admin roles
 

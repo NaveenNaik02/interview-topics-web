@@ -4,7 +4,6 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAppStore } from '@/lib/stores/appStore'
 import { useSearch } from '@/lib/context/SearchContext'
-import { useTopicGroups } from '@/lib/context/TopicsContext'
 import { supabase } from '@/lib/supabase/client'
 
 interface SearchQuestion {
@@ -104,7 +103,7 @@ export default function SearchResults() {
     (id: string) => mounted && !!store[id],
     [store, mounted]
   )
-  const groups = useTopicGroups()
+  const groups = useAppStore((s) => s.groups)
   const router = useRouter()
   const [questions, setQuestions] = useState<SearchQuestion[]>([])
   const [loaded, setLoaded] = useState(false)

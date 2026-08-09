@@ -1,29 +1,13 @@
 'use client';
 
-import { useMemo } from 'react';
 import { useAppStore } from './stores/appStore';
-import { useTopicGroups } from './context/TopicsContext';
-import { useInitialTotals } from './context/TotalsContext';
-import { computeStats } from './stores/progressSelectors';
 
 /**
- * Granular hook to get the computed progress statistics.
- * This hook is optimized to only trigger re-renders when the store's progress
- * or section totals change, preventing massive UI re-renders on every store update.
+ * Computed progress statistics. The store recomputes `stats` on every change
+ * to progress/totals/groups (progressSlice.recomputeStats) and is constructed
+ * with the server's totals+groups already in it, so this is a plain selector —
+ * there's nothing left to merge in at the call site.
  */
 export function useProgressStats() {
-  const store = useAppStore((s) => s.store);
-  const stateTotals = useAppStore((s) => s.totals);
-  const groups = useTopicGroups();
-  const initialTotals = useInitialTotals();
-
-  const totals = useMemo(
-    () => ({ ...initialTotals, ...stateTotals }),
-    [initialTotals, stateTotals],
-  );
-
-  return useMemo(
-    () => computeStats(store, totals, groups),
-    [store, totals, groups],
-  );
+  return useAppStore((s) => s.stats);
 }
