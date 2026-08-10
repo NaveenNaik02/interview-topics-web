@@ -33,9 +33,13 @@ Requires `.env.local` in `web/` with `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SU
 npm run lint       # ESLint (eslint-config-next flat config, eslint.config.mjs)
 npm test           # Vitest, run once (vitest.config.ts)
 npm run set-admin  # node --env-file=.env.local scripts/set-admin.js <email> [--revoke]
+npm run pull-remote # Copy the CLOUD project's data into local Docker Supabase, re-owned to DEV_USER
+
 ```
 
 Database schema changes: see "Database Migrations" in the root `CLAUDE.md` — add a `.sql` file to `supabase/migrations/`, then `npm run migrate` from here to apply it to the linked **cloud** project (local dev picks up the same files automatically via `supabase start`).
+
+- **No Database Resets**: **NEVER** run database resets (such as `supabase db reset` or any command/script that drops and recreates database tables) under any circumstances, to prevent local development data loss. Database schema updates must always be applied incrementally.
 
 ## CI/CD
 
@@ -79,6 +83,8 @@ App state lives in a single Zustand store composed from 9 slices (`lib/stores/sl
 **Filtering happens in RLS, not in app code.** `lib/supabase/server.ts`'s `createClient()` is cookie-scoped (anon key, caller's session), so queries carry no `.eq('created_by', ...)` — the DB enforces it for the browser client and server actions too. Adding an app-level filter duplicates the rule at one call site while the actual boundary stays the policy; what _does_ break the model is reaching for the service-role client on a read path.
 
 `scripts/backfill-static-sections.js <email>` is the one-time fixup: the static curriculum's subtopics never had `sections` rows, so they became unreachable under owner-scoped reads until real rows exist owned by a real account. Not yet run against cloud.
+
+`scripts/pull-remote.js` (`npm run pull-remote`) seeds **local** Docker Supabase from the cloud project: it copies content + the source account's study data and rewrites every `created_by`/`user_id` to `DEV_USER`, so local dev sees a real dataset. It derives `sections` rows from the imported questions (broader than `backfill-static-sections.js`, which only knows the static list) and folds the cloud's still-separate `starred_questions`/`priority` tables into `questions.starred`/`questions.priority` — cloud is behind `20260804105557_merge_starred_priority_into_questions`. Upsert-only and safe to re-run; it never writes to the remote.
 
 ### Dynamic topics & authoring
 

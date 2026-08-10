@@ -5,6 +5,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { BulkSelectionButtons } from './BulkSelectionButtons';
 import { ActiveFilterChips } from './ActiveFilterChips';
 import { FilterMenu } from './FilterMenu';
+import { useActiveTokens } from '../hooks';
 import * as Icon from '@/components/Icons';
 import type { SortMode } from '@/features/settings';
 
@@ -27,10 +28,15 @@ export default function FilterSortToolbar() {
     })),
   );
 
+  const { hasFilters } = useActiveTokens();
+
   return (
     <div className="section-toolbar">
       <BulkSelectionButtons />
-      <ActiveFilterChips />
+      {hasFilters && <span className="tb-divider" />}
+      <div className="tb-chips">
+        <ActiveFilterChips />
+      </div>
       <FilterMenu />
       <button
         type="button"

@@ -11,12 +11,17 @@ const EMPTY_ARRAY: ParsedQuestion[] = [];
 const SectionTitleHeaderComponent = () => {
   const pathname = usePathname();
   const { store, mounted, questions, groups } = useAppStore(
-    useShallow((s) => ({
-      store: s.store,
-      mounted: s.mounted,
-      questions: s.sectionQuestionsCache[pathname] || EMPTY_ARRAY,
-      groups: s.groups,
-    })),
+    useShallow((s) => {
+      const segments = pathname.split('/').filter(Boolean);
+      const section = findSection(s.groups, segments);
+      const key = section ? `/${section.topic}/${section.file}` : '';
+      return {
+        store: s.store,
+        mounted: s.mounted,
+        questions: s.sectionQuestionsCache[key] || EMPTY_ARRAY,
+        groups: s.groups,
+      };
+    }),
   );
 
   const context = useMemo(() => {
@@ -45,24 +50,28 @@ const SectionTitleHeaderComponent = () => {
   const pct = total > 0 ? Math.round((stats.done / total) * 100) : 0;
 
   return (
-    <div className="subtopic-title-area">
-      <div className="subtopic-eyebrow">{context.groupName}</div>
-      <div className="subtopic-row">
-        <h1 className="subtopic-title">{context.sectionLabel}</h1>
-        <div className="subtopic-progress">
-          <span className="subtopic-pct">{pct}%</span>
-          <div className="subtopic-bar-bg">
-            <div
-              className="subtopic-bar-fill"
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-          <span className="subtopic-count">
-            {stats.done}/{total} done
-          </span>
+    <>
+      <div className="eyebrow">{context.groupName}</div>
+      <h1 className="subtopic-title">{context.sectionLabel}</h1>
+      <div className="subtopic-meta">
+        <span className="meta-stat">
+          <strong>{mounted ? stats.done : 0}</strong> of{' '}
+          <strong>{total}</strong> complete
+        </span>
+        <div className="bar">
+          <div
+            className="bar-fill"
+            style={{ width: `${mounted ? pct : 0}%` }}
+          />
         </div>
+        <span
+          className="meta-stat"
+          style={{ fontVariantNumeric: 'tabular-nums' }}
+        >
+          {mounted ? pct : 0}%
+        </span>
       </div>
-    </div>
+    </>
   );
 };
 

@@ -11,6 +11,7 @@
     "start": "next start",
     "migrate": "node --env-file=.env.local scripts/migrate.js",
     "set-admin": "node --env-file=.env.local scripts/set-admin.js",
+    "pull-remote": "node --env-file=.env.local scripts/pull-remote.js",
     "lint": "eslint .",
     "test": "vitest run"
   },

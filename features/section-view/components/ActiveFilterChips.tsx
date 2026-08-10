@@ -18,32 +18,29 @@ export const ActiveFilterChips = () => {
 
   return (
     <>
-      <span className="tb-divider" />
-      <div className="tb-chips">
-        {activeTokens.map((t) => (
-          <span key={t.key} className={`f-token ${t.cls}`}>
-            {t.dot ? (
-              <span className="f-token-dot" />
-            ) : statusFilter === 'done' ? (
-              <Icon.Check />
-            ) : (
-              <Icon.Circle />
-            )}
-            {t.label}
-            <button
-              type="button"
-              className="f-token-x"
-              onClick={t.remove}
-              aria-label={`Remove ${t.label} filter`}
-            >
-              <Icon.Close />
-            </button>
-          </span>
-        ))}
-        <button type="button" className="f-clear-all" onClick={clearFilters}>
-          Clear all
-        </button>
-      </div>
+      {activeTokens.map((t) => (
+        <span key={t.key} className={`f-token ${t.cls}`}>
+          {t.dot ? (
+            <span className="f-token-dot" />
+          ) : statusFilter === 'done' ? (
+            <Icon.Check />
+          ) : (
+            <Icon.Circle />
+          )}
+          {t.label}
+          <button
+            type="button"
+            className="f-token-x"
+            onClick={t.remove}
+            aria-label={`Remove ${t.label} filter`}
+          >
+            <Icon.Close />
+          </button>
+        </span>
+      ))}
+      <button type="button" className="f-clear-all" onClick={clearFilters}>
+        Clear all
+      </button>
     </>
   );
 };

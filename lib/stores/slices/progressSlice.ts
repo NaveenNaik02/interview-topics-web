@@ -95,8 +95,21 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
           setCachedProgress(cached.filter(q => !removeSet.has(q)))
         }
       } else {
-        const write = value ? progressActions.bulkUpsertProgress(ids) : progressActions.bulkDeleteProgress(ids)
-        write.catch(err => console.error('[progress] bulk write failed:', err))
+        const targetIds = value
+          ? ids.filter((id) => !store[id])
+          : ids.filter((id) => store[id]);
+
+        if (targetIds.length > 0) {
+          const write = value
+            ? progressActions.bulkUpsertProgress(targetIds)
+            : progressActions.bulkDeleteProgress(targetIds);
+          write.catch((err) => {
+            console.error('[progress] bulk write failed:', err);
+            // Rollback on failure
+            set({ store });
+            recomputeStats();
+          });
+        }
         if (offlineModeEnabled) {
           const cached = getCachedProgress()
           if (value) {
