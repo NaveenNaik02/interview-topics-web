@@ -1,4 +1,4 @@
-import Sidebar from '@/components/Sidebar';
+import { Sidebar } from '@/features/sidebar';
 import Topbar from '@/components/Topbar';
 import MainContent from '@/components/MainContent';
 import StoreProvider from '@/lib/stores/StoreProvider';
@@ -32,7 +32,7 @@ export default async function AppLayout({
       <DrawerProvider>
         <SearchProvider>
           <div className="app-container">
-            <Sidebar groups={groups} />
+            <Sidebar />
             <main className="main-content">
               <Topbar user={user} />
               <MainContent>{children}</MainContent>

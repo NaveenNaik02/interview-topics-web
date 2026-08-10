@@ -1,21 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { TopicGroup } from '@/lib/topics';
 import { useProgressStats } from '@/lib/useProgressStats';
 import { useAppStore } from '@/lib/stores/appStore';
 import { useDrawer } from '@/lib/context/DrawerContext';
-import { Icon } from './SidebarIcons';
-import SidebarNavLink from './SidebarNavLink';
-import SidebarTopicTree from './SidebarTopicTree';
+import { Icon } from '@/components/SidebarIcons';
+import { SidebarNavLink } from './components/SidebarNavLink';
+import { SidebarTopicTree } from './components/SidebarTopicTree';
 
-export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
+export const Sidebar = () => {
   const stats = useProgressStats();
   const inboxCount = useAppStore((s) => s.inboxCount);
   const setAsideCount = useAppStore((s) => s.setAsideCount);
   const starredCount = useAppStore((s) => s.starredCount);
   const { drawerOpen, setDrawerOpen } = useDrawer();
-
 
   const totalCount = stats.total;
   const closeDrawer = () => setDrawerOpen(false);
@@ -80,9 +78,9 @@ export default function Sidebar({ groups }: { groups: TopicGroup[] }) {
 
           <div className="sidebar-nav-sep" />
 
-          <SidebarTopicTree groups={groups} />
+          <SidebarTopicTree />
         </nav>
       </aside>
     </>
   );
-}
+};

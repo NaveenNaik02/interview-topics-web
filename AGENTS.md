@@ -39,6 +39,7 @@ npm run pull-remote # Copy the CLOUD project's data into local Docker Supabase, 
 
 Database schema changes: see "Database Migrations" in the root `CLAUDE.md` — add a `.sql` file to `supabase/migrations/`, then `npm run migrate` from here to apply it to the linked **cloud** project (local dev picks up the same files automatically via `supabase start`).
 
+- **No Direct Remote DB Actions**: Agents **NEVER** act directly on the remote/cloud Supabase project — no `npm run migrate`, no `scripts/set-admin.js` against cloud, no Management API calls, no service-role writes, no SQL against the cloud DB. Write the migration/script and tell the user to run it. Local Docker Supabase is the only DB an agent may touch.
 - **No Database Resets**: **NEVER** run database resets (such as `supabase db reset` or any command/script that drops and recreates database tables) under any circumstances, to prevent local development data loss. Database schema updates must always be applied incrementally.
 
 ## CI/CD

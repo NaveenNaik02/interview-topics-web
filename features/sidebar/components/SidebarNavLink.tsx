@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-export default function SidebarNavLink({
+export const SidebarNavLink = ({
   href,
   icon,
   label,
@@ -15,7 +15,7 @@ export default function SidebarNavLink({
   label: string
   badge?: number
   onClick: () => void
-}) {
+}) => {
   const pathname = usePathname()
   const isActive = pathname === href
 
@@ -67,4 +67,4 @@ export default function SidebarNavLink({
       {badge > 0 && <span className="ic-nav-badge">{badge}</span>}
     </Link>
   )
-}
+};
