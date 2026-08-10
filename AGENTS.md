@@ -121,6 +121,8 @@ Question ids are namespaced by section (`"{topic}/{file}/u-{uuid}"`), and progre
 - **Syntax highlighting** — `lib/highlight.ts` wraps Prism.js, highlighting the `<pre><code class="language-xxx">` DOM that `marked` already produces (no re-render needed).
 - **HTML→Markdown fallback** — `lib/htmlToMarkdown.ts` (via `turndown`) best-effort reconstructs Markdown for editing ETL-imported questions that predate the `markdown` column; explicitly lossy.
 - **FAB drag** — `lib/useFabDrag.ts` uses its own small Zustand store (`useFabOffsetStore`, separate from `useAppStore` — pure client UI concern, and the FABs render outside `UIProvider` in `layout.tsx`) so dragging any one FAB moves the whole bottom-right cluster together; resets on route change.
+- **Exports**: Always use named exports (e.g., `export const MyComponent = ...`) instead of default exports (`export default ...`), unless it is absolutely necessary (such as for Next.js routing page files, dynamic lazy loading using `next/dynamic` where it expects a default export, or configuration files).
+- **State Locality and Store Access**: When creating or refactoring components, always try to keep state as local to the component as possible. Lift state up only when it is absolutely necessary. Do not pass store data down as props if it can be accessed directly within the component from the Zustand store. Always try to separate concerns, break down complex components, and keep state localized.
 - **`components/MainContent.tsx`** — swaps in `<SearchResults>` when the shared search query is ≥ 2 chars, and manually resets scroll on pathname change (the whole app is one catch-all route, so Next's built-in scroll reset never fires).
 
 ### Components

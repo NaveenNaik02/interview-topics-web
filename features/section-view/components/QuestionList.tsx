@@ -14,7 +14,7 @@ import RowActions from '@/components/RowActions';
 import SaveToast from '@/components/SaveToast';
 import { deleteQuestion } from '@/lib/actions/questions';
 import { setAsideQuestion } from '@/lib/actions/setAside';
-import { useSectionDrag } from '../hooks/useSectionDrag';
+import { useSectionDrag } from '../hooks';
 import {
   sectionUrl,
   findGroupForSection,
@@ -43,23 +43,13 @@ interface QuestionListProps {
     origIdx: number;
     priority: PriorityLevel | null;
   }[];
-  clearFilters: () => void;
-  isComplete: (id: string) => boolean;
   reorderable: boolean;
-  setShowOfflineModal: (show: boolean) => void;
-  handleToggleStar: (id: string, wasStarred: boolean) => void;
-  handleSetPriority: (id: string, level: PriorityLevel | null) => void;
   section: SectionMeta;
 }
 
 export default function QuestionList({
   processed,
-  clearFilters,
-  isComplete,
   reorderable,
-  setShowOfflineModal,
-  handleToggleStar,
-  handleSetPriority,
   section,
 }: QuestionListProps) {
   const router = useRouter();
@@ -78,8 +68,7 @@ export default function QuestionList({
 
   const {
     mounted,
-    isOnline,
-    offlineModeEnabled,
+    store,
     user,
     appendSetAsideItem,
     renameProgressId,
@@ -87,11 +76,13 @@ export default function QuestionList({
     setQuestionOrder,
     navigateAfterMove,
     toggle,
+    updateQuestionPriority,
+    toggleQuestionStarred,
+    clearFilters,
   } = useAppStore(
     useShallow((s) => ({
       mounted: s.mounted,
-      isOnline: s.isOnline,
-      offlineModeEnabled: s.offlineModeEnabled,
+      store: s.store,
       user: s.user,
       appendSetAsideItem: s.appendSetAsideItem,
       renameProgressId: s.renameProgressId,
@@ -99,16 +90,16 @@ export default function QuestionList({
       setQuestionOrder: s.setQuestionOrder,
       navigateAfterMove: s.navigateAfterMove,
       toggle: s.toggle,
+      updateQuestionPriority: s.updateQuestionPriority,
+      toggleQuestionStarred: s.toggleQuestionStarred,
+      clearFilters: s.clearFilters,
     })),
   );
 
   // Invoke the drag-to-reorder hook internally since all drag targets, refs, and IDs are self-contained here
   const { listRef, dragId, indicatorTop, handlePointerDown } = useSectionDrag({
     processed,
-    isOnline,
-    offlineModeEnabled,
     setQuestionOrder,
-    setShowOfflineModal,
   });
 
   return (
@@ -127,42 +118,35 @@ export default function QuestionList({
               mounted &&
               !!user &&
               (q.createdBy === user.id || user.app_metadata?.is_admin === true);
+            const isDone = mounted && !!store[q.id];
             return (
               <QuestionItem
                 key={q.id}
                 id={q.id}
                 title={q.title}
-                isDone={isComplete(q.id)}
+                isDone={isDone}
                 isOpen={openId === q.id}
                 priority={priority}
                 reorderable={reorderable}
                 onHandlePointerDown={handlePointerDown(q.id)}
                 onToggleOpen={() => {
-                  if (!isOnline && !offlineModeEnabled) {
-                    setShowOfflineModal(true);
-                    return;
-                  }
                   setOpenId(openId === q.id ? null : q.id);
                 }}
                 onToggleDone={() => {
-                  if (!isOnline && !offlineModeEnabled) {
-                    setShowOfflineModal(true);
-                    return;
-                  }
                   toggle(q.id);
                 }}
                 actions={
                   <>
                     <StarButton
                       isStarred={!!q.starred}
-                      onToggle={() => handleToggleStar(q.id, !!q.starred)}
+                      onToggle={() => toggleQuestionStarred(q.id, !!q.starred)}
                     />
                     <RowActions
                       getText={() => stripHtml(q.title)}
                       isStarred={!!q.starred}
-                      onToggleStar={() => handleToggleStar(q.id, !!q.starred)}
+                      onToggleStar={() => toggleQuestionStarred(q.id, !!q.starred)}
                       priority={priority}
-                      onSetPriority={(level) => handleSetPriority(q.id, level)}
+                      onSetPriority={(level) => updateQuestionPriority(q.id, level)}
                       onEdit={
                         canManage
                           ? async () => {

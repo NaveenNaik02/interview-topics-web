@@ -12,18 +12,12 @@ interface DragItem {
 
 interface UseSectionDragOptions {
   processed: DragItem[];
-  isOnline: boolean;
-  offlineModeEnabled: boolean;
   setQuestionOrder: (order: string[]) => void;
-  setShowOfflineModal: (show: boolean) => void;
 }
 
 export function useSectionDrag({
   processed,
-  isOnline,
-  offlineModeEnabled,
   setQuestionOrder,
-  setShowOfflineModal,
 }: UseSectionDragOptions) {
   const listRef = useRef<HTMLDivElement>(null);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -82,10 +76,6 @@ export function useSectionDrag({
       if (e.pointerType !== 'mouse') return;
       const target = e.target as HTMLElement;
       if (target.closest('.q-actions, .q-text, .q-body-col')) return;
-      if (!isOnline && !offlineModeEnabled) {
-        setShowOfflineModal(true);
-        return;
-      }
       const itemEl = (e.currentTarget as HTMLElement).closest<HTMLElement>(
         '.q-item',
       );
@@ -160,13 +150,10 @@ export function useSectionDrag({
       document.addEventListener('pointerup', onPointerUp, { once: true });
     },
     [
-      isOnline,
-      offlineModeEnabled,
       processed,
       slotForY,
       updateIndicator,
       setQuestionOrder,
-      setShowOfflineModal,
     ],
   );
 

@@ -11,6 +11,7 @@ import { createSetAsideSlice } from './slices/setAsideSlice';
 import { createStarredSlice } from './slices/starredSlice';
 import { createOfflineSlice } from './slices/offlineSlice';
 import { createQuestionOrderSlice } from './slices/questionOrderSlice';
+import { createSectionQuestionsSlice } from '@/features/section-view/store/sectionQuestionsSlice';
 import { computeStats } from './progressSelectors';
 import type { TopicGroup } from '@/lib/topics';
 import type { AppState } from './types';
@@ -36,6 +37,7 @@ export const createAppStore = (init: StoreInit) =>
     ...createStarredSlice(...a),
     ...createOfflineSlice(...a),
     ...createQuestionOrderSlice(...a),
+    ...createSectionQuestionsSlice(...a),
     // Seeded after the slices so these win over their empty defaults.
     groups: init.groups,
     totals: init.totals,

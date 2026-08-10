@@ -56,7 +56,6 @@ export default async function Page({ params }: Props) {
     <div className="space-y-12">
       <SectionClient
         section={section}
-        group={group}
         questions={questions}
         initialOrder={initialOrder}
       />

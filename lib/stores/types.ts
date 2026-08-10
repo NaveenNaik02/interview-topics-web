@@ -1,5 +1,6 @@
 import type { User } from '@supabase/supabase-js';
 import type { SortMode } from '@/features/settings';
+import type { SectionQuestionsSlice } from '@/features/section-view/store/types';
 import type { Theme } from '@/lib/context/ThemeContext';
 import type { PriorityLevel } from '@/lib/offlineSync';
 import type { TopicGroup } from '@/lib/topics';
@@ -129,6 +130,8 @@ export interface OfflineSlice {
   initOfflineState: () => () => void;
 }
 
+
+
 export type AppState = AuthSlice &
   ProgressSlice &
   SettingsSlice &
@@ -136,4 +139,5 @@ export type AppState = AuthSlice &
   SetAsideSlice &
   StarredSlice &
   OfflineSlice &
-  QuestionOrderSlice;
+  QuestionOrderSlice &
+  SectionQuestionsSlice;
