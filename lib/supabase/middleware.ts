@@ -41,7 +41,12 @@ export async function updateSession(request: NextRequest) {
   // visitor actually log in" check.
   const { pathname } = request.nextUrl;
   const isAuthPage = pathname === '/login' || pathname === '/signup';
-  const isExempt = pathname === '/manifest.json' || pathname === '/sw.js';
+  // /auth/* must stay reachable while signed out — the OAuth callback's whole
+  // job is to exchange the code for the session that doesn't exist yet.
+  const isExempt =
+    pathname === '/manifest.json' ||
+    pathname === '/sw.js' ||
+    pathname.startsWith('/auth/');
   const isAuthed = !!user && !user.is_anonymous;
 
   if (!isAuthed && !isAuthPage && !isExempt) {
