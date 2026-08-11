@@ -32,7 +32,15 @@ export default function TopicCard({ group }: TopicCardProps) {
   return (
     <div className="topic-card">
       {firstSection ? (
-        <Link href={sectionUrl(firstSection)} className="tc-main">
+        // Every route here is dynamic (owner-scoped, nothing cacheable), so a
+        // prefetch is a full server render. Scrolling the dashboard would
+        // otherwise fire one per card — and two per tool link, which only ever
+        // open a modal. Same reason the sidebar's links opt out.
+        <Link
+          href={sectionUrl(firstSection)}
+          className="tc-main"
+          prefetch={false}
+        >
           {tcMain}
         </Link>
       ) : (
@@ -45,6 +53,7 @@ export default function TopicCard({ group }: TopicCardProps) {
           href={`/?add-subtopic=${group.slug}`}
           className="tc-tool"
           scroll={false}
+          prefetch={false}
         >
           <Icon.Plus />
           <span>Add subtopic</span>
@@ -56,6 +65,7 @@ export default function TopicCard({ group }: TopicCardProps) {
             )}`}
             className="tc-tool"
             scroll={false}
+            prefetch={false}
           >
             <Icon.Trash />
             <span>Delete topic</span>
