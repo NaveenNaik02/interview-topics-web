@@ -98,10 +98,9 @@ export default async function Page({ params }: Props) {
   );
 }
 
-// No shared content left to pre-render — everything is per-account now, and
-// getAllGroups() depends on cookies() (via createClient()), which isn't
-// available at build time anyway. dynamicParams defaults to true, so every
-// path renders on demand per request instead.
-export async function generateStaticParams() {
-  return [];
-}
+// Deliberately no generateStaticParams(): everything is per-account now, and
+// getAllGroups() reads cookies() (via createClient()). Exporting it — even
+// returning [] — opts this route into static generation, and unlisted paths
+// are then generated on demand *statically*, so cookies() throws
+// DYNAMIC_SERVER_USAGE and every section page 500s. Without it the route is
+// server-rendered per request, which is what we want.
