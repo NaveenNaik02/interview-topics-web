@@ -44,17 +44,17 @@ function renderAnswerHtml(markdown: string): string {
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
-// Migrates the current user's own progress row from a question's old id to
-// its new one after a cross-section move — otherwise a question the user
-// had already checked off would silently read as "not done" again once its
-// id changes. starred/priority need no such migration: they're columns on
-// the same questions row, and the update that mints the new id (`UPDATE
-// questions SET id = newId ... WHERE id = oldId`) carries them along for
-// free. Cross-user rows (e.g. someone else's completion on a shared ETL
-// question) are out of scope: this app has no service-role client to touch
-// rows outside the caller's own (same limitation noted on deleteQuestion's
-// cleanup below).
-async function carryOverProgress(
+// Migrates the current user's own id-keyed rows (progress, question_position)
+// from a question's old id to its new one after a cross-section move —
+// otherwise a question the user had already checked off would silently read
+// as "not done" again once its id changes, and its manual ordering would be
+// orphaned. starred/priority need no such migration: they're columns on the
+// same questions row, and the update that mints the new id (`UPDATE questions
+// SET id = newId ... WHERE id = oldId`) carries them along for free.
+// Cross-user rows (e.g. someone else's completion on a shared ETL question)
+// are out of scope: this app has no service-role client to touch rows outside
+// the caller's own (same limitation noted on deleteQuestion's cleanup below).
+async function carryOverUserRows(
   supabase: SupabaseServerClient,
   userId: string,
   oldId: string,
@@ -78,6 +78,15 @@ async function carryOverProgress(
       .eq('user_id', userId)
       .eq('question_id', oldId);
   }
+
+  // question_position does have an own-row UPDATE policy, so a rename is one
+  // statement. The client already mirrors this via renameOrderId() — without
+  // the DB write the manual ordering silently reverts on the next load.
+  await supabase
+    .from('question_position')
+    .update({ question_id: newId })
+    .eq('user_id', userId)
+    .eq('question_id', oldId);
 }
 
 export async function addQuestion(
@@ -221,7 +230,7 @@ export async function updateQuestion(
   // here as either an error or zero rows, not a thrown permission error.
   if (error || !data) throw new Error('You can only edit your own questions.');
 
-  if (changedSection) await carryOverProgress(supabase, user.id, id, newId);
+  if (changedSection) await carryOverUserRows(supabase, user.id, id, newId);
 
   revalidateSection(section.topic, section.file);
   if (changedSection) {
@@ -296,7 +305,7 @@ export async function moveQuestion(
     .single();
   if (error || !data) throw new Error('You can only move your own questions.');
 
-  await carryOverProgress(supabase, user.id, id, newId);
+  await carryOverUserRows(supabase, user.id, id, newId);
 
   revalidateSection(section.topic, section.file);
   revalidateSection(existing.topic, existing.file);
