@@ -22,10 +22,10 @@ import {
 } from '@/lib/topics';
 import type { ParsedQuestion } from '@/lib/parser';
 import type { PriorityLevel } from '@/lib/offlineSync';
-import type { EditingQuestion } from '@/components/AddQuestionModal';
+import type { EditingQuestion } from '@/features/authoring';
 
-const AddQuestionModal = dynamic(
-  () => import('@/components/AddQuestionModal'),
+const EditQuestionModal = dynamic(
+  () => import('@/features/authoring').then((m) => m.EditQuestionModal),
   {
     ssr: false,
   },
@@ -252,7 +252,7 @@ export default function QuestionList({
       )}
 
       {editingQuestion && (
-        <AddQuestionModal
+        <EditQuestionModal
           editing={editingQuestion}
           onClose={() => setEditingQuestion(null)}
           onSaved={(question, newSection) => {

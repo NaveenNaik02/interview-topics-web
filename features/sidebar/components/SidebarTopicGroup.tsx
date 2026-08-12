@@ -10,8 +10,6 @@ import AddTopicModal from '@/components/AddTopicModal';
 import { DeleteTarget } from '../hooks';
 import { SidebarSubtopicRow } from './SidebarSubtopicRow';
 
-const DEFAULT_EXPANDED = ['javascript', 'react'];
-
 interface Props {
   group: TopicGroup;
   onRequestDelete: (target: DeleteTarget) => void;
@@ -20,9 +18,7 @@ interface Props {
 export const SidebarTopicGroup = ({ group, onRequestDelete }: Props) => {
   const router = useRouter();
   const stats = useProgressStats();
-  const [expanded, setExpanded] = useState(
-    DEFAULT_EXPANDED.includes(group.slug),
-  );
+  const [expanded, setExpanded] = useState(false);
   const [adding, setAdding] = useState(false);
 
   const { done, total } = group.sections.reduce(

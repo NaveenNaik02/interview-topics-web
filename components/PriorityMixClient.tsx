@@ -25,7 +25,7 @@ import QuestionItem, {
   stripHtml,
 } from './QuestionItem';
 import RowActions from './RowActions';
-import AddQuestionModal, { type EditingQuestion } from './AddQuestionModal';
+import { EditQuestionModal, type EditingQuestion } from '@/features/authoring';
 import MoveQuestionModal from './MoveQuestionModal';
 import SaveToast from './SaveToast';
 import { htmlToMarkdown } from '@/lib/htmlToMarkdown';
@@ -678,7 +678,7 @@ export default function PriorityMixClient({
       )}
 
       {editingQuestion && (
-        <AddQuestionModal
+        <EditQuestionModal
           editing={editingQuestion}
           onClose={() => setEditingQuestion(null)}
           onSaved={() => {

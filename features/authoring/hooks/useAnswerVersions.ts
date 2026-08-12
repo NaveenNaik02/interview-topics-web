@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
-import { capAnswerVersions } from './markdownPreview'
-import type { AnswerVersion } from './types'
+import { capAnswerVersions } from '../markdownPreview'
+import type { AnswerVersion } from '../types'
 
 // Version history for the answer editor: every Generate/Format snapshots
 // whatever's there before overwriting it, so switching drafts (or back to

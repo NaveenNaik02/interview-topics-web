@@ -11,9 +11,7 @@ import {
 import { setAsideQuestion } from '@/lib/actions/setAside';
 import type { StarredQuestion } from '@/features/starred/db/db';
 import StarredQuestionList, { type StarredRow } from './components/StarredQuestionList';
-import AddQuestionModal, {
-  type EditingQuestion,
-} from '@/components/AddQuestionModal';
+import { EditQuestionModal, type EditingQuestion } from '@/features/authoring';
 import MoveQuestionModal from '@/components/MoveQuestionModal';
 import SaveToast from '@/components/SaveToast';
 import { htmlToMarkdown } from '@/lib/htmlToMarkdown';
@@ -74,7 +72,7 @@ export default function StarredClient({ questions }: Props) {
       />
 
       {editingQuestion && (
-        <AddQuestionModal
+        <EditQuestionModal
           editing={editingQuestion}
           onClose={() => setEditingQuestion(null)}
           onSaved={() => {

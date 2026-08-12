@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, type ReactNode } from 'react'
-import { renderPreviewHtml } from './markdownPreview'
+import { renderPreviewHtml } from '../markdownPreview'
 
 interface Props {
   tab: 'write' | 'preview'

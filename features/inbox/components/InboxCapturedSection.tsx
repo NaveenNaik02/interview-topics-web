@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAppStore } from '@/lib/stores/appStore';
-import AddQuestionModal from '@/components/AddQuestionModal';
+import { AddQuestionModal } from '@/features/authoring';
 import type { InboxItem } from '../db';
 import InboxCapturedList from './InboxCapturedList';
 

@@ -10,7 +10,10 @@ import { useFabDrag } from '@/lib/useFabDrag'
 
 // Rarely opened relative to every other page view (Add Question/Topic pull in
 // marked + isomorphic-dompurify + AI action wiring) — load only when needed.
-const AddQuestionModal = dynamic(() => import('./AddQuestionModal'), { ssr: false })
+const AddQuestionModal = dynamic(
+  () => import('@/features/authoring').then((m) => m.AddQuestionModal),
+  { ssr: false },
+)
 const AddTopicModal = dynamic(() => import('./AddTopicModal'), { ssr: false })
 
 export default function AddQuestionFab() {

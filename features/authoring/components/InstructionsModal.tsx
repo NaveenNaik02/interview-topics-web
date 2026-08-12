@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { X } from 'lucide-react'
 import { AQ_MODELS, type AqModelId } from '@/lib/aiModels'
 import { loadPresets } from '@/lib/instructionPresets'
-import AqSelect from '../AqSelect'
+import AqSelect from '@/components/AqSelect'
 import MarkdownField from './MarkdownField'
 
 interface Props {

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAppStore } from '@/lib/stores/appStore';
-import AddQuestionModal from '@/components/AddQuestionModal';
+import { AddQuestionModal } from '@/features/authoring';
 import type { SetAsideItem } from '@/lib/db/setAside';
 import InboxSetAsideList from './InboxSetAsideList';
 
