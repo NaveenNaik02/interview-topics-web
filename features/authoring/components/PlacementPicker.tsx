@@ -2,22 +2,29 @@
 
 import { Sparkles } from 'lucide-react';
 import AqSelect from '@/components/AqSelect';
-import type { Placement } from '../hooks/usePlacement';
-
-interface Props {
-  // The form's usePlacement instance. Passed in rather than called here —
-  // calling the hook again would create a second, unrelated copy of the
-  // state, so this is the one thing that can't be read directly.
-  placement: Placement;
-}
+import { useAuthoring, usePlacementView } from '../store/authoringStore';
 
 // Topic/subtopic pickers plus the "Suggest placement" flow. The suggestion
 // card previews where the AI wants the question to go — including topics or
 // subtopics that don't exist yet — and only touches state when accepted.
-export const PlacementPicker = ({ placement }: Props) => {
-  const { groups, suggestion, suggestState } = placement;
-  const groupName = (slug: string) =>
-    groups.find((g) => g.slug === slug)?.groupName;
+export const PlacementPicker = () => {
+  const { topicOptions, sectionOptions } = usePlacementView();
+  const groups = useAuthoring((s) => s.groups);
+  const groupSlug = useAuthoring((s) => s.groupSlug);
+  const sectionK = useAuthoring((s) => s.sectionK);
+  const setGroupSlug = useAuthoring((s) => s.setGroupSlug);
+  const setSectionK = useAuthoring((s) => s.setSectionK);
+  const title = useAuthoring((s) => s.title);
+  const suggestion = useAuthoring((s) => s.suggestion);
+  const suggestState = useAuthoring((s) => s.suggestState);
+  const suggest = useAuthoring((s) => s.suggestPlacement);
+  const accept = useAuthoring((s) => s.acceptSuggestion);
+  const dismiss = useAuthoring((s) => s.dismissSuggestion);
+
+  const canSuggest = title.trim().length > 3 && suggestState !== 'loading';
+  const groupName = (slug: string) => {
+    return groups.find((g) => g.slug === slug)?.groupName;
+  };
 
   return (
     <>
@@ -27,10 +34,10 @@ export const PlacementPicker = ({ placement }: Props) => {
           <button
             type="button"
             className={`aq-generate-btn ${suggestState === 'loading' ? 'loading' : ''}`}
-            onClick={placement.suggest}
-            disabled={!placement.canSuggest}
+            onClick={suggest}
+            disabled={!canSuggest}
             title={
-              placement.canSuggest
+              canSuggest
                 ? 'Suggest where this question belongs, using the existing topics'
                 : 'Write a question first'
             }
@@ -62,18 +69,18 @@ export const PlacementPicker = ({ placement }: Props) => {
           <label htmlFor="aq-topic">Topic</label>
           <AqSelect
             id="aq-topic"
-            value={placement.groupSlug}
-            onChange={placement.setGroupSlug}
-            options={placement.topicOptions}
+            value={groupSlug}
+            onChange={setGroupSlug}
+            options={topicOptions}
           />
         </div>
         <div className="aq-field">
           <label htmlFor="aq-subtopic">Subtopic</label>
           <AqSelect
             id="aq-subtopic"
-            value={placement.sectionK}
-            onChange={placement.setSectionK}
-            options={placement.sectionOptions}
+            value={sectionK}
+            onChange={setSectionK}
+            options={sectionOptions}
           />
         </div>
       </div>
@@ -91,11 +98,12 @@ export const PlacementPicker = ({ placement }: Props) => {
                     {
                       groups
                         .find((g) => g.slug === suggestion.groupSlug)
-                        ?.sections.find(
-                          (s) =>
+                        ?.sections.find((s) => {
+                          return (
                             s.topic === suggestion.topic &&
-                            s.file === suggestion.file,
-                        )?.label
+                            s.file === suggestion.file
+                          );
+                        })?.label
                     }
                   </b>
                 </>
@@ -123,18 +131,10 @@ export const PlacementPicker = ({ placement }: Props) => {
             <p className="aq-suggest-reason">{suggestion.reasoning}</p>
           )}
           <div className="aq-suggest-actions">
-            <button
-              type="button"
-              className="btn-cancel"
-              onClick={placement.dismissSuggestion}
-            >
+            <button type="button" className="btn-cancel" onClick={dismiss}>
               Choose manually
             </button>
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={placement.acceptSuggestion}
-            >
+            <button type="button" className="btn-primary" onClick={accept}>
               Use this placement
             </button>
           </div>

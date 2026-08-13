@@ -3,13 +3,13 @@
 import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '@/lib/stores/appStore';
 import { addQuestion } from '@/lib/actions/questions';
+import { AuthoringProvider } from './store/AuthoringProvider';
 import { QuestionFormModal } from './components/QuestionFormModal';
 import type { AddQuestionModalProps } from './types';
 
 // Creating a brand-new question. Assigning a captured Inbox item or a
 // Set aside item is the same flow with seeded fields plus a source row to
-// clear on success — only the copy and that cleanup differ, so they stay
-// here rather than in the form.
+// clear on success — only the copy and that cleanup differ.
 export const AddQuestionModal = ({
   defaultSection,
   prefillTitle,
@@ -30,7 +30,7 @@ export const AddQuestionModal = ({
   );
 
   return (
-    <QuestionFormModal
+    <AuthoringProvider
       heading={
         fromInboxId
           ? 'Assign from Inbox'
@@ -61,6 +61,8 @@ export const AddQuestionModal = ({
         onSaved(question, section);
       }}
       onClose={onClose}
-    />
+    >
+      <QuestionFormModal />
+    </AuthoringProvider>
   );
 };

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   X,
   Loader2,
@@ -9,107 +9,69 @@ import {
   SlidersHorizontal,
   AlignLeft,
 } from 'lucide-react';
-import { useAppStore } from '@/lib/stores/appStore';
-import { AQ_MODELS, type AqModelId } from '@/lib/aiModels';
-import {
-  loadPresets,
-  getActiveInstructionText,
-} from '@/lib/instructionPresets';
-import type { PriorityLevel } from '@/lib/offlineSync';
-import { useTypewriter } from '@/lib/useTypewriter';
+import { AQ_MODELS } from '@/lib/aiModels';
+import { loadPresets } from '@/lib/instructionPresets';
 import AqSelect from '@/components/AqSelect';
 import MarkdownField from './MarkdownField';
 import InstructionsModal from './InstructionsModal';
 import { PlacementPicker } from './PlacementPicker';
 import { QuestionField } from './QuestionField';
-import { useAnswerVersions } from '../hooks/useAnswerVersions';
-import { useAnswerGenerator } from '../hooks/useAnswerGenerator';
-import { usePlacement } from '../hooks/usePlacement';
-import {
-  PRIORITY_OPTIONS,
-  LANG_OPTIONS,
-  AQ_MODEL_KEY,
-  type QuestionFormProps,
-} from '../types';
+import { useAuthoring, useAuthoringApi } from '../store/authoringStore';
+import { useTypewriterBridge } from '../store/useTypewriterBridge';
+import { PRIORITY_OPTIONS, LANG_OPTIONS } from '../types';
 
-// The question form itself — it renders exactly what it is given and knows
-// nothing about why it is open. Adding, editing, and assigning from
-// Inbox/Set aside are all callers that supply their own copy and onSubmit
-// (see AddQuestionModal / EditQuestionModal).
-export const QuestionFormModal = ({
-  heading,
-  footNote,
-  submitLabel,
-  initialSection,
-  initial,
-  original,
-  excludeQuestionId,
-  onSubmit,
-  onClose,
-}: QuestionFormProps) => {
-  const defaultPriority = useAppStore((s) => s.defaultPriority);
+// The modal shell: layout, the fields that don't warrant their own component
+// yet, and the save/cancel footer. Everything it renders comes from the
+// authoring store, so it takes no props — see AuthoringProvider.
+export const QuestionFormModal = () => {
+  const api = useAuthoringApi();
+  useTypewriterBridge();
 
-  const [title, setTitle] = useState(initial?.title ?? '');
-  // `null` is a real choice here ("no priority"), so only an absent priority
-  // falls back to the user's default.
-  const [priority, setPriorityLevel] = useState<PriorityLevel | null>(
-    initial?.priority === undefined ? defaultPriority : initial.priority,
-  );
-  const [lang, setLang] = useState(initial?.lang || 'js');
-  const [tags, setTags] = useState(initial?.tags ?? '');
-  const [markdown, setMarkdown] = useState(initial?.markdown ?? '');
-  const [isImpl, setIsImpl] = useState(!!initial?.problem);
-  const [problem, setProblem] = useState(initial?.problem ?? '');
-  const [tab, setTab] = useState<'write' | 'preview'>('write');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const heading = useAuthoring((s) => s.heading);
+  const footNote = useAuthoring((s) => s.footNote);
+  const submitLabel = useAuthoring((s) => s.submitLabel);
+  const onClose = useAuthoring((s) => s.onClose);
+
+  const title = useAuthoring((s) => s.title);
+  const markdown = useAuthoring((s) => s.markdown);
+  const problem = useAuthoring((s) => s.problem);
+  const tags = useAuthoring((s) => s.tags);
+  const setTags = useAuthoring((s) => s.setTags);
+  const lang = useAuthoring((s) => s.lang);
+  const setLang = useAuthoring((s) => s.setLang);
+  const priority = useAuthoring((s) => s.priority);
+  const setPriority = useAuthoring((s) => s.setPriority);
+  const isImpl = useAuthoring((s) => s.isImpl);
+  const tab = useAuthoring((s) => s.tab);
+  const setTab = useAuthoring((s) => s.setTab);
+  const instructions = useAuthoring((s) => s.instructions);
+  const setInstructions = useAuthoring((s) => s.setInstructions);
+  const model = useAuthoring((s) => s.model);
+  const setModel = useAuthoring((s) => s.setModel);
+  const showInstructions = useAuthoring((s) => s.showInstructions);
+  const setShowInstructions = useAuthoring((s) => s.setShowInstructions);
+  const saving = useAuthoring((s) => s.saving);
+  const saveError = useAuthoring((s) => s.saveError);
+  const save = useAuthoring((s) => s.save);
+
+  const answerVersions = useAuthoring((s) => s.answerVersions);
+  const activeVersionId = useAuthoring((s) => s.activeVersionId);
+  const editMarkdown = useAuthoring((s) => s.editMarkdown);
+  const selectVersion = useAuthoring((s) => s.selectVersion);
+  const answerState = useAuthoring((s) => s.answerState);
+  const answerError = useAuthoring((s) => s.answerError);
+  const generateAnswer = useAuthoring((s) => s.generateAnswer);
+  const formatAnswer = useAuthoring((s) => s.formatAnswer);
+
   const firstFieldRef = useRef<HTMLInputElement>(null);
 
-  const [showInstructions, setShowInstructions] = useState(false);
-  // Seeded from the built-in default matching isImpl (text vs. code-only) —
-  // per-question edits below are this question's local draft only and must
-  // never persist as a global override.
-  const [instructions, setInstructions] = useState(() =>
-    getActiveInstructionText(isImpl),
-  );
-  const [model, setModel] = useState<AqModelId>(() => {
-    try {
-      const saved = localStorage.getItem(AQ_MODEL_KEY);
-      return AQ_MODELS.some((m) => m.id === saved)
-        ? (saved as AqModelId)
-        : AQ_MODELS[0].id;
-    } catch {
-      return AQ_MODELS[0].id;
-    }
-  });
-  const placement = usePlacement({ initialSection, title, tags, model });
-
-  const typewrite = useTypewriter(setMarkdown);
-
-  const originalMarkdown = original?.markdown ?? '';
-  const {
-    answerVersions,
-    activeVersionId,
-    snapshotCurrentAnswer,
-    addAnswerVersion,
-    handleMarkdownChange,
-    handleSelectAnswerVersion,
-  } = useAnswerVersions(markdown, setMarkdown, originalMarkdown);
-
-  const answerGen = useAnswerGenerator({
-    question: title,
-    markdown,
-    topicName: placement.activeTopicName,
-    sectionLabel: placement.activeSectionLabel,
-    instructions,
-    isImpl,
-    lang,
-    model,
-    typewrite,
-    setTab,
-    snapshotCurrentAnswer,
-    addAnswerVersion,
-  });
+  const canSave =
+    title.trim().length > 3 &&
+    markdown.trim().length > 3 &&
+    !saving &&
+    (!isImpl || problem.trim().length > 3);
+  const canGenerate = title.trim().length > 3 && answerState !== 'loading';
+  const canFormat = markdown.trim().length > 3 && answerState !== 'loading';
 
   useEffect(() => {
     firstFieldRef.current?.focus();
@@ -128,60 +90,11 @@ export const QuestionFormModal = ({
     const presets = loadPresets();
     const textDefault = presets.find((p) => p.kind === 'text')?.text ?? '';
     const codeDefault = presets.find((p) => p.kind === 'code')?.text ?? '';
-    if (instructions === textDefault || instructions === codeDefault) {
-      setInstructions(isImpl ? codeDefault : textDefault);
+    const current = api.getState().instructions;
+    if (current === textDefault || current === codeDefault) {
+      api.getState().setInstructions(isImpl ? codeDefault : textDefault);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isImpl]);
-
-  const canSave =
-    title.trim().length > 3 &&
-    markdown.trim().length > 3 &&
-    !saving &&
-    (!isImpl || problem.trim().length > 3);
-  const canGenerate = title.trim().length > 3 && answerGen.state !== 'loading';
-  const canFormat = markdown.trim().length > 3 && answerGen.state !== 'loading';
-  const handleModelChange = (id: AqModelId) => {
-    setModel(id);
-    try {
-      localStorage.setItem(AQ_MODEL_KEY, id);
-    } catch {}
-  };
-
-  const handleSaveInstructions = (v: string, m: AqModelId) => {
-    setInstructions(v);
-    handleModelChange(m);
-    setShowInstructions(false);
-  };
-
-  const handleSave = async () => {
-    if (!canSave) return;
-    setSaving(true);
-    setError(null);
-    try {
-      const targetSection = await placement.resolveTargetSection();
-      await onSubmit(
-        {
-          topic: targetSection.topic,
-          file: targetSection.file,
-          title,
-          markdown,
-          lang,
-          tags,
-          problem: isImpl ? problem : '',
-          priority,
-        },
-        targetSection,
-      );
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Could not save this question — try again.',
-      );
-      setSaving(false);
-    }
-  };
+  }, [api, isImpl]);
 
   return (
     <div
@@ -209,23 +122,9 @@ export const QuestionFormModal = ({
         </div>
 
         <div className="aq-body">
-          <PlacementPicker placement={placement} />
+          <PlacementPicker />
 
-          <QuestionField
-            value={title}
-            onChange={setTitle}
-            inputRef={firstFieldRef}
-            originalTitle={original?.title}
-            placement={placement}
-            lang={lang}
-            tags={tags}
-            model={model}
-            isImpl={isImpl}
-            onImplChange={setIsImpl}
-            problem={problem}
-            onProblemChange={setProblem}
-            excludeQuestionId={excludeQuestionId}
-          />
+          <QuestionField inputRef={firstFieldRef} />
 
           <div className="aq-row">
             <div className="aq-field">
@@ -236,9 +135,9 @@ export const QuestionFormModal = ({
                     key={o.level}
                     type="button"
                     className={`aq-pill ${o.level} ${priority === o.level ? 'on' : ''}`}
-                    onClick={() =>
-                      setPriorityLevel(priority === o.level ? null : o.level)
-                    }
+                    onClick={() => {
+                      setPriority(priority === o.level ? null : o.level);
+                    }}
                   >
                     <span className="pdot" />
                     {o.label}
@@ -280,10 +179,10 @@ export const QuestionFormModal = ({
               tab={tab}
               onTabChange={setTab}
               value={markdown}
-              onChange={handleMarkdownChange}
-              readOnly={answerGen.state === 'loading'}
+              onChange={editMarkdown}
+              readOnly={answerState === 'loading'}
               textareaClassName={
-                answerGen.state === 'loading' ? 'aq-gen-active' : ''
+                answerState === 'loading' ? 'aq-gen-active' : ''
               }
               placeholder={
                 isImpl
@@ -307,7 +206,7 @@ export const QuestionFormModal = ({
                   <button
                     type="button"
                     className="aq-format-btn"
-                    onClick={answerGen.format}
+                    onClick={formatAnswer}
                     disabled={!canFormat}
                     title={
                       canFormat
@@ -319,8 +218,8 @@ export const QuestionFormModal = ({
                   </button>
                   <button
                     type="button"
-                    className={`aq-generate-btn ${answerGen.state === 'loading' ? 'loading' : ''}`}
-                    onClick={answerGen.generate}
+                    className={`aq-generate-btn ${answerState === 'loading' ? 'loading' : ''}`}
+                    onClick={generateAnswer}
                     disabled={!canGenerate}
                     title={
                       canGenerate
@@ -328,14 +227,14 @@ export const QuestionFormModal = ({
                         : 'Add a question above first'
                     }
                   >
-                    {answerGen.state === 'loading' ? (
+                    {answerState === 'loading' ? (
                       <>
                         <span className="aq-gen-spinner" />
                         Generating…
                       </>
-                    ) : answerGen.state === 'done' ||
-                      answerGen.state === 'error' ||
-                      answerGen.state === 'limited' ? (
+                    ) : answerState === 'done' ||
+                      answerState === 'error' ||
+                      answerState === 'limited' ? (
                       <>
                         <RefreshCw size={12.5} /> Regenerate
                       </>
@@ -357,7 +256,7 @@ export const QuestionFormModal = ({
                           type="button"
                           key={v.id}
                           className={`aq-version-chip ${activeVersionId === v.id ? 'active' : ''}`}
-                          onClick={() => handleSelectAnswerVersion(v)}
+                          onClick={() => selectVersion(v)}
                           title={v.text.slice(0, 140)}
                         >
                           {v.label}
@@ -365,10 +264,10 @@ export const QuestionFormModal = ({
                       ))}
                     </div>
                   )}
-                  {answerGen.state === 'error' && answerGen.error && (
-                    <div className="aq-gen-error">{answerGen.error}</div>
+                  {answerState === 'error' && answerError && (
+                    <div className="aq-gen-error">{answerError}</div>
                   )}
-                  {answerGen.state === 'limited' && (
+                  {answerState === 'limited' && (
                     <div className="aq-gen-error">
                       {AQ_MODELS.find((m) => m.id === model)?.label ??
                         'This model'}{' '}
@@ -379,7 +278,7 @@ export const QuestionFormModal = ({
                 </>
               }
               afterPanes={
-                answerGen.state === 'done' && (
+                answerState === 'done' && (
                   <div className="aq-gen-note">
                     <Sparkles size={11} />
                     AI-drafted — review before saving.
@@ -395,11 +294,15 @@ export const QuestionFormModal = ({
               model={model}
               isImpl={isImpl}
               onClose={() => setShowInstructions(false)}
-              onSave={handleSaveInstructions}
+              onSave={(v, m) => {
+                setInstructions(v);
+                setModel(m);
+                setShowInstructions(false);
+              }}
             />
           )}
 
-          {error && <div className="aq-gen-error">{error}</div>}
+          {saveError && <div className="aq-gen-error">{saveError}</div>}
         </div>
 
         <div className="aq-foot">
@@ -411,7 +314,7 @@ export const QuestionFormModal = ({
             <button
               className={`btn-primary btn-save ${saving ? 'saving' : ''}`}
               disabled={!canSave}
-              onClick={handleSave}
+              onClick={save}
             >
               {saving ? <Loader2 size={14} className="aq-spin" /> : null}
               {saving ? 'Saving…' : submitLabel}

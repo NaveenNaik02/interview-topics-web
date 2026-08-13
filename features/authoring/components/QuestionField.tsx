@@ -1,99 +1,44 @@
 'use client';
 
-import { useEffect, type RefObject } from 'react';
+import type { RefObject } from 'react';
 import { Sparkles, RefreshCw, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { useTypewriter } from '@/lib/useTypewriter';
-import type { AqModelId } from '@/lib/aiModels';
-import { useQuestionGenerator } from '../hooks/useQuestionGenerator';
-import { useProblemGenerator } from '../hooks/useProblemGenerator';
-import { useDuplicateCheck } from '../hooks/useDuplicateCheck';
-import type { Placement } from '../hooks/usePlacement';
+import { useAuthoring, usePlacementView } from '../store/authoringStore';
 
 interface Props {
-  value: string;
-  onChange: (value: string) => void;
+  // Autofocused on open, so the modal shell owns the ref.
   inputRef: RefObject<HTMLInputElement | null>;
-  // The question as it was saved. Present only when editing — that's what
-  // makes "Revert to original" available.
-  originalTitle?: string;
-  placement: Placement;
-  // An implementation question swaps the plain answer for a Problem →
-  // Solution layout, so the problem statement is edited here alongside the
-  // question it belongs to.
-  isImpl: boolean;
-  onImplChange: (isImpl: boolean) => void;
-  problem: string;
-  onProblemChange: (problem: string) => void;
-  // Form state the AI actions below need for their requests.
-  lang: string;
-  tags: string;
-  model: AqModelId;
-  excludeQuestionId?: string;
 }
 
-// The Question field: the text itself, the three actions that write or verify
-// it (generate, revert, check for duplicates), and everything those actions
-// report back.
-export const QuestionField = ({
-  value,
-  onChange,
-  inputRef,
-  originalTitle,
-  placement,
-  isImpl,
-  onImplChange,
-  problem,
-  onProblemChange,
-  lang,
-  tags,
-  model,
-  excludeQuestionId,
-}: Props) => {
-  const typewriteQuestion = useTypewriter(onChange);
-  const questionGen = useQuestionGenerator({
-    topicName: placement.activeTopicName,
-    sectionLabel: placement.activeSectionLabel,
-    seed: value,
-    isImpl,
-    lang,
-    tags,
-    model,
-    typewriteQuestion,
-  });
+// The question's definition: the text itself, the actions that write or
+// verify it, whether it's an implementation question, and the problem
+// statement that goes with one.
+export const QuestionField = ({ inputRef }: Props) => {
+  const { section, isPendingSection } = usePlacementView();
+  const title = useAuthoring((s) => s.title);
+  const setTitle = useAuthoring((s) => s.setTitle);
+  const originalTitle = useAuthoring((s) => s.original?.title);
+  const isImpl = useAuthoring((s) => s.isImpl);
+  const setIsImpl = useAuthoring((s) => s.setIsImpl);
+  const problem = useAuthoring((s) => s.problem);
+  const setProblem = useAuthoring((s) => s.setProblem);
+  const questionState = useAuthoring((s) => s.questionState);
+  const generateQuestion = useAuthoring((s) => s.generateQuestion);
+  const problemState = useAuthoring((s) => s.problemState);
+  const generateProblem = useAuthoring((s) => s.generateProblem);
+  const dupState = useAuthoring((s) => s.dupState);
+  const dupResult = useAuthoring((s) => s.dupResult);
+  const checkDuplicate = useAuthoring((s) => s.checkDuplicate);
 
-  const dupCheck = useDuplicateCheck({
-    title: value,
-    section: placement.section,
-    excludeId: excludeQuestionId,
-    model,
-  });
-
-  // A duplicate check is only valid for the topic/subtopic it ran against —
-  // picking a different one invalidates the result without needing a re-check.
-  useEffect(() => {
-    dupCheck.reset();
-  }, [placement.groupSlug, placement.sectionK]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const typewriteProblem = useTypewriter(onProblemChange);
-  const problemGen = useProblemGenerator({
-    question: value,
-    lang,
-    tags,
-    model,
-    typewriteProblem,
-  });
-
-  const canRevert = !!originalTitle && value !== originalTitle;
+  const canRevert = !!originalTitle && title !== originalTitle;
   const canGenerateProblem =
-    value.trim().length > 3 && problemGen.state !== 'loading';
+    title.trim().length > 3 && problemState !== 'loading';
   // Needs a question to compare, and a subtopic that actually exists — a
   // staged one has nothing filed under it yet.
   const canCheckDuplicate =
-    value.trim().length > 3 &&
-    dupCheck.state !== 'loading' &&
-    !!placement.section &&
-    !placement.isPendingSection;
-  const { result } = dupCheck;
+    title.trim().length > 3 &&
+    dupState !== 'loading' &&
+    !!section &&
+    !isPendingSection;
 
   return (
     <>
@@ -103,16 +48,16 @@ export const QuestionField = ({
           <div className="aq-label-actions">
             <button
               type="button"
-              className={`aq-generate-btn ${questionGen.state === 'loading' ? 'loading' : ''}`}
-              onClick={questionGen.generate}
-              disabled={questionGen.state === 'loading'}
+              className={`aq-generate-btn ${questionState === 'loading' ? 'loading' : ''}`}
+              onClick={generateQuestion}
+              disabled={questionState === 'loading'}
               title={
-                value.trim()
+                title.trim()
                   ? 'Generate a fresh question, using your text above as a rough idea'
                   : 'Generate a question for this topic/subtopic'
               }
             >
-              {questionGen.state === 'loading' ? (
+              {questionState === 'loading' ? (
                 <>
                   <span className="aq-gen-spinner" />
                   Generating…
@@ -120,7 +65,7 @@ export const QuestionField = ({
               ) : (
                 <>
                   <Sparkles size={12.5} />{' '}
-                  {value.trim() ? 'Regenerate' : 'Generate question'}
+                  {title.trim() ? 'Regenerate' : 'Generate question'}
                 </>
               )}
             </button>
@@ -128,7 +73,7 @@ export const QuestionField = ({
               <button
                 type="button"
                 className="aq-generate-btn aq-revert-btn"
-                onClick={() => onChange(originalTitle!)}
+                onClick={() => setTitle(originalTitle!)}
                 title="Restore the original saved question text"
               >
                 <RefreshCw size={12.5} /> Revert to original
@@ -136,12 +81,12 @@ export const QuestionField = ({
             )}
             <button
               type="button"
-              className={`aq-generate-btn ${dupCheck.state === 'loading' ? 'loading' : ''}`}
-              onClick={dupCheck.check}
+              className={`aq-generate-btn ${dupState === 'loading' ? 'loading' : ''}`}
+              onClick={checkDuplicate}
               disabled={!canCheckDuplicate}
               title="Check this question against existing ones in the selected subtopic"
             >
-              {dupCheck.state === 'loading' ? (
+              {dupState === 'loading' ? (
                 <>
                   <span className="aq-gen-spinner" />
                   Checking…
@@ -161,44 +106,44 @@ export const QuestionField = ({
           className="aq-input"
           type="text"
           placeholder="e.g. What is the difference between let, const, and var?"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
         />
 
-        {questionGen.state === 'error' && (
+        {questionState === 'error' && (
           <div className="aq-gen-error">
             Couldn&apos;t generate a question — try again.
           </div>
         )}
-        {dupCheck.state === 'error' && (
+        {dupState === 'error' && (
           <div className="aq-gen-error">
             Couldn&apos;t check for duplicates — try again.
           </div>
         )}
-        {dupCheck.state === 'done' && result && (
+        {dupState === 'done' && dupResult && (
           <div
-            className={`aq-dup-card ${result.isDuplicate ? 'is-dup' : 'is-clear'}`}
+            className={`aq-dup-card ${dupResult.isDuplicate ? 'is-dup' : 'is-clear'}`}
           >
             <div className="aq-dup-head">
-              {result.isDuplicate ? (
+              {dupResult.isDuplicate ? (
                 <AlertTriangle size={13} />
               ) : (
                 <CheckCircle2 size={13} />
               )}
               <span>
-                {result.isDuplicate
+                {dupResult.isDuplicate
                   ? 'Possible duplicate found'
                   : 'No duplicate found'}
               </span>
             </div>
-            {result.match && (
+            {dupResult.match && (
               <>
                 <span className="aq-dup-label">Matched question</span>
-                <p className="aq-dup-match">&ldquo;{result.match}&rdquo;</p>
+                <p className="aq-dup-match">&ldquo;{dupResult.match}&rdquo;</p>
               </>
             )}
-            {result.reasoning && (
-              <p className="aq-suggest-reason">{result.reasoning}</p>
+            {dupResult.reasoning && (
+              <p className="aq-suggest-reason">{dupResult.reasoning}</p>
             )}
           </div>
         )}
@@ -210,7 +155,7 @@ export const QuestionField = ({
             <input
               type="checkbox"
               checked={isImpl}
-              onChange={(e) => onImplChange(e.target.checked)}
+              onChange={(e) => setIsImpl(e.target.checked)}
             />
             <span className="aq-toggle-track">
               <span className="aq-toggle-thumb" />
@@ -230,8 +175,8 @@ export const QuestionField = ({
             <div className="aq-problem-gen-row">
               <button
                 type="button"
-                className={`aq-generate-btn ${problemGen.state === 'loading' ? 'loading' : ''}`}
-                onClick={problemGen.generate}
+                className={`aq-generate-btn ${problemState === 'loading' ? 'loading' : ''}`}
+                onClick={generateProblem}
                 disabled={!canGenerateProblem}
                 title={
                   canGenerateProblem
@@ -239,7 +184,7 @@ export const QuestionField = ({
                     : 'Add a question above first'
                 }
               >
-                {problemGen.state === 'loading' ? (
+                {problemState === 'loading' ? (
                   <>
                     <span className="aq-gen-spinner" />
                     Generating…
@@ -256,9 +201,9 @@ export const QuestionField = ({
               rows={3}
               placeholder="Describe what needs to be implemented — e.g. Write flatten(arr, depth) that flattens nested arrays up to depth levels…"
               value={problem}
-              onChange={(e) => onProblemChange(e.target.value)}
+              onChange={(e) => setProblem(e.target.value)}
             />
-            {problemGen.state === 'error' && (
+            {problemState === 'error' && (
               <div className="aq-gen-error">
                 Couldn&apos;t generate — try again.
               </div>

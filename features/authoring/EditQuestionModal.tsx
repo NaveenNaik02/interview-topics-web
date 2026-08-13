@@ -1,6 +1,7 @@
 'use client';
 
 import { updateQuestion } from '@/lib/actions/questions';
+import { AuthoringProvider } from './store/AuthoringProvider';
 import { QuestionFormModal } from './components/QuestionFormModal';
 import type { EditQuestionModalProps } from './types';
 
@@ -12,7 +13,7 @@ export const EditQuestionModal = ({
   onClose,
   onSaved,
 }: EditQuestionModalProps) => (
-  <QuestionFormModal
+  <AuthoringProvider
     heading="Edit question"
     footNote="Saving updates this question in place, everywhere it appears."
     submitLabel="Save changes"
@@ -27,9 +28,11 @@ export const EditQuestionModal = ({
     }}
     original={{ title: editing.title, markdown: editing.markdown }}
     excludeQuestionId={editing.id}
-    onSubmit={async (input, section) =>
-      onSaved(await updateQuestion(editing.id, input), section)
-    }
+    onSubmit={async (input, section) => {
+      onSaved(await updateQuestion(editing.id, input), section);
+    }}
     onClose={onClose}
-  />
+  >
+    <QuestionFormModal />
+  </AuthoringProvider>
 );

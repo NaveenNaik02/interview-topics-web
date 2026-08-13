@@ -130,6 +130,16 @@ Question ids are namespaced by section (`"{topic}/{file}/u-{uuid}"`), and progre
 - **FAB drag** — `lib/useFabDrag.ts` uses its own small Zustand store (`useFabOffsetStore`, separate from `useAppStore` — pure client UI concern, and the FABs render outside `UIProvider` in `layout.tsx`) so dragging any one FAB moves the whole bottom-right cluster together; resets on route change.
 - **Exports**: Always use named exports (e.g., `export const MyComponent = ...`) instead of default exports (`export default ...`), unless it is absolutely necessary (such as for Next.js routing page files, dynamic lazy loading using `next/dynamic` where it expects a default export, or configuration files).
 - **Naming**: A name must say what the thing is for, without being a sentence. Aim for the shortest name that still answers "what is this?" on its own — `canCheckDuplicate`, `resolveTargetSection`, `pendingPlacement`. Avoid names that need the surrounding line to make sense (`data`, `handle`, `tmp`, `flag`, `p2`), and equally avoid padding that adds no information (`questionGeneratorLoadingStateValue`, `theCurrentlySelectedTopicGroupSlug`). Drop words the context already supplies: inside `usePlacement`, `pending` beats `pendingPlacement`; inside `QuestionField`, `value` beats `questionFieldValue`. Booleans read as assertions (`isImpl`, `canSave`, `hasResult`), functions as verbs (`suggest`, `acceptSuggestion`, `reset`).
+- **Arrow bodies**: If an arrow function's body doesn't fit on the same line as the `=>`, give it a block body with an explicit `return` — never leave a concise body dangling on the next line. Exempt: bodies wrapped in parentheses, i.e. `=> (` for JSX and `=> ({` for an object literal; those stay as they are. Applies to new code; don't retrofit existing files.
+  ```ts
+  // no — body wrapped to the next line                // yes
+  const labelOf = (options, v) =>                      const labelOf = (options, v) => {
+    options.find((o) => o.value === v)?.label ?? '';     return options.find((o) => o.value === v)?.label ?? '';
+                                                       };
+  // fine as-is — parenthesised body
+  {items.map((i) => (<Row key={i.id} {...i} />))}
+  const toOption = (g) => ({ value: g.slug, label: g.groupName });
+  ```
 - **State Locality and Store Access**: When creating or refactoring components, always try to keep state as local to the component as possible. Lift state up only when it is absolutely necessary. Do not pass store data down as props if it can be accessed directly within the component from the Zustand store. Always try to separate concerns, break down complex components, and keep state localized.
 - **`components/MainContent.tsx`** — swaps in `<SearchResults>` when the shared search query is ≥ 2 chars, and manually resets scroll on pathname change (the whole app is one catch-all route, so Next's built-in scroll reset never fires).
 
