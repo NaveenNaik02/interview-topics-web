@@ -2,11 +2,9 @@ import { useEffect, useState } from 'react';
 import { useAppStore } from '@/lib/stores/appStore';
 import { addTopicGroup, addSection } from '@/lib/actions/topics';
 import { findGroupForSection, type SectionMeta } from '@/lib/topics';
-import {
-  suggestPlacement,
-  type PlacementSuggestion,
-} from '@/lib/actions/suggestPlacement';
 import type { AqModelId } from '@/lib/aiModels';
+import { buildPlacementOptions, sectionKey } from '../utils/placementOptions';
+import { useSuggestion } from './useSuggestion';
 import {
   PENDING_GROUP_SLUG,
   PENDING_SECTION_KEY,
@@ -21,11 +19,9 @@ interface Params {
   model: AqModelId;
 }
 
-const sectionKey = (s: SectionMeta) => `${s.topic}/${s.file}`;
-
-// Everything about where the question is filed: the selected topic/subtopic,
-// the options the two pickers render, the AI's placement suggestion, and any
-// topic/subtopic staged by an accepted suggestion but not created yet.
+// Where the question gets filed. Holds the selected topic/subtopic, plus any
+// topic/subtopic staged by an accepted AI suggestion — staged ones exist only
+// in memory until resolveTargetSection creates them at save time.
 export const usePlacement = ({
   initialSection,
   title,
@@ -44,168 +40,70 @@ export const usePlacement = ({
   const [groupSlug, setGroupSlug] = useState(
     initialGroup?.slug ?? groups[0].slug,
   );
-  const isPendingGroup = groupSlug === PENDING_GROUP_SLUG;
-  const group = isPendingGroup
-    ? null
-    : (groups.find((g) => g.slug === groupSlug) ?? groups[0]);
-
   // Lazy initializer: evaluated once at mount, when groupSlug can't yet be
-  // the pending-topic sentinel — safe to assume a real group here.
-  const [sectionK, setSectionK] = useState(() => {
-    if (initialSection) return sectionKey(initialSection);
-    const mountGroup = groups.find((g) => g.slug === groupSlug) ?? groups[0];
-    return sectionKey(mountGroup.sections[0]);
-  });
+  // the pending-topic sentinel — so the group is whatever seeded it above.
+  const [sectionK, setSectionK] = useState(() =>
+    sectionKey(initialSection ?? (initialGroup ?? groups[0]).sections[0]),
+  );
+  const [pending, setPending] = useState<PendingPlacement | null>(null);
+
+  const { group, topicOptions, sectionOptions } = buildPlacementOptions(
+    groups,
+    groupSlug,
+    pending,
+  );
   const section =
     group?.sections.find((s) => sectionKey(s) === sectionK) ??
     group?.sections[0];
 
-  // A suggestion staged via "Use this placement" for a topic/subtopic that
-  // doesn't exist yet — surfaced as a synthetic option (below) and only
-  // created for real in resolveTargetSection, so cancelling the modal
-  // leaves no orphaned topic/subtopic behind.
-  const [pendingPlacement, setPendingPlacement] =
-    useState<PendingPlacement | null>(null);
+  // The options already map a selected value to its display name, for staged
+  // placements as much as real ones.
+  const labelOf = (options: { value: string; label: string }[], v: string) =>
+    options.find((o) => o.value === v)?.label ?? '';
 
-  const pendingTopic =
-    pendingPlacement?.kind === 'new-topic' ? pendingPlacement : null;
-  const pendingSubtopicForGroup =
-    pendingPlacement?.kind === 'new-subtopic' &&
-    pendingPlacement.groupSlug === groupSlug
-      ? pendingPlacement
-      : null;
-
-  const topicOptions = [
-    ...groups.map((g) => ({ value: g.slug, label: g.groupName })),
-    ...(pendingTopic
-      ? [
-          {
-            value: PENDING_GROUP_SLUG,
-            label: pendingTopic.topicName,
-            sub: 'new',
-          },
-        ]
-      : []),
-  ];
-  const sectionOptions =
-    pendingTopic && isPendingGroup
-      ? [{ value: PENDING_SECTION_KEY, label: pendingTopic.label, sub: 'new' }]
-      : [
-          ...(group?.sections ?? []).map((s) => ({
-            value: sectionKey(s),
-            label: s.label,
-          })),
-          ...(pendingSubtopicForGroup
-            ? [
-                {
-                  value: PENDING_SECTION_KEY,
-                  label: pendingSubtopicForGroup.label,
-                  sub: 'new',
-                },
-              ]
-            : []),
-        ];
-  const activeTopicName =
-    isPendingGroup && pendingTopic
-      ? pendingTopic.topicName
-      : (group?.groupName ?? '');
-  const activeSectionLabel =
-    sectionK === PENDING_SECTION_KEY && pendingPlacement
-      ? pendingPlacement.label
-      : (section?.label ?? '');
-
+  // Switching topics leaves sectionK pointing at the old topic's subtopic.
   useEffect(() => {
     if (sectionOptions.some((o) => o.value === sectionK)) return;
     if (sectionOptions[0]) setSectionK(sectionOptions[0].value);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupSlug]);
 
-  const [suggestion, setSuggestion] = useState<PlacementSuggestion | null>(
-    null,
-  );
-  const [suggestState, setSuggestState] = useState<
-    'idle' | 'loading' | 'error'
-  >('idle');
+  const ai = useSuggestion({ title, tags, model, groups });
 
-  const suggest = async () => {
-    setSuggestState('loading');
-    setSuggestion(null);
-    try {
-      setSuggestion(
-        await suggestPlacement({
-          title,
-          tags,
-          groups: groups.map((g) => ({
-            groupSlug: g.slug,
-            groupName: g.groupName,
-            sections: g.sections.map((s) => ({
-              topic: s.topic,
-              file: s.file,
-              label: s.label,
-            })),
-          })),
-          model,
-        }),
-      );
-      setSuggestState('idle');
-    } catch {
-      setSuggestState('error');
-    }
-  };
-
-  // Accepting a suggestion always clears it — the card's job is done once the
+  // Accepting always clears the suggestion — the card's job is done once the
   // pickers reflect it.
   const acceptSuggestion = () => {
-    if (!suggestion) return;
-    if (suggestion.mode === 'existing') {
-      setPendingPlacement(null);
-      setGroupSlug(suggestion.groupSlug);
-      setSectionK(`${suggestion.topic}/${suggestion.file}`);
-    } else if (suggestion.mode === 'new-subtopic') {
-      setPendingPlacement({
-        kind: 'new-subtopic',
-        groupSlug: suggestion.groupSlug,
-        label: suggestion.label,
-      });
-      setGroupSlug(suggestion.groupSlug);
-      setSectionK(PENDING_SECTION_KEY);
-    } else {
-      setPendingPlacement({
-        kind: 'new-topic',
-        topicName: suggestion.topicName,
-        blurb: suggestion.blurb,
-        label: suggestion.label,
-      });
-      setGroupSlug(PENDING_GROUP_SLUG);
-      setSectionK(PENDING_SECTION_KEY);
+    const s = ai.suggestion;
+    if (!s) return;
+    ai.dismiss();
+    if (s.mode === 'existing') {
+      setPending(null);
+      setGroupSlug(s.groupSlug);
+      setSectionK(`${s.topic}/${s.file}`);
+      return;
     }
-    setSuggestion(null);
+    setPending(s);
+    setGroupSlug(s.mode === 'new-topic' ? PENDING_GROUP_SLUG : s.groupSlug);
+    setSectionK(PENDING_SECTION_KEY);
   };
 
-  // A staged new topic/subtopic only gets created here, right before saving
-  // the question that needs it — so cancelling out of the modal earlier
-  // never leaves an empty topic/subtopic behind.
+  // A staged topic/subtopic is created here and nowhere else — right before
+  // the question that needs it — so cancelling the modal earlier never leaves
+  // an empty topic/subtopic behind.
   const resolveTargetSection = async (): Promise<SectionMeta> => {
-    if (isPendingGroup && pendingPlacement?.kind === 'new-topic') {
-      const newGroup = await addTopicGroup({
-        groupName: pendingPlacement.topicName,
-        blurb: pendingPlacement.blurb,
+    if (groupSlug === PENDING_GROUP_SLUG && pending?.mode === 'new-topic') {
+      const group = await addTopicGroup({
+        groupName: pending.topicName,
+        blurb: pending.blurb,
       });
-      return (
-        await addSection({
-          groupSlug: newGroup.slug,
-          label: pendingPlacement.label,
-        })
-      ).section;
+      return (await addSection({ groupSlug: group.slug, label: pending.label }))
+        .section;
     }
-    if (
-      sectionK === PENDING_SECTION_KEY &&
-      pendingPlacement?.kind === 'new-subtopic'
-    ) {
+    if (sectionK === PENDING_SECTION_KEY && pending?.mode === 'new-subtopic') {
       return (
         await addSection({
-          groupSlug: pendingPlacement.groupSlug,
-          label: pendingPlacement.label,
+          groupSlug: pending.groupSlug,
+          label: pending.label,
         })
       ).section;
     }
@@ -221,17 +119,17 @@ export const usePlacement = ({
     section,
     topicOptions,
     sectionOptions,
-    activeTopicName,
-    activeSectionLabel,
+    activeTopicName: labelOf(topicOptions, groupSlug),
+    activeSectionLabel: labelOf(sectionOptions, sectionK),
     // Nothing to compare a duplicate against for a subtopic that doesn't
     // exist until Save.
     isPendingSection: sectionK === PENDING_SECTION_KEY,
-    suggestion,
-    suggestState,
-    canSuggest: title.trim().length > 3 && suggestState !== 'loading',
-    suggest,
+    suggestion: ai.suggestion,
+    suggestState: ai.state,
+    canSuggest: ai.canSuggest,
+    suggest: ai.suggest,
     acceptSuggestion,
-    dismissSuggestion: () => setSuggestion(null),
+    dismissSuggestion: ai.dismiss,
     resolveTargetSection,
   };
 };

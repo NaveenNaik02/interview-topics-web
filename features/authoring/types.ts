@@ -1,4 +1,5 @@
 import type { SectionMeta } from '@/lib/topics';
+import type { PlacementSuggestion } from '@/lib/actions/suggestPlacement';
 import type { PriorityLevel } from '@/lib/offlineSync';
 import type { ParsedQuestion } from '@/lib/parser';
 
@@ -119,6 +120,10 @@ export const AQ_MODEL_KEY = 'prep-tracker:ai-model';
 export const PENDING_GROUP_SLUG = '__pending-topic__';
 export const PENDING_SECTION_KEY = '__pending-section__';
 
-export type PendingPlacement =
-  | { kind: 'new-subtopic'; groupSlug: string; label: string }
-  | { kind: 'new-topic'; topicName: string; blurb: string; label: string };
+// A staged topic/subtopic is always just the suggestion that produced it —
+// nothing else in the modal can create one — so it's that type minus the
+// case where the target already exists.
+export type PendingPlacement = Exclude<
+  PlacementSuggestion,
+  { mode: 'existing' }
+>;

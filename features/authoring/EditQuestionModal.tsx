@@ -1,7 +1,7 @@
 'use client';
 
 import { updateQuestion } from '@/lib/actions/questions';
-import { QuestionFormModal } from './QuestionFormModal';
+import { QuestionFormModal } from './components/QuestionFormModal';
 import type { EditQuestionModalProps } from './types';
 
 // Editing an existing question. `original` is what turns on "Revert to

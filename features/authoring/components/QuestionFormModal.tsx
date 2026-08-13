@@ -8,8 +8,6 @@ import {
   RefreshCw,
   SlidersHorizontal,
   AlignLeft,
-  AlertTriangle,
-  CheckCircle2,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/stores/appStore';
 import { AQ_MODELS, type AqModelId } from '@/lib/aiModels';
@@ -20,18 +18,19 @@ import {
 import type { PriorityLevel } from '@/lib/offlineSync';
 import { useTypewriter } from '@/lib/useTypewriter';
 import AqSelect from '@/components/AqSelect';
-import MarkdownField from './components/MarkdownField';
-import InstructionsModal from './components/InstructionsModal';
-import { PlacementPicker } from './components/PlacementPicker';
-import { useAnswerVersions } from './hooks/useAnswerVersions';
-import { useAiActions } from './hooks/useAiActions';
-import { usePlacement } from './hooks/usePlacement';
+import MarkdownField from './MarkdownField';
+import InstructionsModal from './InstructionsModal';
+import { PlacementPicker } from './PlacementPicker';
+import { QuestionField } from './QuestionField';
+import { useAnswerVersions } from '../hooks/useAnswerVersions';
+import { useAnswerGenerator } from '../hooks/useAnswerGenerator';
+import { usePlacement } from '../hooks/usePlacement';
 import {
   PRIORITY_OPTIONS,
   LANG_OPTIONS,
   AQ_MODEL_KEY,
   type QuestionFormProps,
-} from './types';
+} from '../types';
 
 // The question form itself — it renders exactly what it is given and knows
 // nothing about why it is open. Adding, editing, and assigning from
@@ -86,12 +85,6 @@ export const QuestionFormModal = ({
   const placement = usePlacement({ initialSection, title, tags, model });
 
   const typewrite = useTypewriter(setMarkdown);
-  const typewriteQuestion = useTypewriter(setTitle);
-  const typewriteProblem = useTypewriter(setProblem);
-
-  const originalTitle = original?.title ?? '';
-  const canRevertTitle = !!originalTitle && title !== originalTitle;
-  const handleRevertTitle = () => setTitle(originalTitle);
 
   const originalMarkdown = original?.markdown ?? '';
   const {
@@ -103,21 +96,16 @@ export const QuestionFormModal = ({
     handleSelectAnswerVersion,
   } = useAnswerVersions(markdown, setMarkdown, originalMarkdown);
 
-  const ai = useAiActions({
-    title,
+  const answerGen = useAnswerGenerator({
+    question: title,
     markdown,
-    activeTopicName: placement.activeTopicName,
-    activeSectionLabel: placement.activeSectionLabel,
+    topicName: placement.activeTopicName,
+    sectionLabel: placement.activeSectionLabel,
+    instructions,
     isImpl,
     lang,
-    tags,
     model,
-    instructions,
-    section: placement.section,
-    excludeId: excludeQuestionId,
     typewrite,
-    typewriteQuestion,
-    typewriteProblem,
     setTab,
     snapshotCurrentAnswer,
     addAnswerVersion,
@@ -133,12 +121,6 @@ export const QuestionFormModal = ({
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
-  // A duplicate check is only valid for the topic/subtopic it ran against —
-  // picking a different one invalidates the result without needing a re-check.
-  useEffect(() => {
-    ai.setDupState('idle');
-    ai.setDupResult(null);
-  }, [placement.groupSlug, placement.sectionK]); // eslint-disable-line react-hooks/exhaustive-deps
   // Follows the Implementation toggle for a still-untouched instructions
   // draft (still exactly one of the two built-in defaults) — never
   // overwrites instructions the author has actually customized.
@@ -157,17 +139,8 @@ export const QuestionFormModal = ({
     markdown.trim().length > 3 &&
     !saving &&
     (!isImpl || problem.trim().length > 3);
-  const canGenerate = title.trim().length > 3 && ai.genState !== 'loading';
-  const canFormat = markdown.trim().length > 3 && ai.genState !== 'loading';
-  const canGenerateQuestion = ai.questionGen !== 'loading';
-  const canGenerateProblem =
-    title.trim().length > 3 && ai.problemGen !== 'loading';
-  const canCheckDuplicate =
-    title.trim().length > 3 &&
-    ai.dupState !== 'loading' &&
-    !!placement.section &&
-    !placement.isPendingSection;
-
+  const canGenerate = title.trim().length > 3 && answerGen.state !== 'loading';
+  const canFormat = markdown.trim().length > 3 && answerGen.state !== 'loading';
   const handleModelChange = (id: AqModelId) => {
     setModel(id);
     try {
@@ -238,175 +211,21 @@ export const QuestionFormModal = ({
         <div className="aq-body">
           <PlacementPicker placement={placement} />
 
-          <div className="aq-field">
-            <div className="aq-label-row">
-              <label htmlFor="aq-question">Question</label>
-              <div className="aq-label-actions">
-                <button
-                  type="button"
-                  className={`aq-generate-btn ${ai.questionGen === 'loading' ? 'loading' : ''}`}
-                  onClick={ai.handleGenerateQuestion}
-                  disabled={!canGenerateQuestion}
-                  title={
-                    title.trim()
-                      ? 'Generate a fresh question, using your text above as a rough idea'
-                      : 'Generate a question for this topic/subtopic'
-                  }
-                >
-                  {ai.questionGen === 'loading' ? (
-                    <>
-                      <span className="aq-gen-spinner" />
-                      Generating…
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles size={12.5} />{' '}
-                      {title.trim() ? 'Regenerate' : 'Generate question'}
-                    </>
-                  )}
-                </button>
-                {canRevertTitle && (
-                  <button
-                    type="button"
-                    className="aq-generate-btn aq-revert-btn"
-                    onClick={handleRevertTitle}
-                    title="Restore the original saved question text"
-                  >
-                    <RefreshCw size={12.5} /> Revert to original
-                  </button>
-                )}
-                <button
-                  type="button"
-                  className={`aq-generate-btn ${ai.dupState === 'loading' ? 'loading' : ''}`}
-                  onClick={ai.handleCheckDuplicate}
-                  disabled={!canCheckDuplicate}
-                  title="Check this question against existing ones in the selected subtopic"
-                >
-                  {ai.dupState === 'loading' ? (
-                    <>
-                      <span className="aq-gen-spinner" />
-                      Checking…
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles size={12.5} /> Check for duplicates
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-            <input
-              id="aq-question"
-              ref={firstFieldRef}
-              className="aq-input"
-              type="text"
-              placeholder="e.g. What is the difference between let, const, and var?"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-            {ai.questionGen === 'error' && (
-              <div className="aq-gen-error">
-                Couldn&apos;t generate a question — try again.
-              </div>
-            )}
-            {ai.dupState === 'error' && (
-              <div className="aq-gen-error">
-                Couldn&apos;t check for duplicates — try again.
-              </div>
-            )}
-            {ai.dupState === 'done' && ai.dupResult && (
-              <div
-                className={`aq-dup-card ${ai.dupResult.isDuplicate ? 'is-dup' : 'is-clear'}`}
-              >
-                <div className="aq-dup-head">
-                  {ai.dupResult.isDuplicate ? (
-                    <AlertTriangle size={13} />
-                  ) : (
-                    <CheckCircle2 size={13} />
-                  )}
-                  <span>
-                    {ai.dupResult.isDuplicate
-                      ? 'Possible duplicate found'
-                      : 'No duplicate found'}
-                  </span>
-                </div>
-                {ai.dupResult.match && (
-                  <>
-                    <span className="aq-dup-label">Matched question</span>
-                    <p className="aq-dup-match">
-                      &ldquo;{ai.dupResult.match}&rdquo;
-                    </p>
-                  </>
-                )}
-                {ai.dupResult.reasoning && (
-                  <p className="aq-suggest-reason">{ai.dupResult.reasoning}</p>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="aq-field">
-            <div className="aq-impl-toggle-row">
-              <label className="aq-toggle">
-                <input
-                  type="checkbox"
-                  checked={isImpl}
-                  onChange={(e) => setIsImpl(e.target.checked)}
-                />
-                <span className="aq-toggle-track">
-                  <span className="aq-toggle-thumb" />
-                </span>
-              </label>
-              <div className="aq-impl-toggle-copy">
-                <span className="aq-impl-toggle-title">
-                  Implementation question
-                </span>
-                <span className="aq-impl-toggle-sub">
-                  Shows a Problem → Solution layout instead of a plain answer
-                </span>
-              </div>
-            </div>
-            {isImpl && (
-              <>
-                <div className="aq-problem-gen-row">
-                  <button
-                    type="button"
-                    className={`aq-generate-btn ${ai.problemGen === 'loading' ? 'loading' : ''}`}
-                    onClick={ai.handleGenerateProblem}
-                    disabled={!canGenerateProblem}
-                    title={
-                      canGenerateProblem
-                        ? 'Generate a problem statement from the question above'
-                        : 'Add a question above first'
-                    }
-                  >
-                    {ai.problemGen === 'loading' ? (
-                      <>
-                        <span className="aq-gen-spinner" />
-                        Generating…
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles size={12.5} /> Generate
-                      </>
-                    )}
-                  </button>
-                </div>
-                <textarea
-                  className="aq-input aq-problem-input"
-                  rows={3}
-                  placeholder="Describe what needs to be implemented — e.g. Write flatten(arr, depth) that flattens nested arrays up to depth levels…"
-                  value={problem}
-                  onChange={(e) => setProblem(e.target.value)}
-                />
-                {ai.problemGen === 'error' && (
-                  <div className="aq-gen-error">
-                    Couldn&apos;t generate — try again.
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+          <QuestionField
+            value={title}
+            onChange={setTitle}
+            inputRef={firstFieldRef}
+            originalTitle={original?.title}
+            placement={placement}
+            lang={lang}
+            tags={tags}
+            model={model}
+            isImpl={isImpl}
+            onImplChange={setIsImpl}
+            problem={problem}
+            onProblemChange={setProblem}
+            excludeQuestionId={excludeQuestionId}
+          />
 
           <div className="aq-row">
             <div className="aq-field">
@@ -462,9 +281,9 @@ export const QuestionFormModal = ({
               onTabChange={setTab}
               value={markdown}
               onChange={handleMarkdownChange}
-              readOnly={ai.genState === 'loading'}
+              readOnly={answerGen.state === 'loading'}
               textareaClassName={
-                ai.genState === 'loading' ? 'aq-gen-active' : ''
+                answerGen.state === 'loading' ? 'aq-gen-active' : ''
               }
               placeholder={
                 isImpl
@@ -488,7 +307,7 @@ export const QuestionFormModal = ({
                   <button
                     type="button"
                     className="aq-format-btn"
-                    onClick={ai.handleFormat}
+                    onClick={answerGen.format}
                     disabled={!canFormat}
                     title={
                       canFormat
@@ -500,8 +319,8 @@ export const QuestionFormModal = ({
                   </button>
                   <button
                     type="button"
-                    className={`aq-generate-btn ${ai.genState === 'loading' ? 'loading' : ''}`}
-                    onClick={ai.handleGenerate}
+                    className={`aq-generate-btn ${answerGen.state === 'loading' ? 'loading' : ''}`}
+                    onClick={answerGen.generate}
                     disabled={!canGenerate}
                     title={
                       canGenerate
@@ -509,14 +328,14 @@ export const QuestionFormModal = ({
                         : 'Add a question above first'
                     }
                   >
-                    {ai.genState === 'loading' ? (
+                    {answerGen.state === 'loading' ? (
                       <>
                         <span className="aq-gen-spinner" />
                         Generating…
                       </>
-                    ) : ai.genState === 'done' ||
-                      ai.genState === 'error' ||
-                      ai.genState === 'limited' ? (
+                    ) : answerGen.state === 'done' ||
+                      answerGen.state === 'error' ||
+                      answerGen.state === 'limited' ? (
                       <>
                         <RefreshCw size={12.5} /> Regenerate
                       </>
@@ -546,10 +365,10 @@ export const QuestionFormModal = ({
                       ))}
                     </div>
                   )}
-                  {ai.genState === 'error' && ai.genError && (
-                    <div className="aq-gen-error">{ai.genError}</div>
+                  {answerGen.state === 'error' && answerGen.error && (
+                    <div className="aq-gen-error">{answerGen.error}</div>
                   )}
-                  {ai.genState === 'limited' && (
+                  {answerGen.state === 'limited' && (
                     <div className="aq-gen-error">
                       {AQ_MODELS.find((m) => m.id === model)?.label ??
                         'This model'}{' '}
@@ -560,7 +379,7 @@ export const QuestionFormModal = ({
                 </>
               }
               afterPanes={
-                ai.genState === 'done' && (
+                answerGen.state === 'done' && (
                   <div className="aq-gen-note">
                     <Sparkles size={11} />
                     AI-drafted — review before saving.

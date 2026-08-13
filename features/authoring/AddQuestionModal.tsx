@@ -3,7 +3,7 @@
 import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '@/lib/stores/appStore';
 import { addQuestion } from '@/lib/actions/questions';
-import { QuestionFormModal } from './QuestionFormModal';
+import { QuestionFormModal } from './components/QuestionFormModal';
 import type { AddQuestionModalProps } from './types';
 
 // Creating a brand-new question. Assigning a captured Inbox item or a
