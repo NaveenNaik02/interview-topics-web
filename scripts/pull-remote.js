@@ -148,9 +148,9 @@ async function count(client, table) {
     pullAll(remote, 'user_settings', mine),
   ]);
 
-  // Remote is still on the pre-20260804105557 shape: starred/priority live in
-  // their own tables there, but are columns on `questions` locally. If remote
-  // ever catches up these selects fail and the columns come through directly.
+  // Remote has caught up on 20260804105557, so these selects now fail and
+  // starred/priority come through as columns on `questions` instead. Kept as a
+  // fallback for pointing this at a project still on the pre-merge shape.
   const legacy = async (table) => {
     try {
       return await pullAll(remote, table, mine);

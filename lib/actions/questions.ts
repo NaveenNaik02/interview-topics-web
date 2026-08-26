@@ -226,9 +226,13 @@ export async function updateQuestion(
     .select('id, number, title, body_html')
     .single();
 
-  // RLS scopes the update to created_by = auth.uid() — a mismatch surfaces
-  // here as either an error or zero rows, not a thrown permission error.
-  if (error || !data) throw new Error('You can only edit your own questions.');
+  // RLS scopes the update to created_by = auth.uid() — a mismatch surfaces as
+  // zero rows, not a thrown permission error. A populated `error` is something
+  // else entirely (constraint violation, bad column) and must not be reported
+  // as a permission problem: a foreign-key violation masquerading as "you can
+  // only edit your own questions" is what hid 20260826170000's cloud drift.
+  if (error) throw new Error(`Could not save question: ${error.message}`);
+  if (!data) throw new Error('You can only edit your own questions.');
 
   if (changedSection) await carryOverUserRows(supabase, user.id, id, newId);
 
@@ -303,7 +307,8 @@ export async function moveQuestion(
     .eq('id', id)
     .select('id')
     .single();
-  if (error || !data) throw new Error('You can only move your own questions.');
+  if (error) throw new Error(`Could not move question: ${error.message}`);
+  if (!data) throw new Error('You can only move your own questions.');
 
   await carryOverUserRows(supabase, user.id, id, newId);
 
@@ -324,8 +329,8 @@ export async function deleteQuestion(id: string): Promise<void> {
     .eq('id', id)
     .select('topic, file')
     .single();
-  if (error || !data)
-    throw new Error('You can only delete your own questions.');
+  if (error) throw new Error(`Could not delete question: ${error.message}`);
+  if (!data) throw new Error('You can only delete your own questions.');
 
   // Best-effort cleanup of the current user's own progress row for this
   // question (starred/priority are columns on the deleted row itself, so
