@@ -14,6 +14,7 @@ import { deleteQuestion } from '@/lib/actions/questions';
 import { setAsideQuestion } from '@/lib/actions/setAside';
 import {
   setStarred,
+  setGreyZone,
   setPriority as setPriorityAction,
 } from '@/lib/actions/questionFlags';
 import type { PriorityMixQuestion } from '@/lib/db/priority';
@@ -250,7 +251,7 @@ export default function PriorityMixClient({
     mounted,
     user,
     appendSetAsideItem,
-    bumpStarredCount,
+    bumpFlagCount,
     store,
   } = useAppStore(
     useShallow((s) => ({
@@ -260,7 +261,7 @@ export default function PriorityMixClient({
       mounted: s.mounted,
       user: s.user,
       appendSetAsideItem: s.appendSetAsideItem,
-      bumpStarredCount: s.bumpStarredCount,
+      bumpFlagCount: s.bumpFlagCount,
       store: s.store,
     })),
   );
@@ -385,9 +386,19 @@ export default function PriorityMixClient({
     setQuestions((prev) =>
       prev.map((q) => (q.id === id ? { ...q, starred: !wasStarred } : q)),
     );
-    bumpStarredCount(wasStarred ? -1 : 1);
+    bumpFlagCount('starred', wasStarred ? -1 : 1);
     setStarred(id, !wasStarred).catch((err) =>
       console.error('[starred] write failed:', err),
+    );
+  };
+
+  const handleToggleGreyZone = (id: string, wasGreyZone: boolean) => {
+    setQuestions((prev) =>
+      prev.map((q) => (q.id === id ? { ...q, greyZone: !wasGreyZone } : q)),
+    );
+    bumpFlagCount('grey_zone', wasGreyZone ? -1 : 1);
+    setGreyZone(id, !wasGreyZone).catch((err) =>
+      console.error('[grey_zone] write failed:', err),
     );
   };
 
@@ -572,6 +583,10 @@ export default function PriorityMixClient({
                       getText={() => stripHtml(r.q.title)}
                       isStarred={r.q.starred}
                       onToggleStar={() => handleToggleStar(r.q.id, r.q.starred)}
+                      isGreyZone={r.q.greyZone}
+                      onToggleGreyZone={() =>
+                        handleToggleGreyZone(r.q.id, r.q.greyZone)
+                      }
                       priority={r.priority}
                       onSetPriority={(level) =>
                         handleSetPriority(r.q.id, level)

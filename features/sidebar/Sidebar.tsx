@@ -12,7 +12,7 @@ export const Sidebar = () => {
   const stats = useProgressStats();
   const inboxCount = useAppStore((s) => s.inboxCount);
   const setAsideCount = useAppStore((s) => s.setAsideCount);
-  const starredCount = useAppStore((s) => s.starredCount);
+  const flagCounts = useAppStore((s) => s.flagCounts);
   const { drawerOpen, setDrawerOpen } = useDrawer();
 
   const totalCount = stats.total;
@@ -60,7 +60,14 @@ export const Sidebar = () => {
             href="/starred"
             icon={<Icon.Star />}
             label="Starred"
-            badge={starredCount}
+            badge={flagCounts.starred}
+            onClick={closeDrawer}
+          />
+          <SidebarNavLink
+            href="/grey-zone"
+            icon={<Icon.GreyZone />}
+            label="Grey Zone"
+            badge={flagCounts.grey_zone}
             onClick={closeDrawer}
           />
           <SidebarNavLink

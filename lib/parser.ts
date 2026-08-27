@@ -14,6 +14,7 @@ export interface ParsedQuestion {
   tags?: string | null;
   problem?: string | null;
   starred?: boolean;
+  greyZone?: boolean;
   priority?: PriorityLevel | null;
 }
 
@@ -52,7 +53,7 @@ export async function parseSection(
   const { data } = await supabase
     .from('questions')
     .select(
-      'id, number, title, body_html, markdown, created_by, lang, tags, problem, starred, priority',
+      'id, number, title, body_html, markdown, created_by, lang, tags, problem, starred, grey_zone, priority',
     )
     .eq('topic', section.topic)
     .eq('file', section.file)
@@ -68,6 +69,7 @@ export async function parseSection(
     tags: r.tags,
     problem: r.problem,
     starred: r.starred,
+    greyZone: r.grey_zone,
     priority: r.priority,
   }));
 }

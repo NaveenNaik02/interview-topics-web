@@ -1,9 +1,9 @@
 import { getUser } from '@/lib/supabase/user';
-import { StarredClient, fetchStarredQuestionsWithClient } from '@/features/starred';
+import { StarredClient, fetchStarredQuestions } from '@/features/starred';
 
 export default async function StarredPage() {
   const { supabase, user } = await getUser();
-  const questions = user ? await fetchStarredQuestionsWithClient(supabase) : [];
+  const questions = user ? await fetchStarredQuestions(supabase) : [];
 
   return (
     <div className="content-wrapper">

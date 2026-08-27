@@ -67,6 +67,18 @@ export const Icon = {
       <path d="M8 1.6l1.9 4.2 4.5.5-3.4 3.1.9 4.5L8 11.7l-3.9 2.2.9-4.5-3.4-3.1 4.5-.5z" />
     </svg>
   ),
+  GreyZone: () => (
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      aria-hidden="true"
+    >
+      <circle cx="8" cy="8" r="6" />
+      <path d="M8 2a6 6 0 0 1 0 12z" fill="currentColor" stroke="none" />
+    </svg>
+  ),
   Plus: () => (
     <svg
       viewBox="0 0 16 16"

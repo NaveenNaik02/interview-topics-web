@@ -16,6 +16,19 @@ export async function setStarred(
   if (error) throw error;
 }
 
+export async function setGreyZone(
+  questionId: string,
+  greyZone: boolean,
+): Promise<void> {
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase
+    .from('questions')
+    .update({ grey_zone: greyZone })
+    .eq('id', questionId)
+    .eq('created_by', user.id);
+  if (error) throw error;
+}
+
 export async function setPriority(
   questionId: string,
   level: PriorityLevel | null,

@@ -7,6 +7,7 @@ import type { TopicGroup } from '@/lib/topics';
 import type { InstructionPreset } from '@/lib/instructionPresets';
 import type { InboxItem } from '@/features/inbox';
 import type { SetAsideItem } from '@/lib/db/setAside';
+import type { ShortlistFlag } from '@/lib/db/shortlist';
 import type { ProgressStats } from './progressSelectors';
 
 export type ProgressStore = Record<string, boolean>;
@@ -92,13 +93,13 @@ export interface SetAsideSlice {
   loadSetAsideCount: (uid: string) => Promise<void>;
 }
 
-export interface StarredSlice {
-  // Count only — see InboxSlice.inboxCount for the same reasoning. Full
-  // starred/priority state now lives on the questions row itself, read
-  // directly off whatever list of questions a page already fetched.
-  starredCount: number;
-  bumpStarredCount: (delta: number) => void;
-  loadStarredCount: (uid: string) => Promise<void>;
+export interface FlagCountsSlice {
+  // Counts only — see InboxSlice.inboxCount for the same reasoning. The flags
+  // themselves now live on the questions row, read directly off whatever list
+  // of questions a page already fetched.
+  flagCounts: Record<ShortlistFlag, number>;
+  bumpFlagCount: (flag: ShortlistFlag, delta: number) => void;
+  loadFlagCounts: (uid: string) => Promise<void>;
 }
 
 export interface QuestionOrderSlice {
@@ -137,7 +138,7 @@ export type AppState = AuthSlice &
   SettingsSlice &
   InboxSlice &
   SetAsideSlice &
-  StarredSlice &
+  FlagCountsSlice &
   OfflineSlice &
   QuestionOrderSlice &
   SectionQuestionsSlice;

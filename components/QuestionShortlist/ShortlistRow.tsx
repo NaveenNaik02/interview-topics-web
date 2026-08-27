@@ -10,34 +10,38 @@ import QuestionItem, {
   stripHtml,
 } from '@/components/QuestionItem';
 import RowActions from '@/components/RowActions';
-import type { StarredRow } from './starredRows';
+import type { ShortlistRowData } from './buildRows';
+import type { ShortlistFlag } from '@/lib/db/shortlist';
 
-interface StarredQuestionRowProps {
-  row: StarredRow;
+interface ShortlistRowProps {
+  row: ShortlistRowData;
+  flag: ShortlistFlag;
   isOpen: boolean;
   index: number;
   onToggleOpen: (id: string) => void;
-  onUnstar: (id: string) => void;
+  onUnflag: (id: string) => void;
   onSetPriority: (id: string, level: PriorityLevel | null) => void;
-  onEdit: (row: StarredRow) => void;
-  onMove: (row: StarredRow) => void;
-  onSetAside: (row: StarredRow) => void;
+  onEdit: (row: ShortlistRowData) => void;
+  onMove: (row: ShortlistRowData) => void;
+  onSetAside: (row: ShortlistRowData) => void;
   onDelete: (id: string) => void;
 }
 
-const StarredQuestionRow = memo(function StarredQuestionRow({
+const ShortlistRow = memo(function ShortlistRow({
   row,
+  flag,
   isOpen,
   index,
   onToggleOpen,
-  onUnstar,
+  onUnflag,
   onSetPriority,
   onEdit,
   onMove,
   onSetAside,
   onDelete,
-}: StarredQuestionRowProps) {
+}: ShortlistRowProps) {
   const { q, subKey, topicLabel, canManage } = row;
+  const isStarred = flag === 'starred';
 
   const isDone = useAppStore((s) => s.mounted && !!s.store[q.id]);
   const toggle = useAppStore((s) => s.toggle);
@@ -61,11 +65,15 @@ const StarredQuestionRow = memo(function StarredQuestionRow({
         }
         actions={
           <>
-            <StarButton isStarred onToggle={() => onUnstar(q.id)} />
+            {isStarred && (
+              <StarButton isStarred onToggle={() => onUnflag(q.id)} />
+            )}
             <RowActions
               getText={() => stripHtml(q.title)}
-              isStarred
-              onToggleStar={() => onUnstar(q.id)}
+              isStarred={isStarred}
+              onToggleStar={isStarred ? () => onUnflag(q.id) : undefined}
+              isGreyZone={!isStarred}
+              onToggleGreyZone={isStarred ? undefined : () => onUnflag(q.id)}
               priority={q.priority}
               onSetPriority={(level) => onSetPriority(q.id, level)}
               onEdit={canManage ? () => onEdit(row) : undefined}
@@ -82,4 +90,4 @@ const StarredQuestionRow = memo(function StarredQuestionRow({
   );
 });
 
-export default StarredQuestionRow;
+export default ShortlistRow;

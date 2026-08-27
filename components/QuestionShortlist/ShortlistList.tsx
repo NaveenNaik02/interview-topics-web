@@ -10,34 +10,34 @@ import {
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/stores/appStore';
 import { deleteQuestion } from '@/lib/actions/questions';
-import {
-  setStarred,
-  setPriority as setPriorityAction,
-} from '@/lib/actions/questionFlags';
-import type { StarredQuestion } from '@/features/starred/db/db';
+import { setPriority as setPriorityAction } from '@/lib/actions/questionFlags';
+import type { ShortlistQuestion, ShortlistFlag } from '@/lib/db/shortlist';
 import type { PriorityLevel } from '@/lib/offlineSync';
 import SaveToast from '@/components/SaveToast';
-import { buildStarredRows, type StarredRow } from './starredRows';
-import StarredQuestionRow from './StarredQuestionRow';
+import { buildRows, type ShortlistRowData } from './buildRows';
+import ShortlistRow from './ShortlistRow';
 
-export type { StarredRow };
+export type { ShortlistRowData };
 
 interface Props {
-  questions: StarredQuestion[];
-  onEdit: (row: StarredRow) => void;
-  onMove: (row: StarredRow) => void;
-  onSetAside: (row: StarredRow) => void;
+  questions: ShortlistQuestion[];
+  flag: ShortlistFlag;
+  onRemove: (id: string) => Promise<void>;
+  onEdit: (row: ShortlistRowData) => void;
+  onMove: (row: ShortlistRowData) => void;
+  onSetAside: (row: ShortlistRowData) => void;
 }
 
-export default function StarredQuestionList({
+export default function ShortlistList({
   questions,
+  flag,
+  onRemove,
   onEdit,
   onMove,
   onSetAside,
 }: Props) {
   const mounted = useAppStore((s) => s.mounted);
   const user = useAppStore((s) => s.user);
-  const bumpStarredCount = useAppStore((s) => s.bumpStarredCount);
 
   const groups = useAppStore((s) => s.groups);
   const router = useRouter();
@@ -50,11 +50,11 @@ export default function StarredQuestionList({
 
   const [optimisticQuestions, setOptimisticQuestions] = useOptimistic(
     questions,
-    (state, unstarId: string) => state.filter((q) => q.id !== unstarId),
+    (state, unflaggedId: string) => state.filter((q) => q.id !== unflaggedId),
   );
 
   const rows = useMemo(
-    () => buildStarredRows(optimisticQuestions, groups, mounted, user),
+    () => buildRows(optimisticQuestions, groups, mounted, user),
     [optimisticQuestions, groups, mounted, user],
   );
 
@@ -62,19 +62,18 @@ export default function StarredQuestionList({
     setOpenId((prev) => (prev === id ? null : id));
   }, []);
 
-  const unstar = useCallback(
+  const unflag = useCallback(
     async (id: string) => {
       startTransition(async () => {
         setOptimisticQuestions(id);
         try {
-          await setStarred(id, false);
-          bumpStarredCount(-1);
+          await onRemove(id);
           router.refresh();
         } catch (error) {
-          console.error('Failed to unstar question:', error);
+          console.error('Failed to remove question from list:', error);
           setErrorToast({
             title: 'Action failed',
-            detail: 'Failed to unstar the question. Reverting changes...',
+            detail: 'Could not update the question. Reverting changes...',
           });
           setTimeout(() => {
             setErrorToast(null);
@@ -82,7 +81,7 @@ export default function StarredQuestionList({
         }
       });
     },
-    [bumpStarredCount, router, setOptimisticQuestions],
+    [onRemove, router, setOptimisticQuestions],
   );
 
   const handleSetPriority = useCallback(
@@ -104,13 +103,14 @@ export default function StarredQuestionList({
   return (
     <div className="questions-list">
       {rows.map((row, index) => (
-        <StarredQuestionRow
+        <ShortlistRow
           key={row.q.id}
           row={row}
+          flag={flag}
           isOpen={openId === row.q.id}
           index={index}
           onToggleOpen={handleToggleOpen}
-          onUnstar={unstar}
+          onUnflag={unflag}
           onSetPriority={handleSetPriority}
           onEdit={onEdit}
           onMove={onMove}

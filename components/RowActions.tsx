@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Copy, Pencil, FolderInput, Archive, Trash2, MoreVertical, Star } from 'lucide-react'
+import { Copy, Pencil, FolderInput, Archive, Trash2, MoreVertical, Star, Contrast } from 'lucide-react'
 import type { PriorityLevel } from '@/lib/offlineSync'
 
 interface Props {
@@ -13,6 +13,8 @@ interface Props {
   onDelete?: () => void
   isStarred?: boolean
   onToggleStar?: () => void
+  isGreyZone?: boolean
+  onToggleGreyZone?: () => void
   priority?: PriorityLevel | null
   onSetPriority?: (level: PriorityLevel | null) => void
 }
@@ -33,7 +35,7 @@ function fallbackCopy(text: string) {
 // Row overflow menu (kebab) — Copy / Edit / Delete. Portal-rendered so the
 // dropdown isn't clipped by the row's own layout, positioned from the
 // trigger button's rect the same way AqSelect/OfflineStatusPill anchor theirs.
-export default function RowActions({ getText, onEdit, onMove, onSetAside, onDelete, isStarred, onToggleStar, priority, onSetPriority }: Props) {
+export default function RowActions({ getText, onEdit, onMove, onSetAside, onDelete, isStarred, onToggleStar, isGreyZone, onToggleGreyZone, priority, onSetPriority }: Props) {
   const [open, setOpen] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null)
@@ -114,6 +116,11 @@ export default function RowActions({ getText, onEdit, onMove, onSetAside, onDele
                   <Star fill={isStarred ? 'currentColor' : 'none'} /> {isStarred ? 'Unstar' : 'Star for review'}
                 </button>
               )}
+              {onToggleGreyZone && (
+                <button type="button" className="kebab-item" onClick={() => { onToggleGreyZone(); close() }}>
+                  <Contrast /> {isGreyZone ? 'Remove from Grey Zone' : 'Add to Grey Zone'}
+                </button>
+              )}
               {onSetPriority && (
                 <div className="kebab-pri-row">
                   <button type="button" className={`kebab-pri high ${priority === 'high' ? 'sel' : ''}`} onClick={() => { onSetPriority(priority === 'high' ? null : 'high') }}><span className="dot" />High</button>
@@ -121,7 +128,7 @@ export default function RowActions({ getText, onEdit, onMove, onSetAside, onDele
                   <button type="button" className={`kebab-pri low ${priority === 'low' ? 'sel' : ''}`} onClick={() => { onSetPriority(priority === 'low' ? null : 'low') }}><span className="dot" />Low</button>
                 </div>
               )}
-              {(onToggleStar || onSetPriority) && <div className="kebab-sep" />}
+              {(onToggleStar || onToggleGreyZone || onSetPriority) && <div className="kebab-sep" />}
               <button type="button" className="kebab-item" onClick={handleCopy}>
                 <Copy /> Copy
               </button>

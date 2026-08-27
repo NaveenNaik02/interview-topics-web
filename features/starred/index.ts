@@ -1,2 +1,2 @@
-export { default as StarredClient } from './StarredClient';
-export { fetchStarredQuestionsWithClient, fetchStarredCount } from './db/db';
+export { StarredClient } from './StarredClient';
+export { fetchStarredQuestions } from './db/db';

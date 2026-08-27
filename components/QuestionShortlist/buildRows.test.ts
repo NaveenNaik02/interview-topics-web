@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { buildStarredRows } from './starredRows';
-import type { StarredQuestion } from '@/features/starred/db/db';
+import { buildRows } from './buildRows';
+import type { ShortlistQuestion } from '@/lib/db/shortlist';
 import type { TopicGroup } from '@/lib/topics';
 
 function makeQuestion(
-  overrides: Partial<StarredQuestion> = {},
-): StarredQuestion {
+  overrides: Partial<ShortlistQuestion> = {},
+): ShortlistQuestion {
   return {
     id: 'q1',
     number: 1,
@@ -29,9 +29,9 @@ const groups: TopicGroup[] = [
   },
 ];
 
-describe('buildStarredRows', () => {
+describe('buildRows', () => {
   it('derives section/subKey/topicLabel from the group lookup', () => {
-    const [row] = buildStarredRows([makeQuestion()], groups, true, {
+    const [row] = buildRows([makeQuestion()], groups, true, {
       id: 'user-1',
     } as never);
     expect(row.section).toEqual({
@@ -43,7 +43,7 @@ describe('buildStarredRows', () => {
   });
 
   it('falls back to groupSlug when the group is missing', () => {
-    const [row] = buildStarredRows(
+    const [row] = buildRows(
       [makeQuestion({ topic: 'unknown', groupSlug: 'orphan' })],
       groups,
       true,
@@ -55,16 +55,16 @@ describe('buildStarredRows', () => {
   it('canManage is true only once mounted, signed in, and owning the question', () => {
     const q = makeQuestion({ createdBy: 'user-1' });
     expect(
-      buildStarredRows([q], groups, false, { id: 'user-1' } as never)[0]
+      buildRows([q], groups, false, { id: 'user-1' } as never)[0]
         .canManage,
     ).toBe(false);
-    expect(buildStarredRows([q], groups, true, null)[0].canManage).toBe(false);
+    expect(buildRows([q], groups, true, null)[0].canManage).toBe(false);
     expect(
-      buildStarredRows([q], groups, true, { id: 'someone-else' } as never)[0]
+      buildRows([q], groups, true, { id: 'someone-else' } as never)[0]
         .canManage,
     ).toBe(false);
     expect(
-      buildStarredRows([q], groups, true, { id: 'user-1' } as never)[0]
+      buildRows([q], groups, true, { id: 'user-1' } as never)[0]
         .canManage,
     ).toBe(true);
   });
@@ -72,6 +72,6 @@ describe('buildStarredRows', () => {
   it('canManage is true for admins regardless of ownership', () => {
     const q = makeQuestion({ createdBy: 'someone-else' });
     const admin = { id: 'user-1', app_metadata: { is_admin: true } } as never;
-    expect(buildStarredRows([q], groups, true, admin)[0].canManage).toBe(true);
+    expect(buildRows([q], groups, true, admin)[0].canManage).toBe(true);
   });
 });

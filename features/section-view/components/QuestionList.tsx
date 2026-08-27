@@ -78,6 +78,7 @@ export default function QuestionList({
     toggle,
     updateQuestionPriority,
     toggleQuestionStarred,
+    toggleQuestionGreyZone,
     clearFilters,
   } = useAppStore(
     useShallow((s) => ({
@@ -92,6 +93,7 @@ export default function QuestionList({
       toggle: s.toggle,
       updateQuestionPriority: s.updateQuestionPriority,
       toggleQuestionStarred: s.toggleQuestionStarred,
+      toggleQuestionGreyZone: s.toggleQuestionGreyZone,
       clearFilters: s.clearFilters,
     })),
   );
@@ -145,6 +147,8 @@ export default function QuestionList({
                       getText={() => stripHtml(q.title)}
                       isStarred={!!q.starred}
                       onToggleStar={() => toggleQuestionStarred(q.id, !!q.starred)}
+                      isGreyZone={!!q.greyZone}
+                      onToggleGreyZone={() => toggleQuestionGreyZone(q.id, !!q.greyZone)}
                       priority={priority}
                       onSetPriority={(level) => updateQuestionPriority(q.id, level)}
                       onEdit={

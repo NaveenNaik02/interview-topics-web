@@ -3,8 +3,10 @@ import type { AppState } from '@/lib/stores/types';
 import type { SectionQuestionsSlice, PriorityFilterKey } from './types';
 import {
   setStarred,
+  setGreyZone,
   setPriority as setPriorityAction,
 } from '@/lib/actions/questionFlags';
+import type { ShortlistFlag } from '@/lib/db/shortlist';
 
 export const createSectionQuestionsSlice: StateCreator<
   AppState,
@@ -66,23 +68,11 @@ export const createSectionQuestionsSlice: StateCreator<
   },
 
   toggleQuestionStarred: (id, wasStarred) => {
-    const { sectionQuestions, activeSectionUrl, sectionQuestionsCache, bumpStarredCount } = get();
-    const updated = sectionQuestions.map((q) =>
-      q.id === id ? { ...q, starred: !wasStarred } : q
-    );
-    const nextState: Partial<SectionQuestionsSlice> = { sectionQuestions: updated };
-    if (activeSectionUrl) {
-      nextState.sectionQuestionsCache = {
-        ...sectionQuestionsCache,
-        [activeSectionUrl]: updated,
-      };
-    }
-    set(nextState);
-    bumpStarredCount(wasStarred ? -1 : 1);
+    toggleFlag(set, get, id, 'starred', !wasStarred);
+  },
 
-    setStarred(id, !wasStarred).catch((err) =>
-      console.error('[starred] write failed:', err)
-    );
+  toggleQuestionGreyZone: (id, wasGreyZone) => {
+    toggleFlag(set, get, id, 'grey_zone', !wasGreyZone);
   },
 
   togglePriorityFilter: (key) => {
@@ -118,3 +108,34 @@ export const createSectionQuestionsSlice: StateCreator<
     });
   },
 });
+
+// Optimistic flip of one row flag in the section list (and its cache), plus
+// the fire-and-forget write — the two flags differ only in which field,
+// action and badge they touch.
+function toggleFlag(
+  set: (partial: Partial<SectionQuestionsSlice>) => void,
+  get: () => AppState,
+  id: string,
+  flag: ShortlistFlag,
+  on: boolean,
+) {
+  const { sectionQuestions, activeSectionUrl, sectionQuestionsCache, bumpFlagCount } = get();
+  const field = flag === 'starred' ? 'starred' : 'greyZone';
+  const updated = sectionQuestions.map((q) =>
+    q.id === id ? { ...q, [field]: on } : q
+  );
+  const nextState: Partial<SectionQuestionsSlice> = { sectionQuestions: updated };
+  if (activeSectionUrl) {
+    nextState.sectionQuestionsCache = {
+      ...sectionQuestionsCache,
+      [activeSectionUrl]: updated,
+    };
+  }
+  set(nextState);
+  bumpFlagCount(flag, on ? 1 : -1);
+
+  const write = flag === 'starred' ? setStarred : setGreyZone;
+  write(id, on).catch((err) =>
+    console.error(`[${flag}] write failed:`, err)
+  );
+}

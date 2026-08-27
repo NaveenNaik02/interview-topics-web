@@ -16,6 +16,7 @@ export interface SectionQuestionsSlice {
   setSectionQuestions: (questions: ParsedQuestion[], section: SectionMeta) => void;
   updateQuestionPriority: (id: string, level: PriorityLevel | null) => void;
   toggleQuestionStarred: (id: string, wasStarred: boolean) => void;
+  toggleQuestionGreyZone: (id: string, wasGreyZone: boolean) => void;
   togglePriorityFilter: (key: PriorityFilterKey) => void;
   toggleStatusFilter: (v: 'done' | 'notdone') => void;
   setSortMode: (mode: SortMode) => void;

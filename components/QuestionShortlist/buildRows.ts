@@ -1,5 +1,5 @@
 import type { User } from '@supabase/supabase-js';
-import type { StarredQuestion } from '@/features/starred/db/db';
+import type { ShortlistQuestion } from '@/lib/db/shortlist';
 import {
   sectionUrl,
   findGroupForSection,
@@ -9,8 +9,8 @@ import {
 
 // One starred question plus everything derived from it (topic lookup, url,
 // permission check) — computed once, never inside a render map.
-export interface StarredRow {
-  q: StarredQuestion;
+export interface ShortlistRowData {
+  q: ShortlistQuestion;
   section: SectionMeta;
   subKey: string;
   topicLabel: string;
@@ -18,14 +18,14 @@ export interface StarredRow {
 }
 
 // Pure — no hooks, no JSX, no server-action imports — kept in its own
-// module so it (and its test) don't drag in StarredQuestionList's
+// module so it (and its test) don't drag in ShortlistList's
 // client/server-action imports.
-export function buildStarredRows(
-  questions: StarredQuestion[],
+export function buildRows(
+  questions: ShortlistQuestion[],
   groups: TopicGroup[],
   mounted: boolean,
   user: User | null,
-): StarredRow[] {
+): ShortlistRowData[] {
   return questions.map((q) => {
     const section: SectionMeta = {
       topic: q.topic,

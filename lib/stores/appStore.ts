@@ -8,7 +8,7 @@ import { createProgressSlice } from './slices/progressSlice';
 import { createSettingsSlice } from '@/features/settings/store/settingsSlice';
 import { createInboxSlice } from '@/features/inbox/store/inboxSlice';
 import { createSetAsideSlice } from './slices/setAsideSlice';
-import { createStarredSlice } from './slices/starredSlice';
+import { createFlagCountsSlice } from './slices/flagCountsSlice';
 import { createOfflineSlice } from './slices/offlineSlice';
 import { createQuestionOrderSlice } from './slices/questionOrderSlice';
 import { createSectionQuestionsSlice } from '@/features/section-view/store/sectionQuestionsSlice';
@@ -34,7 +34,7 @@ export const createAppStore = (init: StoreInit) =>
     ...createSettingsSlice(...a),
     ...createInboxSlice(...a),
     ...createSetAsideSlice(...a),
-    ...createStarredSlice(...a),
+    ...createFlagCountsSlice(...a),
     ...createOfflineSlice(...a),
     ...createQuestionOrderSlice(...a),
     ...createSectionQuestionsSlice(...a),

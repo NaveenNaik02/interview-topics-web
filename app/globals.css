@@ -5292,6 +5292,102 @@ div.drag-shadow.drag-shadow {
   color: var(--accent-text);
 }
 
+/* Topic drill-down cards (Grey Zone) — pick a topic, then its questions. */
+.review-topics {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.review-topic-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-card);
+  text-align: left;
+  cursor: pointer;
+}
+
+.review-topic-card:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+}
+
+.rt-icon {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-family: var(--f-serif);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.rt-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rt-name {
+  font-family: var(--f-serif);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.rt-sub {
+  font-size: 12.5px;
+  color: var(--text-subtle);
+}
+
+.rt-count {
+  flex-shrink: 0;
+  font-family: var(--f-mono);
+  font-size: 13px;
+  color: var(--text-subtle);
+}
+
+.rt-chev {
+  flex-shrink: 0;
+  color: var(--text-subtle);
+}
+
+.rt-chev svg {
+  width: 14px;
+  height: 14px;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: var(--s-4);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.back-link:hover {
+  color: var(--accent-text);
+}
+
+.back-link svg {
+  width: 14px;
+  height: 14px;
+}
+
 .empty-set {
   text-align: center;
   padding: var(--s-8) var(--s-5);
