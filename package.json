@@ -2,6 +2,9 @@
   "name": "interview-topics-web",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "sh -c 'set -a && . ./.env.local.docker && set +a && next dev'",
     "dev:remote": "DEV_REMOTE=1 next dev -p 3010",

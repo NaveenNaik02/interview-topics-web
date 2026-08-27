@@ -48,6 +48,8 @@ Database schema changes: see "Database Migrations" in the root `CLAUDE.md` — a
 
 `.github/workflows/deploy.yml` is manual only (`workflow_dispatch`, run from the Actions tab) — it never fires on push. It runs `node scripts/migrate.js` (applying any pending `supabase/migrations/*.sql` to the linked project) before building and deploying to Vercel production, so the new build never runs against a schema it doesn't expect. Needs the `SUPABASE_ACCESS_TOKEN` and `NEXT_PUBLIC_SUPABASE_URL` repo secrets in addition to the existing Vercel ones.
 
+`vercel.json` sets `git.deploymentEnabled: false`, which turns off Vercel's own Git integration — pushing to GitHub no longer builds or deploys anything. Production ships only when someone runs the `deploy.yml` workflow by hand. `package.json`'s `engines.node` pins the Vercel build/runtime to Node 24 (current LTS); the workflows themselves ask `actions/setup-node` for `lts/*`, which resolves to the same major.
+
 ## Architecture
 
 This is a **Next.js 16 App Router** application (React 19) backed by **Supabase** (Postgres). Content, progress, and now a growing set of user-authored/curated data (topics, inbox, starred, set-aside, priority, question order, settings) all live in the database — there is no runtime dependency on local Markdown files except during ETL.
