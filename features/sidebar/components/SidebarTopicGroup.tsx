@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { TopicGroup, sectionUrl } from '@/lib/topics';
 import { useProgressStats } from '@/lib/useProgressStats';
 import { Icon } from '@/components/SidebarIcons';
@@ -17,9 +17,19 @@ interface Props {
 
 export const SidebarTopicGroup = ({ group, onRequestDelete }: Props) => {
   const router = useRouter();
+  const pathname = usePathname();
   const stats = useProgressStats();
-  const [expanded, setExpanded] = useState(false);
+  const active =
+    pathname === `/${group.slug}` ||
+    group.sections.some((s) => pathname === sectionUrl(s));
+  const [expanded, setExpanded] = useState(active);
+  const [wasActive, setWasActive] = useState(active);
   const [adding, setAdding] = useState(false);
+
+  if (active !== wasActive) {
+    setWasActive(active);
+    if (active) setExpanded(true);
+  }
 
   const { done, total } = group.sections.reduce(
     (acc, s) => {

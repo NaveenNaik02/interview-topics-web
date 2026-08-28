@@ -1,7 +1,7 @@
 'use server';
 
 import { requireAuthor } from '@/lib/supabase/user';
-import { AQ_MODELS, type AqModelId } from '@/lib/aiModels';
+import { AQ_MODELS, type AqModelId, AQ_THINKING } from '@/lib/aiModels';
 
 const DEFAULT_MODEL: AqModelId = AQ_MODELS[0].id;
 
@@ -42,7 +42,7 @@ export async function splitInboxText(
         systemInstruction: { parts: [{ text: systemInstruction }] },
         contents: [{ role: 'user', parts: [{ text: trimmed }] }],
         generationConfig: {
-          thinkingConfig: { thinkingBudget: 0 },
+          thinkingConfig: AQ_THINKING,
           responseMimeType: 'application/json',
         },
       }),

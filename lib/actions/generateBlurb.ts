@@ -1,7 +1,7 @@
 'use server';
 
 import { requireAuthor } from '@/lib/supabase/user';
-import { AQ_MODELS } from '@/lib/aiModels';
+import { AQ_MODELS, AQ_THINKING } from '@/lib/aiModels';
 
 const DEFAULT_MODEL = AQ_MODELS[0].id;
 
@@ -30,7 +30,7 @@ export async function generateTopicBlurb(topicName: string): Promise<string> {
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: systemInstruction }] },
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { thinkingConfig: { thinkingBudget: 0 } },
+        generationConfig: { thinkingConfig: AQ_THINKING },
       }),
     },
   );

@@ -22,6 +22,12 @@ export interface AuthoringInit {
   // The question as saved. Present only when editing.
   original?: { title: string; markdown: string };
   excludeQuestionId?: string;
+  // Starts the auto-run chain as soon as the modal opens.
+  autoRun?: boolean;
+  // Assigning a captured Inbox item — the only flow that runs the duplicate
+  // step, and the only one with a source row "Discard this item" can drop.
+  fromInbox?: boolean;
+  onDiscard?: () => void;
   onSubmit: (input: QuestionInput, section: SectionMeta) => Promise<void>;
   onClose: () => void;
   groups: TopicGroup[];
@@ -36,6 +42,7 @@ export interface ConfigSlice {
   excludeQuestionId?: string;
   onSubmit: AuthoringInit['onSubmit'];
   onClose: () => void;
+  onDiscard?: () => void;
 }
 
 export interface DraftSlice {
@@ -48,6 +55,8 @@ export interface DraftSlice {
   isImpl: boolean;
   tab: 'write' | 'preview';
   instructions: string;
+  // Seeded from the Settings choice when the modal opens; nothing inside the
+  // modal changes it.
   model: AqModelId;
   showInstructions: boolean;
   saving: boolean;
@@ -65,7 +74,6 @@ export interface DraftSlice {
   setIsImpl: (v: boolean) => void;
   setTab: (v: 'write' | 'preview') => void;
   setInstructions: (v: string) => void;
-  setModel: (v: AqModelId) => void;
   setShowInstructions: (v: boolean) => void;
   // Typing detaches from whichever draft was active; picking one re-attaches.
   editMarkdown: (v: string) => void;
@@ -121,7 +129,36 @@ export interface AiSlice {
   finishStream: () => void;
 }
 
+// The same calls the manual flow offers one button at a time, in the order
+// auto-run chains them. Order is the pipeline — a step's index is what makes
+// it done, running, or still queued.
+export const AUTO_STEPS = [
+  'question',
+  'placement',
+  'duplicate',
+  'answer',
+] as const;
+
+export type AutoStep = (typeof AUTO_STEPS)[number];
+
+export interface AutoRunSlice {
+  // The steps this flow actually runs, in order — three or four of AUTO_STEPS
+  // depending on whether there's an Inbox item behind it.
+  autoSteps: readonly AutoStep[];
+  // Index into autoSteps of the step running now, or the one it stopped at.
+  autoStep: number;
+  // 'idle' hides the banner entirely; the form is then plain manual.
+  autoStatus: 'idle' | 'running' | 'paused' | 'done';
+
+  startAuto: () => Promise<void>;
+  // "Switch to manual" — abandons an in-flight run and hides the banner.
+  dismissAuto: () => void;
+  // Dismisses a flagged duplicate and finishes the remaining steps.
+  keepAsNew: () => Promise<void>;
+}
+
 export type AuthoringState = ConfigSlice &
   DraftSlice &
   PlacementSlice &
-  AiSlice;
+  AiSlice &
+  AutoRunSlice;

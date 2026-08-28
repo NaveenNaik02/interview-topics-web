@@ -1,20 +1,8 @@
 import type { StateCreator } from 'zustand';
-import { AQ_MODELS, type AqModelId } from '@/lib/aiModels';
+import { getSavedModel } from '@/lib/aiModels';
 import { getActiveInstructionText } from '@/lib/instructionPresets';
 import { capAnswerVersions } from '../utils/markdownPreview';
-import { AQ_MODEL_KEY } from '../types';
 import type { AuthoringInit, AuthoringState, DraftSlice } from './types';
-
-const savedModel = (): AqModelId => {
-  try {
-    const saved = localStorage.getItem(AQ_MODEL_KEY);
-    return AQ_MODELS.some((m) => m.id === saved)
-      ? (saved as AqModelId)
-      : AQ_MODELS[0].id;
-  } catch {
-    return AQ_MODELS[0].id;
-  }
-};
 
 export const createDraftSlice = (
   init: AuthoringInit,
@@ -40,7 +28,7 @@ export const createDraftSlice = (
       // Seeded from the built-in default matching isImpl (text vs. code-only).
       // Edits here are this question's local draft and never persist.
       instructions: getActiveInstructionText(isImpl),
-      model: savedModel(),
+      model: getSavedModel(),
       showInstructions: false,
       saving: false,
       saveError: null,
@@ -60,12 +48,6 @@ export const createDraftSlice = (
       setTab: (tab) => set({ tab }),
       setInstructions: (instructions) => set({ instructions }),
       setShowInstructions: (showInstructions) => set({ showInstructions }),
-      setModel: (model) => {
-        set({ model });
-        try {
-          localStorage.setItem(AQ_MODEL_KEY, model);
-        } catch {}
-      },
 
       editMarkdown: (markdown) => set({ markdown, activeVersionId: null }),
       selectVersion: (v) => set({ markdown: v.text, activeVersionId: v.id }),

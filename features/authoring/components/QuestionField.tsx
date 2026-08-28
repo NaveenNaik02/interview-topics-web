@@ -28,6 +28,9 @@ export const QuestionField = ({ inputRef }: Props) => {
   const dupState = useAuthoring((s) => s.dupState);
   const dupResult = useAuthoring((s) => s.dupResult);
   const checkDuplicate = useAuthoring((s) => s.checkDuplicate);
+  const autoStatus = useAuthoring((s) => s.autoStatus);
+  const keepAsNew = useAuthoring((s) => s.keepAsNew);
+  const onDiscard = useAuthoring((s) => s.onDiscard);
 
   const canRevert = !!originalTitle && title !== originalTitle;
   const canGenerateProblem =
@@ -144,6 +147,28 @@ export const QuestionField = ({ inputRef }: Props) => {
             )}
             {dupResult.reasoning && (
               <p className="aq-suggest-reason">{dupResult.reasoning}</p>
+            )}
+            {/* Auto-run stops here rather than guessing; these two are how it
+                gets going again. */}
+            {autoStatus === 'paused' && dupResult.isDuplicate && (
+              <div className="aq-dup-actions">
+                <button
+                  type="button"
+                  className="aq-dup-action-btn"
+                  onClick={keepAsNew}
+                >
+                  Keep as new, continue auto-run
+                </button>
+                {onDiscard && (
+                  <button
+                    type="button"
+                    className="aq-dup-action-btn"
+                    onClick={onDiscard}
+                  >
+                    Discard this item
+                  </button>
+                )}
+              </div>
             )}
           </div>
         )}

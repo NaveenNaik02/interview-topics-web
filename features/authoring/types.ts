@@ -82,6 +82,12 @@ export interface AddQuestionModalProps {
   // successful save, that item is removed from Set aside the same way
   // fromInboxId removes a captured Inbox item.
   fromSetAsideId?: string;
+  // Opens straight into the auto-run pipeline — the same AI steps the form
+  // offers one button at a time, chained, stopping before the save.
+  autoRun?: boolean;
+  // Auto-run's "Discard": throw the source item away rather than turn it
+  // into a question. Falls back to a plain close when not supplied.
+  onDiscard?: () => void;
   onClose: () => void;
   onSaved: (question: ParsedQuestion, section: SectionMeta) => void;
 }
@@ -111,8 +117,6 @@ export const PRIORITY_OPTIONS: { level: PriorityLevel; label: string }[] = [
 ];
 
 export const LANG_OPTIONS = ['js', 'jsx', 'ts', 'html', 'css', 'bash', 'none'];
-
-export const AQ_MODEL_KEY = 'prep-tracker:ai-model';
 
 // Sentinel select values for a suggested topic/subtopic that doesn't exist
 // yet — nothing is created in the database until Save, so these stand in

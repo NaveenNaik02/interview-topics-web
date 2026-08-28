@@ -1,7 +1,7 @@
 'use server';
 
 import { requireAuthor } from '@/lib/supabase/user';
-import { AQ_MODELS, type AqModelId } from '@/lib/aiModels';
+import { AQ_MODELS, type AqModelId, AQ_THINKING } from '@/lib/aiModels';
 
 const DEFAULT_MODEL: AqModelId = AQ_MODELS[0].id;
 
@@ -62,7 +62,7 @@ export async function generateQuestion(
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: systemInstruction }] },
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { thinkingConfig: { thinkingBudget: 0 } },
+        generationConfig: { thinkingConfig: AQ_THINKING },
       }),
     },
   );

@@ -16,6 +16,7 @@ import MarkdownField from './MarkdownField';
 import InstructionsModal from './InstructionsModal';
 import { PlacementPicker } from './PlacementPicker';
 import { QuestionField } from './QuestionField';
+import { AutoRunBanner } from './AutoRunBanner';
 import { useAuthoring, useAuthoringApi } from '../store/authoringStore';
 import { useTypewriterBridge } from '../store/useTypewriterBridge';
 import { PRIORITY_OPTIONS, LANG_OPTIONS } from '../types';
@@ -31,6 +32,13 @@ export const QuestionFormModal = () => {
   const footNote = useAuthoring((s) => s.footNote);
   const submitLabel = useAuthoring((s) => s.submitLabel);
   const onClose = useAuthoring((s) => s.onClose);
+  const startAuto = useAuthoring((s) => s.startAuto);
+  // Offered only when editing a saved question — a blank Add form has nothing
+  // to automate from, and an Inbox assign starts the run on its own. Hidden
+  // once a run is underway, since the banner then owns the controls.
+  const canAutoRun = useAuthoring((s) => {
+    return !!s.original && s.autoStatus === 'idle';
+  });
 
   const title = useAuthoring((s) => s.title);
   const markdown = useAuthoring((s) => s.markdown);
@@ -47,7 +55,6 @@ export const QuestionFormModal = () => {
   const instructions = useAuthoring((s) => s.instructions);
   const setInstructions = useAuthoring((s) => s.setInstructions);
   const model = useAuthoring((s) => s.model);
-  const setModel = useAuthoring((s) => s.setModel);
   const showInstructions = useAuthoring((s) => s.showInstructions);
   const setShowInstructions = useAuthoring((s) => s.setShowInstructions);
   const saving = useAuthoring((s) => s.saving);
@@ -76,6 +83,15 @@ export const QuestionFormModal = () => {
   useEffect(() => {
     firstFieldRef.current?.focus();
   }, []);
+  // An Inbox assign opens mid-run: the store starts on 'running' so the
+  // banner is there on the first paint, and this kicks the chain off. The ref
+  // is what stops React's development double-mount running it twice.
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (autoStarted.current) return;
+    autoStarted.current = true;
+    if (api.getState().autoStatus === 'running') api.getState().startAuto();
+  }, [api]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -111,17 +127,31 @@ export const QuestionFormModal = () => {
       >
         <div className="aq-head">
           <h2>{heading}</h2>
-          <button
-            className="aq-close"
-            onClick={onClose}
-            aria-label="Close"
-            title="Close"
-          >
-            <X size={15} />
-          </button>
+          <div className="aq-head-actions">
+            {canAutoRun && (
+              <button
+                type="button"
+                className="aq-generate-btn"
+                onClick={startAuto}
+                title="Regenerate the question, re-check placement, and rewrite the answer automatically"
+              >
+                <Sparkles size={12.5} /> Auto-run
+              </button>
+            )}
+            <button
+              className="aq-close"
+              onClick={onClose}
+              aria-label="Close"
+              title="Close"
+            >
+              <X size={15} />
+            </button>
+          </div>
         </div>
 
         <div className="aq-body">
+          <AutoRunBanner />
+
           <PlacementPicker />
 
           <QuestionField inputRef={firstFieldRef} />
@@ -271,8 +301,8 @@ export const QuestionFormModal = () => {
                     <div className="aq-gen-error">
                       {AQ_MODELS.find((m) => m.id === model)?.label ??
                         'This model'}{' '}
-                      looks rate-limited — open Instructions to switch models,
-                      or try again shortly.
+                      looks rate-limited — switch models in Settings, or try
+                      again shortly.
                     </div>
                   )}
                 </>
@@ -291,12 +321,10 @@ export const QuestionFormModal = () => {
           {showInstructions && (
             <InstructionsModal
               value={instructions}
-              model={model}
               isImpl={isImpl}
               onClose={() => setShowInstructions(false)}
-              onSave={(v, m) => {
+              onSave={(v) => {
                 setInstructions(v);
-                setModel(m);
                 setShowInstructions(false);
               }}
             />

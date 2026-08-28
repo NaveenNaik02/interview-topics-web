@@ -4,6 +4,7 @@ import SortOrderPicker from './components/SortOrderPicker';
 import RememberFiltersToggle from './components/RememberFiltersToggle';
 import DefaultPriorityPicker from './components/DefaultPriorityPicker';
 import NavigateAfterMoveToggle from './components/NavigateAfterMoveToggle';
+import AiModelPicker from './components/AiModelPicker';
 import InstructionPresetsEditor from './components/InstructionPresetsEditor';
 import OfflineAccessControl from './components/OfflineAccessControl';
 import ResetSettingsControl from './components/ResetSettingsControl';
@@ -100,6 +101,18 @@ export default function SettingsClient({
 
       <section className="settings-section">
         <h2 className="settings-section-title">AI answer instructions</h2>
+        <div className="settings-row">
+          <div className="settings-row-text">
+            <div className="settings-row-label">AI model</div>
+            <div className="settings-row-hint">
+              Used everywhere a question or answer is generated. If a model is
+              rate-limited, switch here and try again.
+            </div>
+          </div>
+          <div className="settings-row-control">
+            <AiModelPicker />
+          </div>
+        </div>
         <p
           className="settings-row-hint"
           style={{ margin: '-6px 0 var(--s-3)' }}

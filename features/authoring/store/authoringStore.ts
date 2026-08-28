@@ -6,6 +6,7 @@ import { useStore } from 'zustand';
 import { createDraftSlice } from './draftSlice';
 import { createPlacementSlice, derivePlacement } from './placementSlice';
 import { createAiSlice } from './aiSlice';
+import { createAutoRunSlice } from './autoRunSlice';
 import type { AuthoringInit, AuthoringState } from './types';
 
 // One store per open modal, not a module singleton — same reasoning as
@@ -17,6 +18,7 @@ export const createAuthoringStore = (init: AuthoringInit) => {
     ...createDraftSlice(init)(...a),
     ...createPlacementSlice(init)(...a),
     ...createAiSlice(...a),
+    ...createAutoRunSlice(init)(...a),
     heading: init.heading,
     footNote: init.footNote,
     submitLabel: init.submitLabel,
@@ -24,6 +26,7 @@ export const createAuthoringStore = (init: AuthoringInit) => {
     excludeQuestionId: init.excludeQuestionId,
     onSubmit: init.onSubmit,
     onClose: init.onClose,
+    onDiscard: init.onDiscard,
   }));
 };
 

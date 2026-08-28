@@ -3065,7 +3065,43 @@ div.drag-shadow.drag-shadow {
   border-radius: 10px;
   box-shadow: var(--shadow-lg);
   padding: 5px;
-  min-width: 200px;
+  min-width: 156px;
+}
+/* Copy / Edit / Move / Delete as one compact row across the top — the
+   one-shot actions, kept out of the stacked list below. */
+.kb-icon-strip {
+  display: flex;
+  gap: 2px;
+  padding: 6px 6px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.kb-icon-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 7px 4px;
+  border-radius: 7px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font: 500 10px var(--f-sans);
+}
+.kb-icon-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.kb-icon-btn svg {
+  width: 15px;
+  height: 15px;
+}
+.kb-icon-btn.danger {
+  color: var(--pri-high);
+}
+.kb-icon-btn.danger:hover {
+  background: var(--pri-high-soft);
 }
 .kebab-item {
   display: flex;
@@ -4684,6 +4720,11 @@ div.drag-shadow.drag-shadow {
   flex: 1 1 220px;
   min-width: 220px;
 }
+/* Fixed-width slot for a row whose control is a select rather than pills. */
+.settings-row-control {
+  width: 220px;
+  flex-shrink: 0;
+}
 .settings-row-label {
   font-size: 14px;
   font-weight: 600;
@@ -5687,3 +5728,145 @@ div.drag-shadow.drag-shadow {
 }
 
 
+
+
+/* Auto-run — the manual AI actions chained, driving the form in place. The
+   banner sits above the fields and the results land in them as they arrive. */
+.ic-action.auto {
+  color: var(--accent-text);
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in oklch, var(--accent) 35%, transparent);
+}
+.ic-action.auto:hover {
+  filter: brightness(0.97);
+}
+.aq-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.aq-auto-banner {
+  margin: -2px 0 2px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.aq-auto-banner.paused {
+  border-color: color-mix(in oklch, var(--warn) 40%, transparent);
+  background: var(--warn-soft);
+}
+.aq-auto-banner.done {
+  border-color: color-mix(in oklch, var(--success) 40%, transparent);
+  background: var(--success-soft);
+}
+/* Finished, but at least one step errored — not a clean run. */
+.aq-auto-banner.partial {
+  border-color: color-mix(in oklch, var(--warn) 40%, transparent);
+  background: var(--warn-soft);
+}
+.aq-auto-steps {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.aq-auto-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-subtle);
+}
+.aq-auto-step.done {
+  color: var(--success);
+}
+.aq-auto-step.active {
+  color: var(--accent-text);
+}
+.aq-auto-step.failed {
+  color: var(--warn);
+}
+.aq-auto-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-strong);
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.aq-auto-step.done .aq-auto-dot {
+  background: var(--success-soft);
+  border-color: transparent;
+  color: var(--success);
+}
+.aq-auto-step.active .aq-auto-dot {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+.aq-auto-step.failed .aq-auto-dot {
+  background: var(--warn-soft);
+  border-color: color-mix(in oklch, var(--warn) 45%, transparent);
+  color: var(--warn);
+}
+.aq-auto-dot svg {
+  width: 10px;
+  height: 10px;
+}
+.aq-auto-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.aq-auto-status-text {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.aq-auto-manual-btn {
+  flex-shrink: 0;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 7px;
+  border: 1px dashed var(--border-strong);
+  background: none;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-subtle);
+  cursor: pointer;
+}
+.aq-dup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+.aq-dup-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 7px;
+  border: 1px solid currentColor;
+  opacity: 0.85;
+  background: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    opacity 0.12s,
+    background 0.12s;
+}
+.aq-dup-action-btn:hover {
+  opacity: 1;
+  background: color-mix(in oklch, currentColor 10%, transparent);
+}

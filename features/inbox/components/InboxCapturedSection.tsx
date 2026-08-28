@@ -16,7 +16,12 @@ interface Props {
 
 export default function InboxCapturedSection({ items, onRemoveItem }: Props) {
   const removeInboxItem = useAppStore((s) => s.removeInboxItem);
-  const [assigning, setAssigning] = useState<InboxItem | null>(null);
+  // Both buttons open the same modal; `auto` only picks which view it
+  // starts on, since either can end up in the form.
+  const [assigning, setAssigning] = useState<{
+    item: InboxItem;
+    auto: boolean;
+  } | null>(null);
 
   const handleDiscard = (id: string) => {
     onRemoveItem(id);
@@ -28,16 +33,22 @@ export default function InboxCapturedSection({ items, onRemoveItem }: Props) {
       <InboxCapturedList
         items={items}
         onRemove={handleDiscard}
-        onAssign={setAssigning}
+        onAssign={(item) => setAssigning({ item, auto: false })}
+        onAutoRun={(item) => setAssigning({ item, auto: true })}
       />
 
       {assigning && (
         <AddQuestionModal
-          prefillTitle={assigning.text}
-          fromInboxId={assigning.id}
+          prefillTitle={assigning.item.text}
+          fromInboxId={assigning.item.id}
+          autoRun={assigning.auto}
+          onDiscard={() => {
+            handleDiscard(assigning.item.id);
+            setAssigning(null);
+          }}
           onClose={() => setAssigning(null)}
           onSaved={() => {
-            onRemoveItem(assigning.id);
+            onRemoveItem(assigning.item.id);
             setAssigning(null);
           }}
         />

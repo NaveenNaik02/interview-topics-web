@@ -9,12 +9,19 @@ import {
   getSuggestionInstructionText,
   getProblemInstructionText,
 } from '@/lib/instructionPresets';
+import { AUTO_RUN_MODEL } from '@/lib/aiModels';
 import { PENDING_GROUP_SLUG, PENDING_SECTION_KEY } from '../types';
 import { selectPlacement } from './placementSlice';
 import type { AiSlice, AuthoringState } from './types';
 
 const isRateLimited = (msg: string) => {
   return /rate|quota|limit|429|overloaded|exhausted|unavailable/i.test(msg);
+};
+
+// The picker's choice, except while auto-run is driving — see AUTO_RUN_MODEL.
+// Leaves the saved preference alone; only this run's requests are redirected.
+const modelFor = (s: AuthoringState) => {
+  return s.autoStatus === 'running' ? AUTO_RUN_MODEL : s.model;
 };
 
 export const createAiSlice: StateCreator<AuthoringState, [], [], AiSlice> = (
@@ -51,7 +58,7 @@ export const createAiSlice: StateCreator<AuthoringState, [], [], AiSlice> = (
             isImpl: s.isImpl,
             lang: s.lang,
             tags: s.tags,
-            model: s.model,
+            model: modelFor(s),
             instructions: getSuggestionInstructionText(),
           }),
         );
@@ -70,7 +77,7 @@ export const createAiSlice: StateCreator<AuthoringState, [], [], AiSlice> = (
             question: s.title,
             lang: s.lang,
             tags: s.tags,
-            model: s.model,
+            model: modelFor(s),
             instructions: getProblemInstructionText(),
           }),
         );
@@ -95,7 +102,7 @@ export const createAiSlice: StateCreator<AuthoringState, [], [], AiSlice> = (
             topicName: activeTopicName,
             subName: activeSectionLabel,
             instructions: s.instructions,
-            model: s.model,
+            model: modelFor(s),
           }),
         );
       } catch (err) {
@@ -120,7 +127,7 @@ export const createAiSlice: StateCreator<AuthoringState, [], [], AiSlice> = (
             instructions: s.instructions,
             isImpl: s.isImpl,
             lang: s.lang,
-            model: s.model,
+            model: modelFor(s),
           }),
         );
       } catch (err) {
@@ -144,7 +151,7 @@ export const createAiSlice: StateCreator<AuthoringState, [], [], AiSlice> = (
             topic: section.topic,
             file: section.file,
             excludeId: s.excludeQuestionId,
-            model: s.model,
+            model: modelFor(s),
           }),
           dupState: 'done',
         });
@@ -170,7 +177,7 @@ export const createAiSlice: StateCreator<AuthoringState, [], [], AiSlice> = (
               groupName: g.groupName,
               sections: g.sections,
             })),
-            model: s.model,
+            model: modelFor(s),
           }),
           suggestState: 'idle',
         });

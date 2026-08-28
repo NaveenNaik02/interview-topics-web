@@ -32,9 +32,10 @@ function fallbackCopy(text: string) {
   } catch {}
 }
 
-// Row overflow menu (kebab) — Copy / Edit / Delete. Portal-rendered so the
-// dropdown isn't clipped by the row's own layout, positioned from the
-// trigger button's rect the same way AqSelect/OfflineStatusPill anchor theirs.
+// Row overflow menu (kebab). The four one-shot actions sit in a compact icon
+// strip across the top; the toggles and priority stack below it. Portal-
+// rendered so the dropdown isn't clipped by the row's own layout, positioned
+// from the trigger button's rect the same way AqSelect/OfflineStatusPill do.
 export default function RowActions({ getText, onEdit, onMove, onSetAside, onDelete, isStarred, onToggleStar, isGreyZone, onToggleGreyZone, priority, onSetPriority }: Props) {
   const [open, setOpen] = useState(false)
   const [confirming, setConfirming] = useState(false)
@@ -111,6 +112,26 @@ export default function RowActions({ getText, onEdit, onMove, onSetAside, onDele
         >
           {!confirming ? (
             <>
+              <div className="kb-icon-strip">
+                <button type="button" className="kb-icon-btn" onClick={handleCopy}>
+                  <Copy /> Copy
+                </button>
+                {onEdit && (
+                  <button type="button" className="kb-icon-btn" onClick={() => { onEdit(); close() }}>
+                    <Pencil /> Edit
+                  </button>
+                )}
+                {onMove && (
+                  <button type="button" className="kb-icon-btn" onClick={() => { onMove(); close() }}>
+                    <FolderInput /> Move
+                  </button>
+                )}
+                {onDelete && (
+                  <button type="button" className="kb-icon-btn danger" onClick={() => setConfirming(true)}>
+                    <Trash2 /> Delete
+                  </button>
+                )}
+              </div>
               {onToggleStar && (
                 <button type="button" className="kebab-item" onClick={() => { onToggleStar(); close() }}>
                   <Star fill={isStarred ? 'currentColor' : 'none'} /> {isStarred ? 'Unstar' : 'Star for review'}
@@ -128,20 +149,6 @@ export default function RowActions({ getText, onEdit, onMove, onSetAside, onDele
                   <button type="button" className={`kebab-pri low ${priority === 'low' ? 'sel' : ''}`} onClick={() => { onSetPriority(priority === 'low' ? null : 'low') }}><span className="dot" />Low</button>
                 </div>
               )}
-              {(onToggleStar || onToggleGreyZone || onSetPriority) && <div className="kebab-sep" />}
-              <button type="button" className="kebab-item" onClick={handleCopy}>
-                <Copy /> Copy
-              </button>
-              {onEdit && (
-                <button type="button" className="kebab-item" onClick={() => { onEdit(); close() }}>
-                  <Pencil /> Edit
-                </button>
-              )}
-              {onMove && (
-                <button type="button" className="kebab-item" onClick={() => { onMove(); close() }}>
-                  <FolderInput /> Move to…
-                </button>
-              )}
               {onSetAside && (
                 <button
                   type="button"
@@ -151,14 +158,6 @@ export default function RowActions({ getText, onEdit, onMove, onSetAside, onDele
                 >
                   <Archive /> Set aside
                 </button>
-              )}
-              {onDelete && (
-                <>
-                  <div className="kebab-sep" />
-                  <button type="button" className="kebab-item danger" onClick={() => setConfirming(true)}>
-                    <Trash2 /> Delete
-                  </button>
-                </>
               )}
             </>
           ) : (

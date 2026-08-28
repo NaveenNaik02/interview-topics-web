@@ -19,6 +19,8 @@ export const AddQuestionModal = ({
   prefillTags,
   prefillProblem,
   fromSetAsideId,
+  autoRun,
+  onDiscard,
   onClose,
   onSaved,
 }: AddQuestionModalProps) => {
@@ -54,6 +56,9 @@ export const AddQuestionModal = ({
         tags: prefillTags,
         problem: prefillProblem,
       }}
+      autoRun={autoRun}
+      fromInbox={!!fromInboxId}
+      onDiscard={onDiscard}
       onSubmit={async (input, section) => {
         const question = await addQuestion(input);
         if (fromInboxId) removeInboxItem(fromInboxId);
