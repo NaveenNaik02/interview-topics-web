@@ -1,9 +1,9 @@
 import type { StateCreator } from 'zustand';
 import { selectPlacement } from './placementSlice';
+import { sectionKey } from '../utils/placementOptions';
 import {
   AUTO_STEPS,
   type AutoRunSlice,
-  type AutoStep,
   type AuthoringInit,
   type AuthoringState,
 } from './types';
@@ -30,11 +30,9 @@ export const createAutoRunSlice = (
     let run = 0;
     const stale = (mine: number) => mine !== run;
 
-    // The duplicate check only earns its place when there's a captured item
-    // being filed into a subtopic; editing a saved question runs three.
-    const steps: readonly AutoStep[] = init.fromInbox
-      ? AUTO_STEPS
-      : AUTO_STEPS.filter((s) => s !== 'duplicate');
+    // Where the question already lives, if it lives anywhere — a captured
+    // Inbox item has no home yet, so every placement is a new one.
+    const homeK = init.initialSection ? sectionKey(init.initialSection) : null;
 
     // A step that fails doesn't stop the run: the field keeps whatever it had
     // and shows its own error, which is visible because the form never left
@@ -43,20 +41,23 @@ export const createAutoRunSlice = (
       const mine = ++run;
       set({ autoStatus: 'running' });
 
-      for (let i = from; i < steps.length; i++) {
+      for (let i = from; i < AUTO_STEPS.length; i++) {
         set({ autoStep: i });
         const s = get();
 
-        if (steps[i] === 'question') {
+        if (AUTO_STEPS[i] === 'question') {
           await s.generateQuestion();
           await typed();
-        } else if (steps[i] === 'placement') {
+        } else if (AUTO_STEPS[i] === 'placement') {
           await s.suggestPlacement();
           if (get().suggestState !== 'error') get().acceptSuggestion();
-        } else if (steps[i] === 'duplicate') {
-          // A staged subtopic has no questions filed under it yet, so there
-          // is nothing to compare against — same guard the manual button uses.
-          if (!selectPlacement(get()).isPendingSection) {
+        } else if (AUTO_STEPS[i] === 'duplicate') {
+          // Two reasons to skip: a staged subtopic has nothing filed under it
+          // to compare against (same guard the manual button uses), and a
+          // question placement left where it already sits can only collide
+          // with the questions it has always sat beside.
+          const moved = get().sectionK !== homeK;
+          if (!selectPlacement(get()).isPendingSection && moved) {
             await s.checkDuplicate();
             if (stale(mine)) return;
             if (get().dupResult?.isDuplicate) {
@@ -75,7 +76,7 @@ export const createAutoRunSlice = (
     };
 
     return {
-      autoSteps: steps,
+      autoSteps: AUTO_STEPS,
       autoStep: 0,
       autoStatus: init.autoRun ? 'running' : 'idle',
 
@@ -86,7 +87,7 @@ export const createAutoRunSlice = (
         set({ autoStatus: 'idle' });
       },
       // Resumes past a duplicate the author chose to keep.
-      keepAsNew: () => runFrom(steps.indexOf('duplicate') + 1),
+      keepAsNew: () => runFrom(AUTO_STEPS.indexOf('duplicate') + 1),
     };
   };
 };

@@ -24,9 +24,6 @@ export interface AuthoringInit {
   excludeQuestionId?: string;
   // Starts the auto-run chain as soon as the modal opens.
   autoRun?: boolean;
-  // Assigning a captured Inbox item — the only flow that runs the duplicate
-  // step, and the only one with a source row "Discard this item" can drop.
-  fromInbox?: boolean;
   onDiscard?: () => void;
   onSubmit: (input: QuestionInput, section: SectionMeta) => Promise<void>;
   onClose: () => void;
@@ -142,8 +139,8 @@ export const AUTO_STEPS = [
 export type AutoStep = (typeof AUTO_STEPS)[number];
 
 export interface AutoRunSlice {
-  // The steps this flow actually runs, in order — three or four of AUTO_STEPS
-  // depending on whether there's an Inbox item behind it.
+  // The steps of the run, in order. The duplicate check is skipped at its
+  // turn rather than dropped from the list, so the checklist stays stable.
   autoSteps: readonly AutoStep[];
   // Index into autoSteps of the step running now, or the one it stopped at.
   autoStep: number;

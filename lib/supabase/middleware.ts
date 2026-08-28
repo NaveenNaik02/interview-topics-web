@@ -27,14 +27,20 @@ export async function updateSession(request: NextRequest) {
           );
         },
       },
+      global: {
+        fetch: (input, init) => {
+          return fetch(input, { ...init, signal: AbortSignal.timeout(5000) });
+        },
+      },
     },
   );
 
   // Touching auth.getUser() here is what actually refreshes an expiring
   // session cookie — do not add logic between client creation and this call.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await supabase.auth
+    .getUser()
+    .then(({ data }) => data.user)
+    .catch(() => null);
 
   // Same gate in dev and prod — there's no auto-provisioned session in
   // either environment anymore, so `isAuthed` is always a real "did this

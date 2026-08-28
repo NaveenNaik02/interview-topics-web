@@ -9,7 +9,7 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/stores/appStore';
-import { deleteQuestion } from '@/lib/actions/questions';
+import { useDeleteToast } from '@/components/useDeleteToast';
 import { setPriority as setPriorityAction } from '@/lib/actions/questionFlags';
 import type { ShortlistQuestion, ShortlistFlag } from '@/lib/db/shortlist';
 import type { PriorityLevel } from '@/lib/offlineSync';
@@ -41,6 +41,7 @@ export default function ShortlistList({
 
   const groups = useAppStore((s) => s.groups);
   const router = useRouter();
+  const { remove, toast: deleteToast } = useDeleteToast();
   const [openId, setOpenId] = useState<string | null>(null);
   const [errorToast, setErrorToast] = useState<{
     title: string;
@@ -92,14 +93,6 @@ export default function ShortlistList({
     [router],
   );
 
-  const handleDelete = useCallback(
-    async (id: string) => {
-      await deleteQuestion(id);
-      router.refresh();
-    },
-    [router],
-  );
-
   return (
     <div className="questions-list">
       {rows.map((row, index) => (
@@ -115,9 +108,10 @@ export default function ShortlistList({
           onEdit={onEdit}
           onMove={onMove}
           onSetAside={onSetAside}
-          onDelete={handleDelete}
+          onDelete={remove}
         />
       ))}
+      {deleteToast}
       {errorToast && (
         <SaveToast
           title={errorToast.title}

@@ -57,7 +57,6 @@ export const AddQuestionModal = ({
         problem: prefillProblem,
       }}
       autoRun={autoRun}
-      fromInbox={!!fromInboxId}
       onDiscard={onDiscard}
       onSubmit={async (input, section) => {
         const question = await addQuestion(input);

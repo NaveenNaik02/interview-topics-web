@@ -10,7 +10,7 @@ import {
   findGroupForSection,
   type SectionMeta,
 } from '@/lib/topics';
-import { deleteQuestion } from '@/lib/actions/questions';
+import { useDeleteToast } from './useDeleteToast';
 import { setAsideQuestion } from '@/lib/actions/setAside';
 import {
   setStarred,
@@ -286,6 +286,7 @@ export default function PriorityMixClient({
     [groups],
   );
   const router = useRouter();
+  const { remove, toast: deleteToast } = useDeleteToast();
   const [openId, setOpenId] = useState<string | null>(null);
   const [showOfflineModal, setShowOfflineModal] = useState(false);
   const [editingQuestion, setEditingQuestion] =
@@ -632,12 +633,7 @@ export default function PriorityMixClient({
                           : undefined
                       }
                       onDelete={
-                        canManage
-                          ? async () => {
-                              await deleteQuestion(r.q.id);
-                              router.refresh();
-                            }
-                          : undefined
+                        canManage ? () => remove(r.q.id) : undefined
                       }
                     />
                   </>
@@ -726,6 +722,7 @@ export default function PriorityMixClient({
         />
       )}
 
+      {deleteToast}
       {moveToast && <SaveToast title="Moved" detail={moveToast} />}
       {asideToast && (
         <SaveToast

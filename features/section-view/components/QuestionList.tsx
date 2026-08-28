@@ -12,7 +12,7 @@ import QuestionItem, {
 } from '@/components/QuestionItem';
 import RowActions from '@/components/RowActions';
 import SaveToast from '@/components/SaveToast';
-import { deleteQuestion } from '@/lib/actions/questions';
+import { useDeleteToast } from '@/components/useDeleteToast';
 import { setAsideQuestion } from '@/lib/actions/setAside';
 import { useSectionDrag } from '../hooks';
 import {
@@ -54,6 +54,7 @@ export default function QuestionList({
 }: QuestionListProps) {
   const router = useRouter();
   const groups = useAppStore((s) => s.groups);
+  const { remove, toast: deleteToast } = useDeleteToast();
 
   // Internal component states for tracking open question, editor/mover modals, and status toasts
   const [openId, setOpenId] = useState<string | null>(null);
@@ -74,6 +75,8 @@ export default function QuestionList({
     renameProgressId,
     renameOrderId,
     setQuestionOrder,
+    totals,
+    setSectionTotal,
     navigateAfterMove,
     toggle,
     updateQuestionPriority,
@@ -89,6 +92,8 @@ export default function QuestionList({
       renameProgressId: s.renameProgressId,
       renameOrderId: s.renameOrderId,
       setQuestionOrder: s.setQuestionOrder,
+      totals: s.totals,
+      setSectionTotal: s.setSectionTotal,
       navigateAfterMove: s.navigateAfterMove,
       toggle: s.toggle,
       updateQuestionPriority: s.updateQuestionPriority,
@@ -97,6 +102,38 @@ export default function QuestionList({
       clearFilters: s.clearFilters,
     })),
   );
+
+  // Shared by the move modal and the edit modal — both can land a question in
+  // a different subtopic, and both mint a new id when they do.
+  const handleMoved = (
+    oldId: string,
+    newId: string,
+    destination: SectionMeta,
+  ) => {
+    const changedSection =
+      destination.topic !== section.topic ||
+      destination.file !== section.file;
+    if (!changedSection) {
+      router.refresh();
+      return;
+    }
+
+    renameProgressId(oldId, newId);
+    renameOrderId(oldId, newId);
+    // The destination section isn't mounted, so nothing else will refresh its
+    // total — without this its sidebar count stays stale until it's visited.
+    const destUrl = sectionUrl(destination);
+    setSectionTotal(destUrl, (totals[destUrl] ?? 0) + 1);
+
+    if (navigateAfterMove) {
+      router.push(destUrl);
+    } else {
+      const destGroup = findGroupForSection(groups, destination);
+      setMoveToast(`${destGroup?.groupName ?? ''} → ${destination.label}`);
+      setTimeout(() => setMoveToast(null), 3600);
+    }
+    router.refresh();
+  };
 
   // Invoke the drag-to-reorder hook internally since all drag targets, refs, and IDs are self-contained here
   const { listRef, dragId, indicatorTop, handlePointerDown } = useSectionDrag({
@@ -190,12 +227,7 @@ export default function QuestionList({
                           : undefined
                       }
                       onDelete={
-                        canManage
-                          ? async () => {
-                              await deleteQuestion(q.id);
-                              router.refresh();
-                            }
-                          : undefined
+                        canManage ? () => remove(q.id) : undefined
                       }
                     />
                   </>
@@ -222,31 +254,13 @@ export default function QuestionList({
           currentSection={section}
           onClose={() => setMovingQuestion(null)}
           onMoved={(destination, newId) => {
-            const changedSection =
-              destination.topic !== section.topic ||
-              destination.file !== section.file;
-            if (changedSection) {
-              renameProgressId(movingQuestion.id, newId);
-              renameOrderId(movingQuestion.id, newId);
-            }
             setMovingQuestion(null);
-            if (navigateAfterMove && changedSection) {
-              router.push(sectionUrl(destination));
-              router.refresh();
-            } else if (changedSection) {
-              const destGroup = findGroupForSection(groups, destination);
-              setMoveToast(
-                `${destGroup?.groupName ?? ''} → ${destination.label}`,
-              );
-              setTimeout(() => setMoveToast(null), 3600);
-              router.refresh();
-            } else {
-              router.refresh();
-            }
+            handleMoved(movingQuestion.id, newId, destination);
           }}
         />
       )}
 
+      {deleteToast}
       {moveToast && <SaveToast title="Moved" detail={moveToast} />}
       {asideToast && (
         <SaveToast
@@ -260,27 +274,8 @@ export default function QuestionList({
           editing={editingQuestion}
           onClose={() => setEditingQuestion(null)}
           onSaved={(question, newSection) => {
-            const changedSection =
-              newSection.topic !== section.topic ||
-              newSection.file !== section.file;
-            if (changedSection && editingQuestion) {
-              renameProgressId(editingQuestion.id, question.id);
-              renameOrderId(editingQuestion.id, question.id);
-            }
             setEditingQuestion(null);
-            if (navigateAfterMove && changedSection) {
-              router.push(sectionUrl(newSection));
-              router.refresh();
-            } else if (changedSection) {
-              const destGroup = findGroupForSection(groups, newSection);
-              setMoveToast(
-                `${destGroup?.groupName ?? ''} → ${newSection.label}`,
-              );
-              setTimeout(() => setMoveToast(null), 3600);
-              router.refresh();
-            } else {
-              router.refresh();
-            }
+            handleMoved(editingQuestion.id, question.id, newSection);
           }}
         />
       )}

@@ -22,7 +22,7 @@ export const createSectionQuestionsSlice: StateCreator<
   sortMode: 'manual',
 
   setSectionQuestions: (questions, section) => {
-    const { rememberFilters, defaultSort, activeSectionUrl, sectionQuestionsCache, totals } = get();
+    const { rememberFilters, defaultSort, activeSectionUrl, sectionQuestionsCache } = get();
     const currentUrl = `/${section.topic}/${section.file}`;
 
     const nextState: Partial<AppState> = {
@@ -32,10 +32,6 @@ export const createSectionQuestionsSlice: StateCreator<
         [currentUrl]: questions,
       },
       activeSectionUrl: currentUrl,
-      totals: {
-        ...totals,
-        [currentUrl]: questions.length,
-      },
     };
 
     // Reset filters if navigating to a different section and rememberFilters is false
@@ -46,6 +42,10 @@ export const createSectionQuestionsSlice: StateCreator<
     }
 
     set(nextState);
+
+    // Goes through setSectionTotal rather than writing `totals` above, so
+    // `stats` (what the sidebar counts read) gets recomputed.
+    get().setSectionTotal(currentUrl, questions.length);
 
     // Fresh server list — anything the local progress store still holds for
     // this section that isn't here anymore was deleted or set aside.

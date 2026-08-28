@@ -18,23 +18,28 @@ vi.mock('@/lib/actions/topics', () => ({
 
 const { createAuthoringStore } = await import('./authoringStore');
 
+type SectionMeta = { topic: string; file: string; label: string };
+
 const GROUPS = [
   {
     slug: 'js',
     groupName: 'JavaScript',
     blurb: '',
-    sections: [{ topic: 'js', file: 'closures', label: 'Closures' }],
+    sections: [
+      { topic: 'js', file: 'closures', label: 'Closures' },
+      { topic: 'js', file: 'scope', label: 'Scope' },
+    ],
   },
 ];
 
 // The typewriter is a React effect the store can't run itself, so stand in
 // for it: play every parked stream through instantly.
-const makeStore = (init: { fromInbox?: boolean } = {}) => {
+const makeStore = (init: { initialSection?: SectionMeta } = {}) => {
   const store = createAuthoringStore({
     heading: '',
     footNote: '',
     submitLabel: '',
-    fromInbox: init.fromInbox ?? true,
+    initialSection: init.initialSection,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     groups: GROUPS as any,
     defaultPriority: null,
@@ -88,17 +93,31 @@ describe('auto-run pipeline', () => {
     expect(s.onSubmit).not.toHaveBeenCalled();
   });
 
-  it('skips the duplicate step outside the Inbox flow', async () => {
-    const store = makeStore({ fromInbox: false });
-    expect(store.getState().autoSteps).toEqual([
-      'question',
-      'placement',
-      'answer',
-    ]);
+  it('skips the duplicate check when placement leaves the question put', async () => {
+    const store = makeStore({
+      initialSection: { topic: 'js', file: 'closures', label: 'Closures' },
+    });
 
     await store.getState().startAuto();
     expect(store.getState().autoStatus).toBe('done');
     expect(checkDuplicateQuestion).not.toHaveBeenCalled();
+  });
+
+  it('checks for duplicates when placement moves the question', async () => {
+    suggestPlacement.mockResolvedValue({
+      mode: 'existing',
+      groupSlug: 'js',
+      topic: 'js',
+      file: 'scope',
+      reasoning: 'better fit',
+    });
+    const store = makeStore({
+      initialSection: { topic: 'js', file: 'closures', label: 'Closures' },
+    });
+
+    await store.getState().startAuto();
+    expect(store.getState().sectionK).toBe('js/scope');
+    expect(checkDuplicateQuestion).toHaveBeenCalledOnce();
   });
 
   it('pauses on a duplicate and leaves the answer step unrun', async () => {
