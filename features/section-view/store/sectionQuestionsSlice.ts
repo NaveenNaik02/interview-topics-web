@@ -46,6 +46,14 @@ export const createSectionQuestionsSlice: StateCreator<
     }
 
     set(nextState);
+
+    // Fresh server list — anything the local progress store still holds for
+    // this section that isn't here anymore was deleted or set aside.
+    get().pruneSectionProgress(
+      section.topic,
+      section.file,
+      questions.map((q) => q.id)
+    );
   },
 
   updateQuestionPriority: (id, level) => {

@@ -3065,7 +3065,7 @@ div.drag-shadow.drag-shadow {
   border-radius: 10px;
   box-shadow: var(--shadow-lg);
   padding: 5px;
-  min-width: 156px;
+  min-width: 220px;
 }
 /* Copy / Edit / Move / Delete as one compact row across the top — the
    one-shot actions, kept out of the stacked list below. */

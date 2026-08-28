@@ -41,6 +41,10 @@ export interface ProgressSlice {
   // new (correctly section-prefixed) id, so the local store doesn't have to
   // wait for a full reload to stop reading the question as "not done".
   renameProgressId: (oldId: string, newId: string) => void;
+  // Drops progress entries for questions that no longer exist in a section —
+  // deleting/setting aside a question removes its DB row, but the local store
+  // would keep counting it until a full reload ("8 of 7 complete").
+  pruneSectionProgress: (topic: string, file: string, ids: string[]) => void;
   loadProgress: (uid: string) => Promise<void>;
 }
 

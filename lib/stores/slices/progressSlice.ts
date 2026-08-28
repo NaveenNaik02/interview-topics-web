@@ -122,6 +122,18 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
       }
     },
 
+    pruneSectionProgress: (topic: string, file: string, ids: string[]) => {
+      const { store } = get()
+      const prefix = `${topic}/${file}/`
+      const alive = new Set(ids)
+      const next = Object.fromEntries(
+        Object.entries(store).filter(([k]) => !k.startsWith(prefix) || alive.has(k))
+      )
+      if (Object.keys(next).length === Object.keys(store).length) return
+      set({ store: next })
+      recomputeStats()
+    },
+
     renameProgressId: (oldId: string, newId: string) => {
       const { store } = get()
       if (!(oldId in store)) return
