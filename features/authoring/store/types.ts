@@ -50,6 +50,9 @@ export interface DraftSlice {
   lang: string;
   priority: PriorityLevel | null;
   isImpl: boolean;
+  // Asks the answer generator for a fenced code example on a non-impl
+  // question. Per-question, reset every time the modal opens.
+  wantCodeExample: boolean;
   tab: 'write' | 'preview';
   instructions: string;
   // Seeded from the Settings choice when the modal opens; nothing inside the
@@ -69,6 +72,7 @@ export interface DraftSlice {
   setLang: (v: string) => void;
   setPriority: (v: PriorityLevel | null) => void;
   setIsImpl: (v: boolean) => void;
+  setWantCodeExample: (v: boolean) => void;
   setTab: (v: 'write' | 'preview') => void;
   setInstructions: (v: string) => void;
   setShowInstructions: (v: boolean) => void;

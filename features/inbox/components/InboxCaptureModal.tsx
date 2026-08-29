@@ -106,12 +106,7 @@ export default function InboxCaptureModal({ onClose, onSaved }: Props) {
   };
 
   return (
-    <div
-      className="modal-scrim"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
+    <div className="modal-scrim">
       <div
         className="aq-modal"
         role="dialog"

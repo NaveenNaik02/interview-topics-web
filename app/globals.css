@@ -1956,6 +1956,40 @@ mark {
   min-height: 160px;
 }
 
+.aq-code-example-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text-subtle);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: var(--f-sans);
+  transition:
+    background 0.12s,
+    border-color 0.12s,
+    color 0.12s;
+}
+.aq-code-example-check svg {
+  width: 13px;
+  height: 13px;
+}
+.aq-code-example-check:hover {
+  border-color: var(--border-strong);
+  color: var(--text-muted);
+}
+.aq-code-example-check.on {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  border-color: color-mix(in oklch, var(--accent) 45%, transparent);
+}
+
 .aq-format-btn {
   display: inline-flex;
   align-items: center;
@@ -2358,7 +2392,8 @@ mark {
     flex-wrap: wrap;
   }
   .aq-generate-btn,
-  .aq-format-btn {
+  .aq-format-btn,
+  .aq-code-example-check {
     height: 34px;
     font-size: 12.5px;
   }

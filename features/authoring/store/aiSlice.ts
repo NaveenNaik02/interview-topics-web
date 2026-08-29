@@ -102,6 +102,7 @@ export const createAiSlice: StateCreator<AuthoringState, [], [], AiSlice> = (
             topicName: activeTopicName,
             subName: activeSectionLabel,
             instructions: s.instructions,
+            wantCodeExample: !s.isImpl && s.wantCodeExample,
             model: modelFor(s),
           }),
         );
@@ -125,6 +126,7 @@ export const createAiSlice: StateCreator<AuthoringState, [], [], AiSlice> = (
             text: s.markdown,
             question: s.title,
             instructions: s.instructions,
+            wantCodeExample: !s.isImpl && s.wantCodeExample,
             isImpl: s.isImpl,
             lang: s.lang,
             model: modelFor(s),

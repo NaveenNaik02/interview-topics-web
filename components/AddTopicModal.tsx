@@ -105,12 +105,7 @@ export default function AddTopicModal({
   };
 
   return (
-    <div
-      className="modal-scrim"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
+    <div className="modal-scrim">
       <div
         className="aq-modal"
         style={{ maxWidth: 560 }}

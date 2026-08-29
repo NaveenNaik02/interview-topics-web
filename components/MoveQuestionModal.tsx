@@ -54,7 +54,7 @@ export default function MoveQuestionModal({ groups, questionId, label, currentSe
   }
 
   return (
-    <div className="modal-scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
+    <div className="modal-scrim">
       <div className="mvq-modal" role="dialog" aria-modal="true" aria-label="Move question">
         <div className="mvq-head">
           <div className="mvq-head-row">

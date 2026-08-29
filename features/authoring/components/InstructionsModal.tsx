@@ -35,7 +35,7 @@ export default function InstructionsModal({ value, isImpl, onClose, onSave }: Pr
   }, [onClose])
 
   return (
-    <div className="aq-instr-scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
+    <div className="aq-instr-scrim">
       <div className="aq-instr-modal" role="dialog" aria-modal="true" aria-label="Instructions">
         <div className="aq-head">
           <h2>Instructions</h2>

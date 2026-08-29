@@ -9,6 +9,7 @@ export interface FormatAnswerInput {
   text: string;
   question?: string;
   instructions?: string;
+  wantCodeExample?: boolean;
   isImpl?: boolean;
   lang?: string;
   model?: string;
@@ -47,6 +48,9 @@ export async function formatAnswer(input: FormatAnswerInput): Promise<string> {
         'short paragraphs or lists where that helps scanning, and fenced code blocks (with a language tag) for any code.',
         'Do NOT start with a Markdown heading — the question itself is already the heading.',
         'Respond ONLY with the reformatted Markdown — no preamble, no closing remarks.',
+        input.wantCodeExample
+          ? 'Include at least one fenced code example (with a language tag) that illustrates the answer.'
+          : '',
         input.instructions?.trim()
           ? `Additionally, follow these formatting preferences from the author: ${input.instructions.trim()}`
           : '',

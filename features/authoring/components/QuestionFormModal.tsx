@@ -8,6 +8,7 @@ import {
   RefreshCw,
   SlidersHorizontal,
   AlignLeft,
+  Code2,
 } from 'lucide-react';
 import { AQ_MODELS } from '@/lib/aiModels';
 import { loadPresets } from '@/lib/instructionPresets';
@@ -50,6 +51,8 @@ export const QuestionFormModal = () => {
   const priority = useAuthoring((s) => s.priority);
   const setPriority = useAuthoring((s) => s.setPriority);
   const isImpl = useAuthoring((s) => s.isImpl);
+  const wantCodeExample = useAuthoring((s) => s.wantCodeExample);
+  const setWantCodeExample = useAuthoring((s) => s.setWantCodeExample);
   const tab = useAuthoring((s) => s.tab);
   const setTab = useAuthoring((s) => s.setTab);
   const instructions = useAuthoring((s) => s.instructions);
@@ -113,12 +116,7 @@ export const QuestionFormModal = () => {
   }, [api, isImpl]);
 
   return (
-    <div
-      className="modal-scrim"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
+    <div className="modal-scrim">
       <div
         className="aq-modal"
         role="dialog"
@@ -222,6 +220,17 @@ export const QuestionFormModal = () => {
               emptyPreviewText="Live preview appears here as you type…"
               toolbar={
                 <div className="aq-gen-controls">
+                  {!isImpl && (
+                    <button
+                      type="button"
+                      className={`aq-code-example-check ${wantCodeExample ? 'on' : ''}`}
+                      aria-pressed={wantCodeExample}
+                      onClick={() => setWantCodeExample(!wantCodeExample)}
+                      title="Ask the generated answer to include a code example"
+                    >
+                      <Code2 size={13} /> Code example
+                    </button>
+                  )}
                   <button
                     type="button"
                     className={`aq-customize-btn ${instructions.trim() ? 'has-value' : ''}`}

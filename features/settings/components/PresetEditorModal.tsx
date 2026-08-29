@@ -28,12 +28,7 @@ export default function PresetEditorModal({
   const canSave = name.trim().length > 0;
 
   return (
-    <div
-      className="aq-instr-scrim"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
+    <div className="aq-instr-scrim">
       <div
         className="aq-instr-modal"
         role="dialog"

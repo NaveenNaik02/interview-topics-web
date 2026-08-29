@@ -10,6 +10,7 @@ export interface GenerateAnswerInput {
   topicName?: string;
   subName?: string;
   instructions?: string;
+  wantCodeExample?: boolean;
   model?: string;
 }
 
@@ -39,6 +40,9 @@ export async function generateAnswer(
     'Respond only in Markdown.',
     'Do NOT start with a Markdown heading (#, ##, ###) — the question itself is already the heading; the answer body starts directly with prose.',
     'No preamble, no closing remarks, no "In summary" — start directly with the answer and end when the explanation is complete.',
+    input.wantCodeExample
+      ? 'Include at least one fenced code example (with a language tag) that illustrates the answer.'
+      : '',
     input.instructions?.trim()
       ? `Follow these formatting and style instructions from the author: ${input.instructions.trim()}`
       : '',

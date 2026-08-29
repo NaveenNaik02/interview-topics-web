@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ParsedQuestion } from '@/lib/parser';
 import { stripHtml } from './stripHtml';
 import { CopyButton } from './CopyButton';
@@ -11,6 +11,9 @@ import { CopyButton } from './CopyButton';
 export function SolutionRail({ q }: { q: ParsedQuestion }) {
   const ref = useRef<HTMLDivElement>(null);
   const [codeLang, setCodeLang] = useState('');
+  // Stable identity or React re-assigns innerHTML on every re-render, which
+  // throws away the token spans Prism injected below.
+  const html = useMemo(() => ({ __html: q.bodyHtml }), [q.bodyHtml]);
 
   useEffect(() => {
     if (!ref.current) return;
@@ -61,7 +64,7 @@ export function SolutionRail({ q }: { q: ParsedQuestion }) {
               </div>
               <div
                 className="q-body prose prose-slate dark:prose-invert max-w-none"
-                dangerouslySetInnerHTML={{ __html: q.bodyHtml }}
+                dangerouslySetInnerHTML={html}
               />
             </div>
           </div>

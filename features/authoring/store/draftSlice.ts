@@ -24,6 +24,7 @@ export const createDraftSlice = (
           ? init.defaultPriority
           : init.initial.priority,
       isImpl,
+      wantCodeExample: false,
       tab: 'write',
       // Seeded from the built-in default matching isImpl (text vs. code-only).
       // Edits here are this question's local draft and never persist.
@@ -45,6 +46,7 @@ export const createDraftSlice = (
       setLang: (lang) => set({ lang }),
       setPriority: (priority) => set({ priority }),
       setIsImpl: (isImpl) => set({ isImpl }),
+      setWantCodeExample: (wantCodeExample) => set({ wantCodeExample }),
       setTab: (tab) => set({ tab }),
       setInstructions: (instructions) => set({ instructions }),
       setShowInstructions: (showInstructions) => set({ showInstructions }),
