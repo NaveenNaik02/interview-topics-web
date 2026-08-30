@@ -23,6 +23,7 @@ import {
 import type { ParsedQuestion } from '@/lib/parser';
 import type { PriorityLevel } from '@/lib/offlineSync';
 import type { EditingQuestion } from '@/features/authoring';
+import { canManage } from '../canManage';
 
 const EditQuestionModal = dynamic(
   () => import('@/features/authoring').then((m) => m.EditQuestionModal),
@@ -83,6 +84,9 @@ export default function QuestionList({
     toggleQuestionStarred,
     toggleQuestionGreyZone,
     clearFilters,
+    selectMode,
+    selectedIds,
+    toggleSelected,
   } = useAppStore(
     useShallow((s) => ({
       mounted: s.mounted,
@@ -100,6 +104,9 @@ export default function QuestionList({
       toggleQuestionStarred: s.toggleQuestionStarred,
       toggleQuestionGreyZone: s.toggleQuestionGreyZone,
       clearFilters: s.clearFilters,
+      selectMode: s.selectMode,
+      selectedIds: s.selectedIds,
+      toggleSelected: s.toggleSelected,
     })),
   );
 
@@ -153,10 +160,7 @@ export default function QuestionList({
           </div>
         ) : (
           processed.map(({ q, priority }) => {
-            const canManage =
-              mounted &&
-              !!user &&
-              (q.createdBy === user.id || user.app_metadata?.is_admin === true);
+            const manageable = mounted && canManage(q, user);
             const isDone = mounted && !!store[q.id];
             return (
               <QuestionItem
@@ -165,6 +169,10 @@ export default function QuestionList({
                 title={q.title}
                 isDone={isDone}
                 isOpen={openId === q.id}
+                isSelected={selectedIds.has(q.id)}
+                onToggleSelect={
+                  selectMode && manageable ? () => toggleSelected(q.id) : undefined
+                }
                 priority={priority}
                 reorderable={reorderable}
                 onHandlePointerDown={handlePointerDown(q.id)}
@@ -189,7 +197,7 @@ export default function QuestionList({
                       priority={priority}
                       onSetPriority={(level) => updateQuestionPriority(q.id, level)}
                       onEdit={
-                        canManage
+                        manageable
                           ? async () => {
                               const markdown =
                                 q.markdown ||
@@ -210,13 +218,13 @@ export default function QuestionList({
                           : undefined
                       }
                       onMove={
-                        canManage
+                        manageable
                           ? () =>
                               setMovingQuestion({ id: q.id, label: q.title })
                           : undefined
                       }
                       onSetAside={
-                        canManage
+                        manageable
                           ? async () => {
                               const item = await setAsideQuestion(q.id);
                               appendSetAsideItem(item);
@@ -227,7 +235,7 @@ export default function QuestionList({
                           : undefined
                       }
                       onDelete={
-                        canManage ? () => remove(q.id) : undefined
+                        manageable ? () => remove(q.id) : undefined
                       }
                     />
                   </>

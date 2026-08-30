@@ -2572,7 +2572,7 @@ div.drag-shadow.drag-shadow {
 .q-check {
   width: 22px;
   height: 22px;
-  border-radius: 6px;
+  border-radius: 50%;
   border: 1.5px solid var(--border-strong);
   background: var(--bg-card);
   flex-shrink: 0;
@@ -2597,6 +2597,13 @@ div.drag-shadow.drag-shadow {
 }
 .q-check.checked svg {
   opacity: 1;
+}
+.q-check.sel {
+  border-radius: 6px;
+}
+.q-check.sel.checked {
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 /* ── Priority spine + chip/popover ─────────────────────────── */
@@ -2713,6 +2720,24 @@ div.drag-shadow.drag-shadow {
   border-color: color-mix(in oklch, var(--accent) 40%, transparent);
   color: var(--accent-text);
   background: var(--accent-soft);
+}
+.action-chip.danger:not(:disabled) {
+  color: var(--pri-high);
+  border-color: color-mix(in oklch, var(--pri-high) 40%, transparent);
+}
+.action-chip.danger:not(:disabled):hover {
+  background: var(--pri-high-soft);
+  border-color: var(--pri-high);
+  color: var(--pri-high);
+}
+.action-chip .q-check {
+  width: 16px;
+  height: 16px;
+  margin-top: 0;
+}
+.action-chip .q-check svg {
+  width: 11px;
+  height: 11px;
 }
 .chip-badge {
   font-family: var(--f-mono);

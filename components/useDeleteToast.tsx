@@ -8,8 +8,10 @@ import SaveToast from './SaveToast';
 export const useDeleteToast = () => {
   const router = useRouter();
   const [state, setState] = useState<'deleting' | 'done' | null>(null);
+  const [count, setCount] = useState(1);
 
-  const remove = async (id: string) => {
+  const remove = async (id: string | string[]) => {
+    setCount(Array.isArray(id) ? id.length : 1);
     setState('deleting');
     try {
       await deleteQuestion(id);
@@ -22,13 +24,14 @@ export const useDeleteToast = () => {
     router.refresh();
   };
 
+  const noun = count === 1 ? 'question' : `${count} questions`;
   const toast = state && (
     <SaveToast
       title={state === 'deleting' ? 'Deleting…' : 'Deleted'}
       detail={
         state === 'deleting'
-          ? 'Removing the question.'
-          : 'The question has been removed.'
+          ? `Removing the ${noun}.`
+          : `The ${noun} ${count === 1 ? 'has' : 'have'} been removed.`
       }
     />
   );

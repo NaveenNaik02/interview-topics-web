@@ -318,29 +318,34 @@ export async function moveQuestion(
   return { id: data.id };
 }
 
-export async function deleteQuestion(id: string): Promise<void> {
+export async function deleteQuestion(id: string | string[]): Promise<void> {
   const { supabase, user } = await requireAuthor(
     'Sign in to delete your questions',
   );
 
+  const ids = Array.isArray(id) ? id : [id];
+  if (ids.length === 0) return;
+
   const { data, error } = await supabase
     .from('questions')
     .delete()
-    .eq('id', id)
-    .select('topic, file')
-    .single();
+    .in('id', ids)
+    .select('topic, file');
   if (error) throw new Error(`Could not delete question: ${error.message}`);
-  if (!data) throw new Error('You can only delete your own questions.');
+  if (!data?.length) throw new Error('You can only delete your own questions.');
 
-  // Best-effort cleanup of the current user's own progress row for this
-  // question (starred/priority are columns on the deleted row itself, so
+  // Best-effort cleanup of the current user's own progress rows for these
+  // questions (starred/priority are columns on the deleted rows themselves, so
   // they're already gone). Cross-user orphan cleanup is out of scope —
   // there's no service-role client in this app, and it's a rare edge case.
   await supabase
     .from('progress')
     .delete()
     .eq('user_id', user.id)
-    .eq('question_id', id);
+    .in('question_id', ids);
 
-  revalidateSection(data.topic, data.file);
+  for (const key of new Set(data.map((q) => `${q.topic}\u0000${q.file}`))) {
+    const [topic, file] = key.split('\u0000');
+    revalidateSection(topic, file);
+  }
 }

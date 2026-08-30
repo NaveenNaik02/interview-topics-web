@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Copy, Pencil, FolderInput, Archive, Trash2, MoreVertical, Star, Contrast } from 'lucide-react'
 import type { PriorityLevel } from '@/lib/offlineSync'
@@ -56,6 +56,20 @@ export default function RowActions({ getText, onEdit, onMove, onSetAside, onDele
     place()
     setOpen(true)
   }
+
+  // Flip above the trigger when the menu would run past the viewport bottom —
+  // otherwise a row near the bottom of the screen opens a clipped menu that
+  // can only be reached by scrolling, which closes it.
+  useLayoutEffect(() => {
+    if (!open || !pos) return
+    const r = btnRef.current?.getBoundingClientRect()
+    const h = popRef.current?.offsetHeight
+    if (!r || !h) return
+    const top = r.bottom + 6 + h > window.innerHeight - 8
+      ? Math.max(8, r.top - 6 - h)
+      : r.bottom + 6
+    if (top !== pos.top) setPos({ ...pos, top })
+  }, [open, pos, confirming])
 
   useEffect(() => {
     if (!open) return

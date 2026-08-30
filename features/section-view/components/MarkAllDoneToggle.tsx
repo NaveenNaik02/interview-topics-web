@@ -12,7 +12,7 @@ import type { ParsedQuestion } from '@/lib/parser';
 
 const EMPTY_ARRAY: ParsedQuestion[] = [];
 
-export const BulkSelectionButtons = () => {
+export const MarkAllDoneToggle = () => {
   const pathname = usePathname();
   const { store, mounted, questions, groups } = useAppStore(
     useShallow((s) => ({
@@ -44,25 +44,19 @@ export const BulkSelectionButtons = () => {
   }, [store, mounted, activeSection, total]);
 
   const allDone = mounted && stats.done === stats.total && stats.total > 0;
-  const noneDone = !mounted || stats.done === 0;
 
+  // One toggle rather than a Select all / Unselect all pair: whichever of the
+  // two is available is always the opposite of the section's current state.
   return (
     <>
       <button
         type="button"
-        className="action-chip"
-        onClick={() => setConfirm('select')}
-        disabled={allDone}
+        className={`action-chip ${allDone ? 'active' : ''}`}
+        onClick={() => setConfirm(allDone ? 'unselect' : 'select')}
+        disabled={total === 0}
+        title={allDone ? 'Clear progress on this subtopic' : 'Mark every question done'}
       >
-        <Icon.Check /> Select all
-      </button>
-      <button
-        type="button"
-        className="action-chip"
-        onClick={() => setConfirm('unselect')}
-        disabled={noneDone}
-      >
-        <Icon.Close /> Unselect all
+        {allDone ? <Icon.Check /> : <Icon.Circle />} All done
       </button>
       <BulkConfirmDialog confirm={confirm} onCancel={() => setConfirm(null)} />
     </>

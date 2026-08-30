@@ -15,6 +15,10 @@ interface Props {
   reorderable?: boolean;
   onToggleOpen: () => void;
   onToggleDone: () => void;
+  // Passed only while the section list is in multi-select mode: the row's
+  // check column then selects the row instead of marking it done.
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
   onHandlePointerDown?: (e: React.PointerEvent) => void;
   // Rendered under the title (e.g. <QuestionCrumb /> for cross-section lists).
   subtitle?: React.ReactNode;
@@ -37,6 +41,8 @@ export default function QuestionItem({
   reorderable,
   onToggleOpen,
   onToggleDone,
+  isSelected,
+  onToggleSelect,
   onHandlePointerDown,
   subtitle,
   actions,
@@ -62,17 +68,31 @@ export default function QuestionItem({
         {...(reorderable ? { onPointerDown: onHandlePointerDown } : {})}
       >
         <div className="q-check-col">
-          <button
-            className={`q-check ${isDone ? 'checked' : ''}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleDone();
-            }}
-            aria-label={isDone ? 'Mark as not done' : 'Mark as done'}
-            aria-pressed={isDone}
-          >
-            <Icon.Check />
-          </button>
+          {onToggleSelect ? (
+            <button
+              className={`q-check sel ${isSelected ? 'checked' : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleSelect();
+              }}
+              aria-label={isSelected ? 'Deselect question' : 'Select question'}
+              aria-pressed={!!isSelected}
+            >
+              <Icon.Check />
+            </button>
+          ) : (
+            <button
+              className={`q-check ${isDone ? 'checked' : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleDone();
+              }}
+              aria-label={isDone ? 'Mark as not done' : 'Mark as done'}
+              aria-pressed={isDone}
+            >
+              <Icon.Check />
+            </button>
+          )}
         </div>
         {subtitle ? (
           <div className="q-body-col">

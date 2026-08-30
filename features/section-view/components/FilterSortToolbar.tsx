@@ -2,7 +2,8 @@
 
 import { useAppStore } from '@/lib/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
-import { BulkSelectionButtons } from './BulkSelectionButtons';
+import { MarkAllDoneToggle } from './MarkAllDoneToggle';
+import { MultiDeleteControls } from './MultiDeleteControls';
 import { ActiveFilterChips } from './ActiveFilterChips';
 import { FilterMenu } from './FilterMenu';
 import { useActiveTokens } from '../hooks';
@@ -21,18 +22,30 @@ const SORT_CYCLE: Record<SortMode, SortMode> = {
 };
 
 export default function FilterSortToolbar() {
-  const { sortMode, setSortMode } = useAppStore(
+  const { sortMode, setSortMode, selectMode } = useAppStore(
     useShallow((s) => ({
       sortMode: s.sortMode,
       setSortMode: s.setSortMode,
+      selectMode: s.selectMode,
     })),
   );
 
   const { hasFilters } = useActiveTokens();
 
+  // Select mode owns the toolbar — the filter/sort chips would only act on a
+  // list the user is mid-selection in.
+  if (selectMode) {
+    return (
+      <div className="section-toolbar">
+        <MultiDeleteControls />
+      </div>
+    );
+  }
+
   return (
     <div className="section-toolbar">
-      <BulkSelectionButtons />
+      <MarkAllDoneToggle />
+      <MultiDeleteControls />
       {hasFilters && <span className="tb-divider" />}
       <div className="tb-chips">
         <ActiveFilterChips />

@@ -12,7 +12,22 @@ import { useShallow } from 'zustand/react/shallow';
 import type { ParsedQuestion } from '@/lib/parser';
 import type { PriorityLevel } from '@/lib/offlineSync';
 import type { SectionMeta } from '@/lib/topics';
+import type { PriorityFilterKey, StatusFilter } from '../store/types';
 import { computePriorityStats } from '@/lib/stores/progressSelectors';
+
+// Membership half of `processed`, split out so the delete toolbar's
+// "select all" covers exactly the rows the list is showing.
+export function isVisible(
+  q: ParsedQuestion,
+  filterSet: Set<PriorityFilterKey>,
+  statusFilter: StatusFilter,
+  isComplete: (id: string) => boolean,
+) {
+  if (filterSet.size && !filterSet.has(q.priority ?? 'none')) return false;
+  if (statusFilter === 'done') return isComplete(q.id);
+  if (statusFilter === 'notdone') return !isComplete(q.id);
+  return true;
+}
 
 export interface ProcessedQuestion {
   q: ParsedQuestion;
@@ -92,11 +107,7 @@ export function useSectionFilters(
       origIdx: i,
       priority: q.priority ?? null,
     }));
-    if (filterSet.size)
-      list = list.filter((x) => filterSet.has(x.priority ?? 'none'));
-    if (statusFilter === 'done') list = list.filter((x) => isComplete(x.q.id));
-    else if (statusFilter === 'notdone')
-      list = list.filter((x) => !isComplete(x.q.id));
+    list = list.filter((x) => isVisible(x.q, filterSet, statusFilter, isComplete));
     if (sortMode === 'manual') {
       // Dragged questions get an explicit position; anything never dragged
       // (or added since the user's last reorder) keeps its original

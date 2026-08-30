@@ -20,6 +20,8 @@ export const createSectionQuestionsSlice: StateCreator<
   filterSet: new Set<PriorityFilterKey>(),
   statusFilter: null,
   sortMode: 'manual',
+  selectMode: false,
+  selectedIds: new Set<string>(),
 
   setSectionQuestions: (questions, section) => {
     const { rememberFilters, defaultSort, activeSectionUrl, sectionQuestionsCache } = get();
@@ -33,6 +35,12 @@ export const createSectionQuestionsSlice: StateCreator<
       },
       activeSectionUrl: currentUrl,
     };
+
+    // A selection only ever means rows in the section it was made in.
+    if (activeSectionUrl !== currentUrl) {
+      nextState.selectMode = false;
+      nextState.selectedIds = new Set<string>();
+    }
 
     // Reset filters if navigating to a different section and rememberFilters is false
     if (!rememberFilters || activeSectionUrl !== currentUrl) {
@@ -107,6 +115,29 @@ export const createSectionQuestionsSlice: StateCreator<
 
   setSortMode: (mode) => {
     set({ sortMode: mode });
+  },
+
+  toggleSelectMode: () => {
+    set((state) => ({
+      selectMode: !state.selectMode,
+      selectedIds: new Set<string>(),
+    }));
+  },
+
+  toggleSelected: (id) => {
+    set((state) => {
+      const next = new Set(state.selectedIds);
+      if (!next.delete(id)) next.add(id);
+      return { selectedIds: next };
+    });
+  },
+
+  setSelected: (ids) => {
+    set({ selectedIds: new Set(ids) });
+  },
+
+  clearSelection: () => {
+    set({ selectMode: false, selectedIds: new Set<string>() });
   },
 
   clearFilters: () => {

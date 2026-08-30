@@ -13,6 +13,12 @@ export interface SectionQuestionsSlice {
   filterSet: Set<PriorityFilterKey>;
   statusFilter: StatusFilter;
   sortMode: SortMode;
+  selectMode: boolean;
+  selectedIds: Set<string>;
+  toggleSelectMode: () => void;
+  toggleSelected: (id: string) => void;
+  setSelected: (ids: string[]) => void;
+  clearSelection: () => void;
   setSectionQuestions: (questions: ParsedQuestion[], section: SectionMeta) => void;
   updateQuestionPriority: (id: string, level: PriorityLevel | null) => void;
   toggleQuestionStarred: (id: string, wasStarred: boolean) => void;
