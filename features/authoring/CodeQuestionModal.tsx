@@ -84,11 +84,11 @@ export const CodeQuestionModal = ({
   );
   const draftCount = useRef(0);
 
-  const titleRef = useRef<HTMLInputElement>(null);
+  const codeRef = useRef<HTMLTextAreaElement>(null);
   const typeOutput = useTypewriter(setOutput);
   const typeExplain = useTypewriter(setExplain);
 
-  useEffect(() => titleRef.current?.focus(), []);
+  useEffect(() => codeRef.current?.focus(), []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -203,7 +203,6 @@ export const CodeQuestionModal = ({
             </label>
             <input
               id="cq-title"
-              ref={titleRef}
               className="aq-input"
               type="text"
               placeholder={defaultTitle}
@@ -216,6 +215,7 @@ export const CodeQuestionModal = ({
             <label htmlFor="cq-code">Code</label>
             <textarea
               id="cq-code"
+              ref={codeRef}
               className="aq-input aq-problem-input"
               rows={9}
               placeholder="Paste the code snippet here…"
