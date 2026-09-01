@@ -28,6 +28,8 @@ export interface AddQuestionInput {
   lang?: string;
   tags?: string;
   problem?: string;
+  code?: string;
+  output?: string;
   priority?: PriorityLevel | null;
   starred?: boolean;
 }
@@ -35,6 +37,7 @@ export interface AddQuestionInput {
 // .q-body only defines heading styles for <h4> — remap every markdown
 // heading level so user-authored answers match hand-authored ones.
 function renderAnswerHtml(markdown: string): string {
+  if (!markdown) return '';
   const raw = marked.parse(markdown, { breaks: true }) as string;
   const remapped = raw
     .replace(/<h[1-6]([^>]*)>/gi, '<h4$1>')
@@ -89,6 +92,18 @@ async function carryOverUserRows(
     .eq('question_id', oldId);
 }
 
+// A code-output question is a snippet plus (optionally) its output and an
+// explanation — both of those can legitimately be blank, so `code` carries
+// the length check the answer normally would.
+function validateQuestion(title: string, markdown: string, code: string) {
+  if (title.length < 4) throw new Error('Question is too short');
+  if (code) {
+    if (code.length < 4) throw new Error('Code snippet is too short');
+    return;
+  }
+  if (markdown.length < 4) throw new Error('Answer is too short');
+}
+
 export async function addQuestion(
   input: AddQuestionInput,
 ): Promise<ParsedQuestion> {
@@ -101,8 +116,8 @@ export async function addQuestion(
   // user-submitted title can't inject markup into other visitors' pages.
   const title = DOMPurify.sanitize(input.title.trim(), { ALLOWED_TAGS: [] });
   const markdown = input.markdown.trim();
-  if (title.length < 4) throw new Error('Question is too short');
-  if (markdown.length < 4) throw new Error('Answer is too short');
+  const code = input.code?.trim() ?? '';
+  validateQuestion(title, markdown, code);
 
   const groups = await getAllGroups();
   const segments = [...input.topic.split('/'), input.file].filter(Boolean);
@@ -139,6 +154,8 @@ export async function addQuestion(
     lang: input.lang?.trim() || null,
     tags: input.tags?.trim() || null,
     problem: input.problem?.trim() || null,
+    code: code || null,
+    output: input.output?.trim() || null,
     starred: input.starred ?? false,
     priority: input.priority ?? null,
   });
@@ -159,8 +176,8 @@ export async function updateQuestion(
 
   const title = DOMPurify.sanitize(input.title.trim(), { ALLOWED_TAGS: [] });
   const markdown = input.markdown.trim();
-  if (title.length < 4) throw new Error('Question is too short');
-  if (markdown.length < 4) throw new Error('Answer is too short');
+  const code = input.code?.trim() ?? '';
+  validateQuestion(title, markdown, code);
 
   const groups = await getAllGroups();
   const segments = [...input.topic.split('/'), input.file].filter(Boolean);
@@ -220,6 +237,8 @@ export async function updateQuestion(
       lang: input.lang?.trim() || null,
       tags: input.tags?.trim() || null,
       problem: input.problem?.trim() || null,
+      code: code || null,
+      output: input.output?.trim() || null,
       priority: input.priority ?? null,
     })
     .eq('id', id)

@@ -1,3 +1,9 @@
 export { AddQuestionModal } from './AddQuestionModal';
 export { EditQuestionModal } from './EditQuestionModal';
-export type { EditingQuestion, QuestionDraft, QuestionInput } from './types';
+export { CodeQuestionModal } from './CodeQuestionModal';
+export type {
+  EditingQuestion,
+  EditingCodeQuestion,
+  QuestionDraft,
+  QuestionInput,
+} from './types';

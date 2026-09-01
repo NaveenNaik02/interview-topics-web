@@ -6,7 +6,12 @@ import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '@/lib/stores/appStore';
 import { addTopicGroup, addSection } from '@/lib/actions/topics';
 import { generateTopicBlurb } from '@/lib/actions/generateBlurb';
-import type { TopicGroup, SectionMeta } from '@/lib/topics';
+import {
+  isCodeOutputSection,
+  CODE_OUTPUT_LABEL,
+  type TopicGroup,
+  type SectionMeta,
+} from '@/lib/topics';
 import { useTypewriter } from '@/lib/useTypewriter';
 import AqSelect from './AqSelect';
 
@@ -45,6 +50,7 @@ export default function AddTopicModal({
   const [topicName, setTopicName] = useState('');
   const [blurb, setBlurb] = useState('');
   const [subLabel, setSubLabel] = useState('');
+  const [subIsCode, setSubIsCode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [blurbGen, setBlurbGen] = useState<'idle' | 'loading' | 'error'>(
@@ -61,6 +67,14 @@ export default function AddTopicModal({
   }, [onClose]);
 
   const isAnonymous = mounted && !!user?.is_anonymous;
+
+  // A topic gets at most one code-output subtopic, so the toggle disappears
+  // once its parent has one. Switching to such a parent with the toggle
+  // already on would otherwise submit a request the insert can only reject.
+  const parentHasCodeSub = !!groups
+    .find((g) => g.slug === groupSlug)
+    ?.sections.some(isCodeOutputSection);
+  const isCode = subIsCode && !parentHasCodeSub;
 
   const canGenerateBlurb =
     topicName.trim().length > 1 && blurbGen !== 'loading';
@@ -93,6 +107,7 @@ export default function AddTopicModal({
         const { section, group } = await addSection({
           groupSlug,
           label: subLabel,
+          isCode,
         });
         onSaved({ kind: 'subtopic', section, group });
       }
@@ -253,6 +268,36 @@ export default function AddTopicModal({
                       onChange={(e) => setSubLabel(e.target.value)}
                     />
                   </div>
+                  {!parentHasCodeSub && (
+                    <div className="aq-field">
+                      <div className="aq-impl-toggle-row">
+                        <label className="aq-toggle">
+                          <input
+                            type="checkbox"
+                            checked={subIsCode}
+                            onChange={(e) => {
+                              setSubIsCode(e.target.checked);
+                              if (e.target.checked && !subLabel.trim()) {
+                                setSubLabel(CODE_OUTPUT_LABEL);
+                              }
+                            }}
+                          />
+                          <span className="aq-toggle-track">
+                            <span className="aq-toggle-thumb" />
+                          </span>
+                        </label>
+                        <div className="aq-impl-toggle-copy">
+                          <span className="aq-impl-toggle-title">
+                            Code-output subtopic
+                          </span>
+                          <span className="aq-impl-toggle-sub">
+                            Holds code snippets with a collapsed
+                            output/explanation — not a regular question list
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <p className="aq-hint">
                     Starts with no questions — click the + button again once
                     you&apos;re on its page to add the first one.

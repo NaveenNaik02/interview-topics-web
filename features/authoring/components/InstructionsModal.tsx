@@ -2,24 +2,27 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { X } from 'lucide-react'
-import { loadPresets } from '@/lib/instructionPresets'
+import { loadPresets, type InstructionPreset } from '@/lib/instructionPresets'
 import AqSelect from '@/components/AqSelect'
 import MarkdownField from './MarkdownField'
 
 interface Props {
   value: string
-  isImpl: boolean
+  // Which protected preset the picker starts on — the caller knows what it's
+  // generating (a plain answer, code-only, a code-output explanation), this
+  // dialog doesn't.
+  kind: InstructionPreset['kind']
   onClose: () => void
   onSave: (v: string) => void
 }
 
 // Formatting instructions for one question. The model choice used to live
 // here too; it's a Settings preference now — see AiModelPicker.
-export default function InstructionsModal({ value, isImpl, onClose, onSave }: Props) {
+export default function InstructionsModal({ value, kind, onClose, onSave }: Props) {
   const [draft, setDraft] = useState(value)
   const [tab, setTab] = useState<'write' | 'preview'>('write')
   const presets = useMemo(() => loadPresets(), [])
-  const [presetPick, setPresetPick] = useState(() => presets.find(p => p.kind === (isImpl ? 'code' : 'text'))?.id ?? presets[0]?.id ?? '')
+  const [presetPick, setPresetPick] = useState(() => presets.find(p => p.kind === kind)?.id ?? presets[0]?.id ?? '')
 
   const handleLoadPreset = (id: string) => {
     setPresetPick(id)

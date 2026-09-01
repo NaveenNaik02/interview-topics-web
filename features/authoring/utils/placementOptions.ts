@@ -1,4 +1,4 @@
-import type { TopicGroup, SectionMeta } from '@/lib/topics';
+import { isCodeOutputSection, type TopicGroup, type SectionMeta } from '@/lib/topics';
 import {
   PENDING_GROUP_SLUG,
   PENDING_SECTION_KEY,
@@ -61,12 +61,14 @@ export const buildPlacementOptions = (
     };
   }
 
-  const sectionOptions: PlacementOption[] = (group?.sections ?? []).map(
-    (s) => ({
+  // The code-output subtopic is never a placement target here: it takes code
+  // questions only, authored through CodeQuestionModal.
+  const sectionOptions: PlacementOption[] = (group?.sections ?? [])
+    .filter((s) => !isCodeOutputSection(s))
+    .map((s) => ({
       value: sectionKey(s),
       label: s.label,
-    }),
-  );
+    }));
   if (pendingSubtopic) {
     sectionOptions.push(newOption(PENDING_SECTION_KEY, pendingSubtopic.label));
   }

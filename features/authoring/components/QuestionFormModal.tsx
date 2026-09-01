@@ -18,6 +18,7 @@ import InstructionsModal from './InstructionsModal';
 import { PlacementPicker } from './PlacementPicker';
 import { QuestionField } from './QuestionField';
 import { AutoRunBanner } from './AutoRunBanner';
+import { DraftChips } from './DraftChips';
 import { useAuthoring, useAuthoringApi } from '../store/authoringStore';
 import { useTypewriterBridge } from '../store/useTypewriterBridge';
 import { PRIORITY_OPTIONS, LANG_OPTIONS } from '../types';
@@ -287,22 +288,11 @@ export const QuestionFormModal = () => {
               }
               belowTabs={
                 <>
-                  {answerVersions.length >= 1 && (
-                    <div className="aq-version-row">
-                      <span className="aq-version-label">Drafts:</span>
-                      {answerVersions.map((v) => (
-                        <button
-                          type="button"
-                          key={v.id}
-                          className={`aq-version-chip ${activeVersionId === v.id ? 'active' : ''}`}
-                          onClick={() => selectVersion(v)}
-                          title={v.text.slice(0, 140)}
-                        >
-                          {v.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                  <DraftChips
+                    versions={answerVersions}
+                    activeId={activeVersionId}
+                    onSelect={selectVersion}
+                  />
                   {answerState === 'error' && answerError && (
                     <div className="aq-gen-error">{answerError}</div>
                   )}
@@ -330,7 +320,7 @@ export const QuestionFormModal = () => {
           {showInstructions && (
             <InstructionsModal
               value={instructions}
-              isImpl={isImpl}
+              kind={isImpl ? 'code' : 'text'}
               onClose={() => setShowInstructions(false)}
               onSave={(v) => {
                 setInstructions(v);

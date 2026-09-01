@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { X, Search, Check } from 'lucide-react'
-import type { TopicGroup, SectionMeta } from '@/lib/topics'
+import { isCodeOutputSection, type TopicGroup, type SectionMeta } from '@/lib/topics'
 import { moveQuestion } from '@/lib/actions/questions'
 
 interface Props {
@@ -34,7 +34,10 @@ export default function MoveQuestionModal({ groups, questionId, label, currentSe
   const filteredGroups = groups
     .map((g) => ({
       group: g,
-      sections: g.sections.filter((s) => !q || g.groupName.toLowerCase().includes(q) || s.label.toLowerCase().includes(q)),
+      // Code-output subtopics are excluded as destinations — they hold code
+      // questions only, and moveQuestion doesn't add the snippet a row needs
+      // to render as one.
+      sections: g.sections.filter((s) => !isCodeOutputSection(s) && (!q || g.groupName.toLowerCase().includes(q) || s.label.toLowerCase().includes(q))),
     }))
     .filter((g) => g.sections.length > 0)
 

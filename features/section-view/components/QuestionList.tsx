@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { Code2 } from 'lucide-react';
 import { useAppStore } from '@/lib/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
 import QuestionItem, {
@@ -18,15 +19,25 @@ import { useSectionDrag } from '../hooks';
 import {
   sectionUrl,
   findGroupForSection,
+  isCodeOutputSection,
   type SectionMeta,
 } from '@/lib/topics';
 import type { ParsedQuestion } from '@/lib/parser';
 import type { PriorityLevel } from '@/lib/offlineSync';
-import type { EditingQuestion } from '@/features/authoring';
+import type {
+  EditingCodeQuestion,
+  EditingQuestion,
+} from '@/features/authoring';
 import { canManage } from '../canManage';
 
 const EditQuestionModal = dynamic(
   () => import('@/features/authoring').then((m) => m.EditQuestionModal),
+  {
+    ssr: false,
+  },
+);
+const CodeQuestionModal = dynamic(
+  () => import('@/features/authoring').then((m) => m.CodeQuestionModal),
   {
     ssr: false,
   },
@@ -59,8 +70,16 @@ export default function QuestionList({
 
   // Internal component states for tracking open question, editor/mover modals, and status toasts
   const [openId, setOpenId] = useState<string | null>(null);
+  // Code-output rows are the snippet itself, so the whole section starts
+  // expanded and clicking collapses — tracking what's *closed* keeps newly
+  // added questions open without reseeding from the list.
+  const codeSection = isCodeOutputSection(section);
+  const [closedIds, setClosedIds] = useState<ReadonlySet<string>>(new Set());
   const [editingQuestion, setEditingQuestion] =
     useState<EditingQuestion | null>(null);
+  const [editingCode, setEditingCode] = useState<EditingCodeQuestion | null>(
+    null,
+  );
   const [movingQuestion, setMovingQuestion] = useState<{
     id: string;
     label: string;
@@ -167,8 +186,9 @@ export default function QuestionList({
                 key={q.id}
                 id={q.id}
                 title={q.title}
+                icon={q.code ? <Code2 size={14} /> : undefined}
                 isDone={isDone}
-                isOpen={openId === q.id}
+                isOpen={codeSection ? !closedIds.has(q.id) : openId === q.id}
                 isSelected={selectedIds.has(q.id)}
                 onToggleSelect={
                   selectMode && manageable ? () => toggleSelected(q.id) : undefined
@@ -177,7 +197,15 @@ export default function QuestionList({
                 reorderable={reorderable}
                 onHandlePointerDown={handlePointerDown(q.id)}
                 onToggleOpen={() => {
-                  setOpenId(openId === q.id ? null : q.id);
+                  if (!codeSection) {
+                    setOpenId(openId === q.id ? null : q.id);
+                    return;
+                  }
+                  setClosedIds((prev) => {
+                    const next = new Set(prev);
+                    if (!next.delete(q.id)) next.add(q.id);
+                    return next;
+                  });
                 }}
                 onToggleDone={() => {
                   toggle(q.id);
@@ -199,6 +227,18 @@ export default function QuestionList({
                       onEdit={
                         manageable
                           ? async () => {
+                              if (q.code) {
+                                setEditingCode({
+                                  id: q.id,
+                                  title: q.title,
+                                  lang: q.lang ?? null,
+                                  code: q.code,
+                                  output: q.output ?? null,
+                                  markdown: q.markdown ?? '',
+                                  priority,
+                                });
+                                return;
+                              }
                               const markdown =
                                 q.markdown ||
                                 (
@@ -274,6 +314,18 @@ export default function QuestionList({
         <SaveToast
           title="Set aside"
           detail="Find it in Inbox whenever you're ready."
+        />
+      )}
+
+      {editingCode && (
+        <CodeQuestionModal
+          section={section}
+          editing={editingCode}
+          onClose={() => setEditingCode(null)}
+          onSaved={() => {
+            setEditingCode(null);
+            router.refresh();
+          }}
         />
       )}
 

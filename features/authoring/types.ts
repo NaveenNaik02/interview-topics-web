@@ -103,6 +103,26 @@ export interface EditQuestionModalProps {
   onSaved: (question: ParsedQuestion, section: SectionMeta) => void;
 }
 
+export interface EditingCodeQuestion {
+  id: string;
+  title: string;
+  lang: string | null;
+  code: string;
+  output: string | null;
+  markdown: string;
+  priority: PriorityLevel | null;
+}
+
+export interface CodeQuestionModalProps {
+  // Always the code-output subtopic the modal was opened from — there's no
+  // topic/subtopic picker, so this is the only placement it can write to.
+  section: SectionMeta;
+  // Set when editing an existing code question rather than adding one.
+  editing?: EditingCodeQuestion;
+  onClose: () => void;
+  onSaved: (question: ParsedQuestion, section: SectionMeta) => void;
+}
+
 export interface AnswerVersion {
   id: string;
   label: string;

@@ -13,6 +13,20 @@ export interface TopicGroup {
   custom?: boolean  // true if this row lives in the `topic_groups` table (user-added), not the static curriculum below — only custom groups can be deleted
 }
 
+// A topic's code-output subtopic is an ordinary `sections` row created from
+// Add Subtopic's toggle, but its `file` is always this reserved slug rather
+// than one derived from the name the user typed. The underscore is
+// deliberate: slugify() collapses every non-alphanumeric character to "-", so
+// no ordinary subtopic can ever produce it — it can't collide with the
+// pre-existing "output-questions" sections, which stay ordinary subtopics.
+// sections' primary key is (topic, file), so this also caps a topic at one.
+export const CODE_OUTPUT_FILE = 'code_output'
+export const CODE_OUTPUT_LABEL = 'Code Output'
+
+export function isCodeOutputSection(section: SectionMeta): boolean {
+  return section.file === CODE_OUTPUT_FILE
+}
+
 export const TOPIC_GROUPS: TopicGroup[] = [
   {
     groupName: 'JavaScript',

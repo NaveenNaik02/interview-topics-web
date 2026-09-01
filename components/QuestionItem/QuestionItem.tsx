@@ -22,6 +22,9 @@ interface Props {
   onHandlePointerDown?: (e: React.PointerEvent) => void;
   // Rendered under the title (e.g. <QuestionCrumb /> for cross-section lists).
   subtitle?: React.ReactNode;
+  // Rendered inline before the title — marks the row's kind at a glance
+  // (e.g. the code tag on a code-output question).
+  icon?: React.ReactNode;
   // Rendered in the row's action slot (e.g. <StarButton /> + <RowActions />)
   // — callers compose whatever actions make sense for their view instead of
   // this component knowing about star/edit/move/delete/priority itself.
@@ -45,6 +48,7 @@ export default function QuestionItem({
   onToggleSelect,
   onHandlePointerDown,
   subtitle,
+  icon,
   actions,
   children,
 }: Props) {
@@ -96,17 +100,17 @@ export default function QuestionItem({
         </div>
         {subtitle ? (
           <div className="q-body-col">
-            <span
-              className="q-text"
-              dangerouslySetInnerHTML={{ __html: title }}
-            />
+            <span className={`q-text ${icon ? 'q-text-icon' : ''}`}>
+              {icon}
+              <span dangerouslySetInnerHTML={{ __html: title }} />
+            </span>
             {subtitle}
           </div>
         ) : (
-          <span
-            className="q-text"
-            dangerouslySetInnerHTML={{ __html: title }}
-          />
+          <span className={`q-text ${icon ? 'q-text-icon' : ''}`}>
+            {icon}
+            <span dangerouslySetInnerHTML={{ __html: title }} />
+          </span>
         )}
         {actions && <div className="q-actions">{actions}</div>}
       </div>

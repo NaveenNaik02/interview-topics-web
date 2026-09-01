@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { Plus } from 'lucide-react'
-import { findSection, sectionUrl } from '@/lib/topics'
+import { findSection, isCodeOutputSection, sectionUrl } from '@/lib/topics'
 import { useAppStore } from '@/lib/stores/appStore';
 import { useFabDrag } from '@/lib/useFabDrag'
 
@@ -15,6 +15,10 @@ const AddQuestionModal = dynamic(
   { ssr: false },
 )
 const AddTopicModal = dynamic(() => import('./AddTopicModal'), { ssr: false })
+const CodeQuestionModal = dynamic(
+  () => import('@/features/authoring').then((m) => m.CodeQuestionModal),
+  { ssr: false },
+)
 
 export default function AddQuestionFab() {
   const pathname = usePathname()
@@ -53,6 +57,15 @@ export default function AddQuestionFab() {
               } else {
                 router.refresh()
               }
+            }}
+          />
+        ) : currentSection && isCodeOutputSection(currentSection) ? (
+          <CodeQuestionModal
+            section={currentSection}
+            onClose={() => setOpen(false)}
+            onSaved={() => {
+              setOpen(false)
+              router.refresh()
             }}
           />
         ) : (

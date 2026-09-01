@@ -13,6 +13,10 @@ export interface ParsedQuestion {
   lang?: string | null;
   tags?: string | null;
   problem?: string | null;
+  // Set only on code-output questions — `code` is the discriminator, output
+  // and the explanation (bodyHtml) are both optional on one.
+  code?: string | null;
+  output?: string | null;
   starred?: boolean;
   greyZone?: boolean;
   priority?: PriorityLevel | null;
@@ -53,7 +57,7 @@ export async function parseSection(
   const { data } = await supabase
     .from('questions')
     .select(
-      'id, number, title, body_html, markdown, created_by, lang, tags, problem, starred, grey_zone, priority',
+      'id, number, title, body_html, markdown, created_by, lang, tags, problem, code, output, starred, grey_zone, priority',
     )
     .eq('topic', section.topic)
     .eq('file', section.file)
@@ -68,6 +72,8 @@ export async function parseSection(
     lang: r.lang,
     tags: r.tags,
     problem: r.problem,
+    code: r.code,
+    output: r.output,
     starred: r.starred,
     greyZone: r.grey_zone,
     priority: r.priority,

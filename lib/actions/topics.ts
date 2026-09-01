@@ -6,6 +6,7 @@ import { getAllGroups } from '@/lib/topicsData';
 import {
   slugify,
   uniqueSlug,
+  CODE_OUTPUT_FILE,
   type TopicGroup,
   type SectionMeta,
 } from '@/lib/topics';
@@ -61,6 +62,9 @@ export async function addTopicGroup(
 export interface AddSectionInput {
   groupSlug: string;
   label: string;
+  // Makes this the topic's code-output subtopic — it holds code snippets with
+  // a collapsed output/explanation instead of a regular question list.
+  isCode?: boolean;
 }
 
 // Adds a subtopic to an existing (static or previously-added) topic group.
@@ -83,7 +87,12 @@ export async function addSection(
   const takenFiles = new Set(
     group.sections.filter((s) => s.topic === topic).map((s) => s.file),
   );
-  const file = uniqueSlug(slugify(label), takenFiles);
+  // A code-output subtopic keeps the label the user typed but never derives
+  // its slug from it — see CODE_OUTPUT_FILE. One per topic falls out of the
+  // (topic, file) primary key, so the insert is the check.
+  const file = input.isCode
+    ? CODE_OUTPUT_FILE
+    : uniqueSlug(slugify(label), takenFiles);
 
   const { error } = await supabase.from('sections').insert({
     topic,
@@ -92,7 +101,11 @@ export async function addSection(
     group_slug: group.slug,
     created_by: user.id,
   });
-  if (error) throw error;
+  if (error) {
+    if (input.isCode && error.code === '23505')
+      throw new Error('This topic already has a code-output subtopic');
+    throw error;
+  }
 
   revalidatePath('/');
   revalidatePath(`/${group.slug}`);

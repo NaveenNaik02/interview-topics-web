@@ -14,7 +14,7 @@ export interface InstructionPreset {
   name: string
   text: string
   protected?: boolean
-  kind?: 'text' | 'code' | 'suggestion' | 'problem'
+  kind?: 'text' | 'code' | 'suggestion' | 'problem' | 'code-explanation'
 }
 
 const PRESETS_KEY = 'prep-tracker:ai-instruction-presets'
@@ -24,6 +24,7 @@ const DEFAULT_TEXT_PRESET_ID = 'default-text'
 const DEFAULT_CODE_PRESET_ID = 'default-code'
 const DEFAULT_SUGGESTION_PRESET_ID = 'default-suggestion'
 const DEFAULT_PROBLEM_PRESET_ID = 'default-problem'
+const DEFAULT_CODE_EXPLANATION_PRESET_ID = 'default-code-explanation'
 
 const DEFAULT_TEXT_INSTRUCTIONS = [
   'Lead with a bold key term or topic name and a one-line definition in the same sentence, then expand with bullet points written as complete narrative sentences (not fragments). This is the default format.',
@@ -43,18 +44,24 @@ const DEFAULT_SUGGESTION_INSTRUCTIONS = 'If a draft question is already provided
 
 const DEFAULT_PROBLEM_INSTRUCTIONS = "Keep it to 1-3 sentences of plain prose, name the function/signature if relevant, and don't restate the question verbatim."
 
+// Governs the code-output subtopic's "Generate" on the Explanation field.
+// Kept here rather than hardcoded in generateCodeOutput.ts so editing it in
+// Settings actually changes what the model is told.
+const DEFAULT_CODE_EXPLANATION_INSTRUCTIONS = 'Use ## for section heading(s) if useful, **bold** for key terms, short paragraphs. Keep it focused on the mechanism (evaluation order, scoping, coercion, async timing, etc.), not a restatement of the code.'
+
 export const DEFAULT_PRESETS: InstructionPreset[] = [
   { id: DEFAULT_TEXT_PRESET_ID, name: 'Detailed explanation', text: DEFAULT_TEXT_INSTRUCTIONS, protected: true, kind: 'text' },
   { id: DEFAULT_CODE_PRESET_ID, name: 'Code snippet only', text: DEFAULT_CODE_INSTRUCTIONS, protected: true, kind: 'code' },
   { id: DEFAULT_SUGGESTION_PRESET_ID, name: 'Question suggestion', text: DEFAULT_SUGGESTION_INSTRUCTIONS, protected: true, kind: 'suggestion' },
   { id: DEFAULT_PROBLEM_PRESET_ID, name: 'Implementation problem statement', text: DEFAULT_PROBLEM_INSTRUCTIONS, protected: true, kind: 'problem' },
+  { id: DEFAULT_CODE_EXPLANATION_PRESET_ID, name: 'Code output explanation', text: DEFAULT_CODE_EXPLANATION_INSTRUCTIONS, protected: true, kind: 'code-explanation' },
 ]
 
 export function presetUid(): string {
   return `preset_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`
 }
 
-// Ensures all four protected kind-tagged presets exist, for lists saved
+// Ensures every protected kind-tagged preset exists, for lists saved
 // before one of them was introduced — prepends/appends whichever is missing
 // and backfills a default's text if it was ever saved blank. Safe to call on
 // an already-migrated list (no-op).
@@ -64,13 +71,16 @@ export function migratePresets(list: InstructionPreset[]): InstructionPreset[] {
   const hasCode = next.some(p => p.id === DEFAULT_CODE_PRESET_ID)
   const hasSuggestion = next.some(p => p.id === DEFAULT_SUGGESTION_PRESET_ID)
   const hasProblem = next.some(p => p.id === DEFAULT_PROBLEM_PRESET_ID)
+  const hasCodeExplanation = next.some(p => p.id === DEFAULT_CODE_EXPLANATION_PRESET_ID)
   if (!hasText) next = [DEFAULT_PRESETS[0], ...next]
   if (!hasCode) next = [...next, DEFAULT_PRESETS[1]]
   if (!hasSuggestion) next = [...next, DEFAULT_PRESETS[2]]
   if (!hasProblem) next = [...next, DEFAULT_PRESETS[3]]
+  if (!hasCodeExplanation) next = [...next, DEFAULT_PRESETS[4]]
   next = next.map(p => (p.id === DEFAULT_CODE_PRESET_ID && !p.text.trim() ? { ...p, text: DEFAULT_CODE_INSTRUCTIONS } : p))
   next = next.map(p => (p.id === DEFAULT_SUGGESTION_PRESET_ID && !p.text.trim() ? { ...p, text: DEFAULT_SUGGESTION_INSTRUCTIONS } : p))
   next = next.map(p => (p.id === DEFAULT_PROBLEM_PRESET_ID && !p.text.trim() ? { ...p, text: DEFAULT_PROBLEM_INSTRUCTIONS } : p))
+  next = next.map(p => (p.id === DEFAULT_CODE_EXPLANATION_PRESET_ID && !p.text.trim() ? { ...p, text: DEFAULT_CODE_EXPLANATION_INSTRUCTIONS } : p))
   return next
 }
 
@@ -119,4 +129,8 @@ export function getSuggestionInstructionText(): string {
 
 export function getProblemInstructionText(): string {
   return loadPresets().find(p => p.kind === 'problem')?.text || ''
+}
+
+export function getCodeExplanationInstructionText(): string {
+  return loadPresets().find(p => p.kind === 'code-explanation')?.text || ''
 }

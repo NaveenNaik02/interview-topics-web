@@ -1497,6 +1497,13 @@ mark {
 .aq-version-chip:hover {
   filter: brightness(0.97);
 }
+.aq-version-chip:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.aq-version-chip:disabled:hover {
+  filter: none;
+}
 .aq-version-chip.active {
   background: var(--accent-soft);
   color: var(--accent-text);
@@ -5929,4 +5936,72 @@ div.drag-shadow.drag-shadow {
 .aq-dup-action-btn:hover {
   opacity: 1;
   background: color-mix(in oklch, currentColor 10%, transparent);
+}
+
+/* Code-output questions (the reserved `code_output` subtopic) — the snippet
+   renders open in the shared .q-code-card, with output and explanation behind
+   collapsed disclosures so nothing spoils the answer. */
+.q-body pre.qc-code {
+  margin: 0;
+  border-radius: 0;
+  padding: 14px;
+  overflow: auto;
+  background: #1c1a16;
+  color: #e8e2d4;
+  font-family: var(--f-mono);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.qc-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: var(--s-3);
+  padding: 9px 13px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elev);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.qc-toggle:hover {
+  border-color: var(--accent);
+}
+.qc-toggle svg {
+  transition: transform 0.16s ease;
+  color: var(--text-subtle);
+}
+.qc-toggle.open svg {
+  transform: rotate(180deg);
+}
+.q-body pre.qc-output {
+  margin: var(--s-2) 0 0;
+  padding: 12px 14px;
+  border: 1px solid #322e26;
+  border-radius: var(--radius-sm);
+  background: #141210;
+  color: #8fd48a;
+  font-family: var(--f-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+.qc-explain {
+  margin-top: var(--s-2);
+  padding: 13px 15px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.q-text-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.q-text-icon > svg {
+  flex-shrink: 0;
+  color: var(--text-subtle);
 }
