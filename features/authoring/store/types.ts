@@ -25,6 +25,7 @@ export interface AuthoringInit {
   // Starts the auto-run chain as soon as the modal opens.
   autoRun?: boolean;
   onDiscard?: () => void;
+  onDeleted?: (id: string) => void;
   onSubmit: (input: QuestionInput, section: SectionMeta) => Promise<void>;
   onClose: () => void;
   groups: TopicGroup[];
@@ -40,6 +41,7 @@ export interface ConfigSlice {
   onSubmit: AuthoringInit['onSubmit'];
   onClose: () => void;
   onDiscard?: () => void;
+  onDeleted?: (id: string) => void;
 }
 
 export interface DraftSlice {

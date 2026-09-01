@@ -692,6 +692,10 @@ export default function PriorityMixClient({
         <EditQuestionModal
           editing={editingQuestion}
           onClose={() => setEditingQuestion(null)}
+          onDeleted={(id) => {
+            setEditingQuestion(null);
+            remove(id);
+          }}
           onSaved={() => {
             setEditingQuestion(null);
             router.refresh();

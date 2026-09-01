@@ -281,6 +281,10 @@ export default function QuestionList({
         <EditQuestionModal
           editing={editingQuestion}
           onClose={() => setEditingQuestion(null)}
+          onDeleted={(id) => {
+            setEditingQuestion(null);
+            remove(id);
+          }}
           onSaved={(question, newSection) => {
             setEditingQuestion(null);
             handleMoved(editingQuestion.id, question.id, newSection);

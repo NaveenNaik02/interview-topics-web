@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, type RefObject } from 'react';
-import { useRouter } from 'next/navigation';
+import { type RefObject } from 'react';
 import {
   Sparkles,
   RefreshCw,
@@ -9,7 +8,6 @@ import {
   CheckCircle2,
   Trash2,
 } from 'lucide-react';
-import { deleteQuestion } from '@/lib/actions/questions';
 import { useAuthoring, usePlacementView } from '../store/authoringStore';
 
 interface Props {
@@ -42,23 +40,7 @@ export const QuestionField = ({ inputRef }: Props) => {
   // Only an edit has a saved question to delete; an Add flow's Cancel is
   // already the way out.
   const excludeQuestionId = useAuthoring((s) => s.excludeQuestionId);
-  const onClose = useAuthoring((s) => s.onClose);
-  const router = useRouter();
-  const [deleteState, setDeleteState] = useState<
-    'idle' | 'deleting' | 'error'
-  >('idle');
-
-  const deleteCurrent = async () => {
-    setDeleteState('deleting');
-    try {
-      await deleteQuestion(excludeQuestionId!);
-    } catch {
-      setDeleteState('error');
-      return;
-    }
-    router.refresh();
-    onClose();
-  };
+  const onDeleted = useAuthoring((s) => s.onDeleted);
 
   const canRevert = !!originalTitle && title !== originalTitle;
   const canGenerateProblem =
@@ -176,24 +158,15 @@ export const QuestionField = ({ inputRef }: Props) => {
             {dupResult.reasoning && (
               <p className="aq-suggest-reason">{dupResult.reasoning}</p>
             )}
-            {dupResult.isDuplicate && excludeQuestionId && (
+            {dupResult.isDuplicate && excludeQuestionId && onDeleted && (
               <div className="aq-dup-actions">
                 <button
                   type="button"
                   className="aq-dup-action-btn"
-                  onClick={deleteCurrent}
-                  disabled={deleteState === 'deleting'}
+                  onClick={() => onDeleted(excludeQuestionId)}
                 >
-                  <Trash2 size={12.5} />{' '}
-                  {deleteState === 'deleting'
-                    ? 'Deleting…'
-                    : 'Delete this question'}
+                  <Trash2 size={12.5} /> Delete this question
                 </button>
-              </div>
-            )}
-            {deleteState === 'error' && (
-              <div className="aq-gen-error">
-                Couldn&apos;t delete — try again.
               </div>
             )}
             {/* Auto-run stops here rather than guessing; these two are how it

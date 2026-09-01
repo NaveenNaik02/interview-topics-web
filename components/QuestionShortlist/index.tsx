@@ -14,6 +14,7 @@ import ShortlistList, { type ShortlistRowData } from './ShortlistList';
 import { EditQuestionModal, type EditingQuestion } from '@/features/authoring';
 import MoveQuestionModal from '@/components/MoveQuestionModal';
 import SaveToast from '@/components/SaveToast';
+import { useDeleteToast } from '@/components/useDeleteToast';
 import { htmlToMarkdown } from '@/lib/htmlToMarkdown';
 
 interface Props {
@@ -33,6 +34,7 @@ export const QuestionShortlist = ({ questions, flag, onRemove }: Props) => {
   const appendSetAsideItem = useAppStore((s) => s.appendSetAsideItem);
   const groups = useAppStore((s) => s.groups);
   const router = useRouter();
+  const { remove, toast: deleteToast } = useDeleteToast();
   const [editingQuestion, setEditingQuestion] =
     useState<EditingQuestion | null>(null);
   const [movingQuestion, setMovingQuestion] = useState<{
@@ -81,6 +83,10 @@ export const QuestionShortlist = ({ questions, flag, onRemove }: Props) => {
         <EditQuestionModal
           editing={editingQuestion}
           onClose={() => setEditingQuestion(null)}
+          onDeleted={(id) => {
+            setEditingQuestion(null);
+            remove(id);
+          }}
           onSaved={() => {
             setEditingQuestion(null);
             router.refresh();
@@ -111,6 +117,7 @@ export const QuestionShortlist = ({ questions, flag, onRemove }: Props) => {
         />
       )}
 
+      {deleteToast}
       {moveToast && <SaveToast title="Moved" detail={moveToast} />}
       {asideToast && (
         <SaveToast

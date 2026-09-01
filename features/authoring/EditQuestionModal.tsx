@@ -12,6 +12,7 @@ export const EditQuestionModal = ({
   editing,
   onClose,
   onSaved,
+  onDeleted,
 }: EditQuestionModalProps) => (
   <AuthoringProvider
     heading="Edit question"
@@ -32,6 +33,7 @@ export const EditQuestionModal = ({
       onSaved(await updateQuestion(editing.id, input), section);
     }}
     onClose={onClose}
+    onDeleted={onDeleted}
   >
     <QuestionFormModal />
   </AuthoringProvider>

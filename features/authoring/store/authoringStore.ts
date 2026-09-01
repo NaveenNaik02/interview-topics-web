@@ -27,6 +27,7 @@ export const createAuthoringStore = (init: AuthoringInit) => {
     onSubmit: init.onSubmit,
     onClose: init.onClose,
     onDiscard: init.onDiscard,
+    onDeleted: init.onDeleted,
   }));
 };
 

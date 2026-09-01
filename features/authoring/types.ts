@@ -60,6 +60,10 @@ export interface QuestionFormProps {
   // staged new topic/subtopic itself, right before calling this.
   onSubmit: (input: QuestionInput, section: SectionMeta) => Promise<void>;
   onClose: () => void;
+  // Deleting the question being edited, from the duplicate-check card. The
+  // caller owns it because the modal closes with it — a toast rendered in
+  // here would unmount before it was ever seen.
+  onDeleted?: (id: string) => void;
 }
 
 export interface AddQuestionModalProps {
@@ -95,6 +99,7 @@ export interface AddQuestionModalProps {
 export interface EditQuestionModalProps {
   editing: EditingQuestion;
   onClose: () => void;
+  onDeleted: (id: string) => void;
   onSaved: (question: ParsedQuestion, section: SectionMeta) => void;
 }
 
