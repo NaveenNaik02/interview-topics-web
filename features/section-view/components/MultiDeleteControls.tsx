@@ -7,7 +7,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '@/lib/stores/appStore';
 import { canManage } from '../canManage';
 import { isVisible } from '../hooks/useSectionFilters';
-import type { ParsedQuestion } from '@/lib/parser';
+import type { ParsedQuestion } from '@/lib/content/parser';
 import { useDeleteToast } from '@/components/useDeleteToast';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import * as Icon from '@/components/Icons';

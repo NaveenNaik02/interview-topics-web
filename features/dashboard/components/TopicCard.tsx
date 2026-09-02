@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { TopicGroup, sectionUrl } from '@/lib/topics';
+import { TopicGroup, sectionUrl } from '@/lib/content/topics';
 import { Icon } from '@/components/SidebarIcons';
 import TopicCardProgress from './TopicCardProgress';
 

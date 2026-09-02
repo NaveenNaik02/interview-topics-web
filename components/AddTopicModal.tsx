@@ -11,7 +11,7 @@ import {
   CODE_OUTPUT_LABEL,
   type TopicGroup,
   type SectionMeta,
-} from '@/lib/topics';
+} from '@/lib/content/topics';
 import { useTypewriter } from '@/lib/hooks';
 import AqSelect from './AqSelect';
 

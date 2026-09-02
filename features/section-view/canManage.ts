@@ -1,5 +1,5 @@
 import type { User } from '@supabase/supabase-js';
-import type { ParsedQuestion } from '@/lib/parser';
+import type { ParsedQuestion } from '@/lib/content/parser';
 
 // Edit/move/delete are the author's own — plus admins, who have the matching
 // `_admin` RLS policies on questions.

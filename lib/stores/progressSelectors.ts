@@ -1,4 +1,4 @@
-import type { TopicGroup } from '@/lib/topics'
+import type { TopicGroup } from '@/lib/content/topics'
 import type { PriorityLevel } from '@/lib/offlineSync'
 
 export interface ProgressStats {

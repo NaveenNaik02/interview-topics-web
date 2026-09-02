@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { Plus } from 'lucide-react'
-import { findSection, isCodeOutputSection, sectionUrl } from '@/lib/topics'
+import { findSection, isCodeOutputSection, sectionUrl } from '@/lib/content/topics'
 import { useAppStore } from '@/lib/stores/appStore';
 import { useFabDrag } from '@/lib/hooks'
 

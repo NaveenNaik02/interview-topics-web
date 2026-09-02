@@ -1,6 +1,6 @@
 import 'server-only';
 import { cache } from 'react';
-import { createClient } from './supabase/server';
+import { createClient } from '../supabase/server';
 import { type TopicGroup } from './topics';
 
 // Every account only ever sees topics/sections it created — RLS on

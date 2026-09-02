@@ -4,11 +4,11 @@ import { useState, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '@/lib/stores/appStore';
 import { computeSectionStats } from '@/lib/stores/progressSelectors';
-import { findSection } from '@/lib/topics';
+import { findSection } from '@/lib/content/topics';
 import { usePathname } from 'next/navigation';
 import * as Icon from '@/components/Icons';
 import BulkConfirmDialog from './BulkConfirmDialog';
-import type { ParsedQuestion } from '@/lib/parser';
+import type { ParsedQuestion } from '@/lib/content/parser';
 
 const EMPTY_ARRAY: ParsedQuestion[] = [];
 

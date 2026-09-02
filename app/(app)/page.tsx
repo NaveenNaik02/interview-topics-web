@@ -1,5 +1,5 @@
-import { getAllGroups } from '@/lib/topicsData';
-import { fetchAllCounts } from '@/lib/parser';
+import { getAllGroups } from '@/lib/content/topicsData';
+import { fetchAllCounts } from '@/lib/content/parser';
 import { Dashboard, DashboardEmptyState } from '@/features/dashboard';
 
 interface HomeProps {

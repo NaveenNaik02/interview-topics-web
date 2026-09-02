@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSearch } from '@/lib/context/SearchContext'
 import { useAppStore } from '@/lib/stores/appStore';
-import { findSection, findGroupForSection } from '@/lib/topics'
+import { findSection, findGroupForSection } from '@/lib/content/topics'
 
 // isSettings/isPriorityMix must be checked before the generic section lookup
 // below, since findSection(['settings']) etc. return null (they're not real

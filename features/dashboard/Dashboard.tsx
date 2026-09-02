@@ -1,4 +1,4 @@
-import { TopicGroup } from '@/lib/topics';
+import { TopicGroup } from '@/lib/content/topics';
 import {
   TopicCard,
   OverallProgressCard,

@@ -1,4 +1,4 @@
-import { isCodeOutputSection, type TopicGroup, type SectionMeta } from '@/lib/topics';
+import { isCodeOutputSection, type TopicGroup, type SectionMeta } from '@/lib/content/topics';
 import {
   PENDING_GROUP_SLUG,
   PENDING_SECTION_KEY,

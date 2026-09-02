@@ -199,7 +199,7 @@ async function count(client, table) {
   // Only 2 `sections` rows exist remotely — the static curriculum's subtopics
   // never got any. Derive the rest from the questions themselves so every
   // subtopic is reachable (broader than scripts/backfill-static-sections.js,
-  // which only knows lib/topics.ts's static list).
+  // which only knows lib/content/topics.ts's static list).
   const sectionByKey = new Map();
   for (const s of remoteSections) {
     sectionByKey.set(`${s.topic}/${s.file}`, {

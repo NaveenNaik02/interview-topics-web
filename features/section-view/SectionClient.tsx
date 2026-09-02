@@ -3,8 +3,8 @@
 import { useEffect } from 'react';
 import { useAppStore } from '@/lib/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
-import type { ParsedQuestion } from '@/lib/parser';
-import { type SectionMeta } from '@/lib/topics';
+import type { ParsedQuestion } from '@/lib/content/parser';
+import { type SectionMeta } from '@/lib/content/topics';
 import { useSectionFilters } from './hooks';
 import { SectionTitleHeader } from './components/SectionTitleHeader';
 import FilterSortToolbar from './components/FilterSortToolbar';

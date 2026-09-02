@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { X, Search, Check } from 'lucide-react'
-import { isCodeOutputSection, type TopicGroup, type SectionMeta } from '@/lib/topics'
+import { isCodeOutputSection, type TopicGroup, type SectionMeta } from '@/lib/content/topics'
 import { moveQuestion } from '@/lib/actions/questions'
 
 interface Props {

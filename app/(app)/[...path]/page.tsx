@@ -6,9 +6,9 @@ import {
   findGroupForSection,
   findPrevNextSections,
   sectionUrl,
-} from '@/lib/topics';
-import { getAllGroups } from '@/lib/topicsData';
-import { parseSection } from '@/lib/parser';
+} from '@/lib/content/topics';
+import { getAllGroups } from '@/lib/content/topicsData';
+import { parseSection } from '@/lib/content/parser';
 import { fetchInitialSectionOrder } from '@/lib/db/questionPositionServer';
 import { SectionClient } from '@/features/section-view';
 

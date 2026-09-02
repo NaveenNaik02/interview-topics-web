@@ -21,8 +21,8 @@ import {
   findGroupForSection,
   isCodeOutputSection,
   type SectionMeta,
-} from '@/lib/topics';
-import type { ParsedQuestion } from '@/lib/parser';
+} from '@/lib/content/topics';
+import type { ParsedQuestion } from '@/lib/content/parser';
 import type { PriorityLevel } from '@/lib/offlineSync';
 import type {
   EditingCodeQuestion,

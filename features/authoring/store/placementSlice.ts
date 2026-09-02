@@ -4,7 +4,7 @@ import {
   findGroupForSection,
   type SectionMeta,
   type TopicGroup,
-} from '@/lib/topics';
+} from '@/lib/content/topics';
 import { buildPlacementOptions, sectionKey } from '../utils/placementOptions';
 import {
   PENDING_GROUP_SLUG,

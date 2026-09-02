@@ -3,7 +3,7 @@ import type { SortMode } from '@/features/settings';
 import type { SectionQuestionsSlice } from '@/features/section-view/store/types';
 import type { Theme } from '@/lib/context/ThemeContext';
 import type { PriorityLevel } from '@/lib/offlineSync';
-import type { TopicGroup } from '@/lib/topics';
+import type { TopicGroup } from '@/lib/content/topics';
 import type { InstructionPreset } from '@/lib/instructionPresets';
 import type { InboxItem } from '@/features/inbox';
 import type { SetAsideItem } from '@/lib/db/setAside';

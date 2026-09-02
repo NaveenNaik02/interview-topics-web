@@ -5,11 +5,11 @@ import { useAppStore } from '@/lib/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
 import { usePathname } from 'next/navigation';
 import { computePriorityStats } from '@/lib/stores/progressSelectors';
-import { findSection } from '@/lib/topics';
+import { findSection } from '@/lib/content/topics';
 import * as Icon from '@/components/Icons';
 import type { PriorityFilterKey } from '../store/types';
 import type { PriorityLevel } from '@/lib/offlineSync';
-import type { ParsedQuestion } from '@/lib/parser';
+import type { ParsedQuestion } from '@/lib/content/parser';
 
 const EMPTY_ARRAY: ParsedQuestion[] = [];
 

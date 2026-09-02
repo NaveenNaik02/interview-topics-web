@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { SectionMeta, sectionUrl } from '@/lib/topics';
+import { SectionMeta, sectionUrl } from '@/lib/content/topics';
 import { useProgressStats } from '@/lib/hooks';
 import { useDrawer } from '@/lib/context/DrawerContext';
 import { Icon } from '@/components/SidebarIcons';

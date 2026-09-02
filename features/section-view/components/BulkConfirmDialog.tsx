@@ -4,8 +4,8 @@ import { usePathname } from 'next/navigation';
 import { useAppStore } from '@/lib/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
 import ConfirmDialog from '@/components/ConfirmDialog';
-import { findSection } from '@/lib/topics';
-import type { ParsedQuestion } from '@/lib/parser';
+import { findSection } from '@/lib/content/topics';
+import type { ParsedQuestion } from '@/lib/content/parser';
 
 const EMPTY_ARRAY: ParsedQuestion[] = [];
 

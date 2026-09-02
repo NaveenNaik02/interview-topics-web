@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getUser } from '@/lib/supabase/user';
-import { getAllGroups } from '@/lib/topicsData';
-import { findGroupForSection } from '@/lib/topics';
+import { getAllGroups } from '@/lib/content/topicsData';
+import { findGroupForSection } from '@/lib/content/topics';
 import { GreyZoneClient, fetchGreyZoneQuestions } from '@/features/grey-zone';
 import type { ShortlistQuestion } from '@/lib/db/shortlist';
 

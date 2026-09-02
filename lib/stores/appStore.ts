@@ -13,7 +13,7 @@ import { createOfflineSlice } from './slices/offlineSlice';
 import { createQuestionOrderSlice } from './slices/questionOrderSlice';
 import { createSectionQuestionsSlice } from '@/features/section-view/store/sectionQuestionsSlice';
 import { computeStats } from './progressSelectors';
-import type { TopicGroup } from '@/lib/topics';
+import type { TopicGroup } from '@/lib/content/topics';
 import type { AppState } from './types';
 
 export interface StoreInit {

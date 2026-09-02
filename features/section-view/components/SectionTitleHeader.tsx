@@ -3,8 +3,8 @@ import { usePathname } from 'next/navigation';
 import { useAppStore } from '@/lib/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
 import { computeSectionStats } from '@/lib/stores/progressSelectors';
-import { findSection, findGroupForSection } from '@/lib/topics';
-import type { ParsedQuestion } from '@/lib/parser';
+import { findSection, findGroupForSection } from '@/lib/content/topics';
+import type { ParsedQuestion } from '@/lib/content/parser';
 
 const EMPTY_ARRAY: ParsedQuestion[] = [];
 

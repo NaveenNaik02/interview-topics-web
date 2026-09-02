@@ -1,4 +1,4 @@
-import type { ParsedQuestion } from '@/lib/parser';
+import type { ParsedQuestion } from '@/lib/content/parser';
 import { CodeAnswer } from './CodeAnswer';
 import { PlainAnswer } from './PlainAnswer';
 import { SolutionRail } from './SolutionRail';

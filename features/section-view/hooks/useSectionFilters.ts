@@ -9,9 +9,9 @@ import {
 } from 'react';
 import { useAppStore } from '@/lib/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
-import type { ParsedQuestion } from '@/lib/parser';
+import type { ParsedQuestion } from '@/lib/content/parser';
 import type { PriorityLevel } from '@/lib/offlineSync';
-import type { SectionMeta } from '@/lib/topics';
+import type { SectionMeta } from '@/lib/content/topics';
 import type { PriorityFilterKey, StatusFilter } from '../store/types';
 import { computePriorityStats } from '@/lib/stores/progressSelectors';
 

@@ -1,4 +1,4 @@
-import type { SectionMeta, TopicGroup } from '@/lib/topics';
+import type { SectionMeta, TopicGroup } from '@/lib/content/topics';
 import type { PriorityLevel } from '@/lib/offlineSync';
 import type { AqModelId } from '@/lib/ai/models';
 import type { PlacementSuggestion } from '@/lib/ai/suggestPlacement';

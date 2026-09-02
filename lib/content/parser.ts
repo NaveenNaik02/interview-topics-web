@@ -1,7 +1,7 @@
 import 'server-only';
-import { createClient } from './supabase/server';
+import { createClient } from '../supabase/server';
 import type { SectionMeta } from './topics';
-import type { PriorityLevel } from './offlineSync';
+import type { PriorityLevel } from '../offlineSync';
 
 export interface ParsedQuestion {
   id: string;

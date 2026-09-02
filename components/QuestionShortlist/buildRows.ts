@@ -5,7 +5,7 @@ import {
   findGroupForSection,
   type SectionMeta,
   type TopicGroup,
-} from '@/lib/topics';
+} from '@/lib/content/topics';
 
 // One starred question plus everything derived from it (topic lookup, url,
 // permission check) — computed once, never inside a render map.

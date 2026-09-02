@@ -1,6 +1,6 @@
 'use strict';
 
-// One-time migration helper: the static curriculum's subtopics (lib/topics.ts
+// One-time migration helper: the static curriculum's subtopics (lib/content/topics.ts
 // TOPIC_GROUPS[].sections) never had corresponding rows in the `sections`
 // table — only a placeholder `topic_groups` row existed per topic (see
 // 20260717120000_seed_static_topic_groups.sql). Before
@@ -32,7 +32,7 @@ const { createClient } = require('@supabase/supabase-js');
     process.exit(1);
   }
 
-  const { TOPIC_GROUPS } = await import('../lib/topics.ts');
+  const { TOPIC_GROUPS } = await import('../lib/content/topics.ts');
   const supabase = createClient(url, serviceKey);
 
   const findUser = async (email) => {

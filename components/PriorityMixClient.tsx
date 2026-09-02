@@ -9,7 +9,7 @@ import {
   sectionUrl,
   findGroupForSection,
   type SectionMeta,
-} from '@/lib/topics';
+} from '@/lib/content/topics';
 import { useDeleteToast } from './useDeleteToast';
 import { setAsideQuestion } from '@/lib/actions/setAside';
 import {

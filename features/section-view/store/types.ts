@@ -1,5 +1,5 @@
-import type { ParsedQuestion } from '@/lib/parser';
-import type { SectionMeta } from '@/lib/topics';
+import type { ParsedQuestion } from '@/lib/content/parser';
+import type { SectionMeta } from '@/lib/content/topics';
 import type { PriorityLevel } from '@/lib/offlineSync';
 import type { SortMode } from '@/features/settings';
 

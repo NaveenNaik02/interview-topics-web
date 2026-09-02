@@ -6,9 +6,9 @@ import { marked } from 'marked';
 import DOMPurify from 'isomorphic-dompurify';
 import { createClient } from '@/lib/supabase/server';
 import { requireAuthor } from '@/lib/supabase/user';
-import { findSection, findGroupForSection } from '@/lib/topics';
-import { getAllGroups } from '@/lib/topicsData';
-import type { ParsedQuestion } from '@/lib/parser';
+import { findSection, findGroupForSection } from '@/lib/content/topics';
+import { getAllGroups } from '@/lib/content/topicsData';
+import type { ParsedQuestion } from '@/lib/content/parser';
 import type { PriorityLevel } from '@/lib/offlineSync';
 
 // Section pages are ISR-cached (`export const revalidate` in

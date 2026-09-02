@@ -1,7 +1,7 @@
 'use client';
 
 import { Trash2, Sparkles, BookOpen } from 'lucide-react';
-import { findGroupForSection, type TopicGroup } from '@/lib/topics';
+import { findGroupForSection, type TopicGroup } from '@/lib/content/topics';
 import type { SetAsideItem } from '@/lib/db/setAside';
 import { timeAgo } from './timeAgo';
 

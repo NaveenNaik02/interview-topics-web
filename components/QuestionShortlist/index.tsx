@@ -7,7 +7,7 @@ import {
   sectionUrl,
   findGroupForSection,
   type SectionMeta,
-} from '@/lib/topics';
+} from '@/lib/content/topics';
 import { setAsideQuestion } from '@/lib/actions/setAside';
 import type { ShortlistQuestion, ShortlistFlag } from '@/lib/db/shortlist';
 import ShortlistList, { type ShortlistRowData } from './ShortlistList';

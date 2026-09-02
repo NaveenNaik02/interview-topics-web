@@ -2,14 +2,14 @@
 
 import { revalidatePath } from 'next/cache';
 import { requireAuthor as requireAuthorUser } from '@/lib/supabase/user';
-import { getAllGroups } from '@/lib/topicsData';
+import { getAllGroups } from '@/lib/content/topicsData';
 import {
   slugify,
   uniqueSlug,
   CODE_OUTPUT_FILE,
   type TopicGroup,
   type SectionMeta,
-} from '@/lib/topics';
+} from '@/lib/content/topics';
 
 function requireAuthor(action: string) {
   return requireAuthorUser(`Sign in to ${action}`);

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { usePathname, useRouter } from 'next/navigation';
-import { TopicGroup, sectionUrl } from '@/lib/topics';
+import { TopicGroup, sectionUrl } from '@/lib/content/topics';
 import { useProgressStats } from '@/lib/hooks';
 import { Icon } from '@/components/SidebarIcons';
 import AddTopicModal from '@/components/AddTopicModal';

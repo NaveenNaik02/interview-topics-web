@@ -20,7 +20,7 @@ import {
   generateCodeExplanation,
 } from '@/lib/ai/generateCodeOutput';
 import { formatAnswer } from '@/lib/ai/formatAnswer';
-import { findGroupForSection, sectionUrl } from '@/lib/topics';
+import { findGroupForSection, sectionUrl } from '@/lib/content/topics';
 import MarkdownField from './components/MarkdownField';
 import InstructionsModal from './components/InstructionsModal';
 import { DraftChips } from './components/DraftChips';
