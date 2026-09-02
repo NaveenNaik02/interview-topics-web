@@ -1,4 +1,4 @@
-import type { createClient } from '@/lib/supabase/server';
+import type { createClient } from '../supabase/server';
 
 export type Theme = 'light' | 'dark' | 'sepia';
 

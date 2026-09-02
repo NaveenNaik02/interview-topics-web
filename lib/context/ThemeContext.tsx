@@ -7,7 +7,7 @@ import {
   useEffect,
   useCallback,
 } from 'react'
-import { type Theme, themeClass } from '../theme'
+import { type Theme, themeClass } from './theme'
 
 export type { Theme }
 
