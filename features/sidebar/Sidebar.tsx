@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useProgressStats } from '@/lib/useProgressStats';
+import { useProgressStats } from '@/lib/hooks';
 import { useAppStore } from '@/lib/stores/appStore';
 import { useDrawer } from '@/lib/context/DrawerContext';
 import { Icon } from '@/components/SidebarIcons';

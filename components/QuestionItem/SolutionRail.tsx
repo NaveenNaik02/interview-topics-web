@@ -27,7 +27,7 @@ export function SolutionRail({ q }: { q: ParsedQuestion }) {
   // reset by that update — dangerouslySetInnerHTML gets reapplied on it.
   useEffect(() => {
     let cancelled = false;
-    import('@/lib/highlight').then(({ highlightIn }) => {
+    import('./highlight').then(({ highlightIn }) => {
       if (!cancelled) highlightIn(ref.current);
     });
     return () => {

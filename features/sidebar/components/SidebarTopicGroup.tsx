@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { usePathname, useRouter } from 'next/navigation';
 import { TopicGroup, sectionUrl } from '@/lib/topics';
-import { useProgressStats } from '@/lib/useProgressStats';
+import { useProgressStats } from '@/lib/hooks';
 import { Icon } from '@/components/SidebarIcons';
 import AddTopicModal from '@/components/AddTopicModal';
 import { DeleteTarget } from '../hooks';

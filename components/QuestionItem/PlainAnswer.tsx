@@ -14,7 +14,7 @@ export function PlainAnswer({ q }: { q: ParsedQuestion }) {
 
   useEffect(() => {
     let cancelled = false;
-    import('@/lib/highlight').then(({ highlightIn }) => {
+    import('./highlight').then(({ highlightIn }) => {
       if (!cancelled) highlightIn(ref.current);
     });
     return () => {

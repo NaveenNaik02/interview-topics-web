@@ -7,7 +7,7 @@ import {
   AQ_MODEL_KEY,
   getSavedModel,
   type AqModelId,
-} from '@/lib/aiModels';
+} from '@/lib/ai/models';
 
 // Nothing outside this component writes the key, so there's nothing to
 // subscribe to — useSyncExternalStore is here for its server snapshot, which

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { SectionMeta, sectionUrl } from '@/lib/topics';
-import { useProgressStats } from '@/lib/useProgressStats';
+import { useProgressStats } from '@/lib/hooks';
 import { useDrawer } from '@/lib/context/DrawerContext';
 import { Icon } from '@/components/SidebarIcons';
 import { DeleteTarget } from '../hooks';

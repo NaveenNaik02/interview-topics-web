@@ -1,7 +1,7 @@
 'use client';
 
 import { Download, X } from 'lucide-react';
-import { useProgressStats } from '@/lib/useProgressStats';
+import { useProgressStats } from '@/lib/hooks';
 import { useAppStore } from '@/lib/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
 

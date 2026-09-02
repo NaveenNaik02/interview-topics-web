@@ -1,6 +1,6 @@
 'use client';
 
-import { useAppStore } from './stores/appStore';
+import { useAppStore } from '../stores/appStore';
 
 /**
  * Computed progress statistics. The store recomputes `stats` on every change

@@ -1,6 +1,11 @@
 import * as progressActions from './actions/progress';
 import * as questionFlagsActions from './actions/questionFlags';
 
+// Must match the same-named constants at the top of public/sw.js — a plain
+// script that can't import, so the two copies are kept in sync by hand.
+export const PAGES_CACHE_NAME = 'interview-pages-v2';
+export const ASSETS_CACHE_NAME = 'interview-assets-v2';
+
 export const OFFLINE_KEYS = {
   PROGRESS_CACHE: 'interview_progress_cache',
   PENDING_OPS: 'interview_pending_ops',

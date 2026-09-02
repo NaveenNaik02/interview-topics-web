@@ -5,12 +5,12 @@ const suggestPlacement = vi.fn();
 const checkDuplicateQuestion = vi.fn();
 const generateAnswer = vi.fn();
 
-vi.mock('@/lib/actions/generateQuestion', () => ({ generateQuestion }));
-vi.mock('@/lib/actions/suggestPlacement', () => ({ suggestPlacement }));
-vi.mock('@/lib/actions/checkDuplicate', () => ({ checkDuplicateQuestion }));
-vi.mock('@/lib/actions/generateAnswer', () => ({ generateAnswer }));
-vi.mock('@/lib/actions/generateProblem', () => ({ generateProblem: vi.fn() }));
-vi.mock('@/lib/actions/formatAnswer', () => ({ formatAnswer: vi.fn() }));
+vi.mock('@/lib/ai/generateQuestion', () => ({ generateQuestion }));
+vi.mock('@/lib/ai/suggestPlacement', () => ({ suggestPlacement }));
+vi.mock('@/lib/ai/checkDuplicate', () => ({ checkDuplicateQuestion }));
+vi.mock('@/lib/ai/generateAnswer', () => ({ generateAnswer }));
+vi.mock('@/lib/ai/generateProblem', () => ({ generateProblem: vi.fn() }));
+vi.mock('@/lib/ai/formatAnswer', () => ({ formatAnswer: vi.fn() }));
 vi.mock('@/lib/actions/topics', () => ({
   addTopicGroup: vi.fn(),
   addSection: vi.fn(),

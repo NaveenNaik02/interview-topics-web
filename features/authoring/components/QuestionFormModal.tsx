@@ -10,7 +10,7 @@ import {
   AlignLeft,
   Code2,
 } from 'lucide-react';
-import { AQ_MODELS } from '@/lib/aiModels';
+import { AQ_MODELS } from '@/lib/ai/models';
 import { loadPresets } from '@/lib/instructionPresets';
 import AqSelect from '@/components/AqSelect';
 import MarkdownField from './MarkdownField';

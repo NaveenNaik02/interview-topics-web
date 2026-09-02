@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic'
 import { Plus } from 'lucide-react'
 import { findSection, isCodeOutputSection, sectionUrl } from '@/lib/topics'
 import { useAppStore } from '@/lib/stores/appStore';
-import { useFabDrag } from '@/lib/useFabDrag'
+import { useFabDrag } from '@/lib/hooks'
 
 // Rarely opened relative to every other page view (Add Question/Topic pull in
 // marked + isomorphic-dompurify + AI action wiring) — load only when needed.

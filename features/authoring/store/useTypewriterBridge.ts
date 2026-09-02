@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useTypewriter } from '@/lib/useTypewriter';
+import { useTypewriter } from '@/lib/hooks';
 import { useAuthoring, useAuthoringApi } from './authoringStore';
 
 // The store parks AI results in `stream`; this plays them into the right

@@ -1,9 +1,8 @@
 'use server';
 
 import { requireAuthor } from '@/lib/supabase/user';
-import { AQ_MODELS, type AqModelId, AQ_THINKING } from '@/lib/aiModels';
-
-const DEFAULT_MODEL: AqModelId = AQ_MODELS[0].id;
+import { geminiJson } from './gemini';
+import { PROMPTS } from './prompts';
 
 export interface SuggestPlacementGroup {
   groupSlug: string;
@@ -60,67 +59,18 @@ export async function suggestPlacement(
 ): Promise<PlacementSuggestion> {
   await requireAuthor('Sign in to use AI placement');
 
-  const apiKey = process.env.FREE_GEM_API_KEY;
-  if (!apiKey) throw new Error('AI generation is not configured');
-
   const title = input.title.trim();
   if (title.length < 4) throw new Error('Write a question first');
 
-  const model = AQ_MODELS.some((m) => m.id === input.model)
-    ? (input.model as AqModelId)
-    : DEFAULT_MODEL;
-
-  const systemInstruction = [
-    'You place a new flashcard question into an existing curriculum tree of topics and subtopics for a developer interview-prep app.',
-    'Respond with ONLY minified JSON, no prose, matching exactly one of these shapes:',
-    '{"mode":"existing","groupSlug":"...","topic":"...","file":"...","reasoning":"..."}',
-    '{"mode":"new-subtopic","groupSlug":"...","label":"...","reasoning":"..."}',
-    '{"mode":"new-topic","topicName":"...","blurb":"...","label":"...","reasoning":"..."}',
-    'Prefer an existing subtopic if the question clearly fits there — copy its groupSlug/topic/file exactly from the tree below, never invent them.',
-    'Only propose a new subtopic if no existing subtopic fits, using the groupSlug of the best existing topic.',
-    'Only propose a new topic if no existing topic is a reasonable home at all.',
-    '"label" and "topicName" are display names shown in a picker, like the existing subtopic names in the tree (e.g. "Redux", "Scalability Basics") — Title Case words with spaces, never a slug or hyphenated string.',
-    'Keep reasoning under 12 words, no trailing period.',
-  ].join(' ');
-
-  const prompt = `Existing curriculum:\n${buildTree(input.groups)}\n\nNew question: "${title}"${
-    input.tags?.trim() ? `\nTags: ${input.tags.trim()}` : ''
-  }`;
-
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemInstruction }] },
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: {
-          thinkingConfig: AQ_THINKING,
-          responseMimeType: 'application/json',
-        },
-      }),
-    },
-  );
-
-  const body = await res.json();
-  if (!res.ok) {
-    throw new Error(
-      body?.error?.message ||
-        'Could not get a placement suggestion — try again.',
-    );
-  }
-
-  const text = body?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text)
-    throw new Error('Could not get a placement suggestion — try again.');
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text.trim().replace(/^```(json)?\s*|```\s*$/g, ''));
-  } catch {
-    throw new Error('Could not read the placement suggestion — try again.');
-  }
+  const parsed = await geminiJson({
+    system: PROMPTS.placement,
+    prompt: `Existing curriculum:\n${buildTree(input.groups)}\n\nNew question: "${title}"${
+      input.tags?.trim() ? `\nTags: ${input.tags.trim()}` : ''
+    }`,
+    model: input.model,
+    failure: 'Could not get a placement suggestion — try again.',
+    parseFailure: 'Could not read the placement suggestion — try again.',
+  });
 
   return validate(parsed, input.groups);
 }

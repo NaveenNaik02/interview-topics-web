@@ -1,6 +1,6 @@
 'use client';
 
-import { useProgressStats } from '@/lib/useProgressStats';
+import { useProgressStats } from '@/lib/hooks';
 import { TopicGroup, sectionUrl } from '@/lib/topics';
 
 interface Props {

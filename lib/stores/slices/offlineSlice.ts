@@ -1,7 +1,8 @@
 import type { StateCreator } from 'zustand';
 import { supabase } from '@/lib/supabase/client';
-import { PAGES_CACHE_NAME, ASSETS_CACHE_NAME } from '@/lib/swConstants';
 import {
+  PAGES_CACHE_NAME,
+  ASSETS_CACHE_NAME,
   getOfflineEnabled,
   setOfflineEnabled,
   setCachedProgress,

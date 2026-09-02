@@ -5,14 +5,14 @@ import { X, Github, Sparkles, Database, Loader2 } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '@/lib/stores/appStore';
 import { addTopicGroup, addSection } from '@/lib/actions/topics';
-import { generateTopicBlurb } from '@/lib/actions/generateBlurb';
+import { generateTopicBlurb } from '@/lib/ai/generateBlurb';
 import {
   isCodeOutputSection,
   CODE_OUTPUT_LABEL,
   type TopicGroup,
   type SectionMeta,
 } from '@/lib/topics';
-import { useTypewriter } from '@/lib/useTypewriter';
+import { useTypewriter } from '@/lib/hooks';
 import AqSelect from './AqSelect';
 
 type Mode = 'topic' | 'subtopic';

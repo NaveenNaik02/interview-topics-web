@@ -1,5 +1,5 @@
 import type { SectionMeta } from '@/lib/topics';
-import type { PlacementSuggestion } from '@/lib/actions/suggestPlacement';
+import type { PlacementSuggestion } from '@/lib/ai/suggestPlacement';
 import type { PriorityLevel } from '@/lib/offlineSync';
 import type { ParsedQuestion } from '@/lib/parser';
 

@@ -20,10 +20,10 @@ Within the feature folder, still split into standalone components/hooks per the 
 
 `eslint.config.mjs` warns (doesn't fail CI) when a file under `components/**` or `lib/actions/**` exceeds 200 lines (`max-lines`) — a tripwire to catch drift, not the actual rule. Line count alone never decides whether to split a component; splitting only to hit a number produces meaningless bins (`Header.tsx`/`Body.tsx`/`Footer.tsx`) that just relocate the same coupling. Split when one of these is actually true:
 
-- **Mixed concerns** — data-fetching/business logic tangled with rendering. Extract the logic into a custom hook (`lib/use*.ts`, following `useFabDrag`/`useTypewriter`/`useProgress`), leave the component rendering only.
+- **Mixed concerns** — data-fetching/business logic tangled with rendering. Extract the logic into a custom hook — `features/<name>/hooks/` if only that feature uses it, `lib/hooks/` if it's shared across features (following `useFabDrag`/`useTypewriter`/`useProgressStats`) — leave the component rendering only.
 - **A genuinely separable, reusable, or independently-testable subtree** — e.g. a modal's markdown editor or AI-actions toolbar deserves its own file; a component's header/body/footer usually doesn't.
 - **Repeated markup or logic** (3+ similar blocks) — extract a shared component or map over data instead.
-- **A conditionally-rendered heavy subtree** (modal body, rarely-used panel) — extract it **and** lazy-load it (`next/dynamic` or `import()`, per the FAB modals and `lib/highlight.ts`) so it's a bundle-size win, not just a readability one.
+- **A conditionally-rendered heavy subtree** (modal body, rarely-used panel) — extract it **and** lazy-load it (`next/dynamic` or `import()`, per the FAB modals and `components/QuestionItem/highlight.ts`) so it's a bundle-size win, not just a readability one.
 
 When a component does grow siblings, colocate them in a folder (`SomeModal/index.tsx`, `MarkdownEditor.tsx`, `AiToolbar.tsx`) instead of scattering flat files across `components/`.
 

@@ -11,15 +11,15 @@ import {
 } from 'lucide-react';
 import AqSelect from '@/components/AqSelect';
 import { useAppStore } from '@/lib/stores/appStore';
-import { useTypewriter } from '@/lib/useTypewriter';
-import { AQ_MODELS, getSavedModel } from '@/lib/aiModels';
+import { useTypewriter } from '@/lib/hooks';
+import { AQ_MODELS, getSavedModel } from '@/lib/ai/models';
 import { getCodeExplanationInstructionText } from '@/lib/instructionPresets';
 import { addQuestion, updateQuestion } from '@/lib/actions/questions';
 import {
   generateCodeOutput,
   generateCodeExplanation,
-} from '@/lib/actions/generateCodeOutput';
-import { formatAnswer } from '@/lib/actions/formatAnswer';
+} from '@/lib/ai/generateCodeOutput';
+import { formatAnswer } from '@/lib/ai/formatAnswer';
 import { findGroupForSection, sectionUrl } from '@/lib/topics';
 import MarkdownField from './components/MarkdownField';
 import InstructionsModal from './components/InstructionsModal';

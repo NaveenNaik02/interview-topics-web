@@ -1,8 +1,8 @@
 import type { SectionMeta, TopicGroup } from '@/lib/topics';
 import type { PriorityLevel } from '@/lib/offlineSync';
-import type { AqModelId } from '@/lib/aiModels';
-import type { PlacementSuggestion } from '@/lib/actions/suggestPlacement';
-import type { DuplicateCheckResult } from '@/lib/actions/checkDuplicate';
+import type { AqModelId } from '@/lib/ai/models';
+import type { PlacementSuggestion } from '@/lib/ai/suggestPlacement';
+import type { DuplicateCheckResult } from '@/lib/ai/checkDuplicate';
 import type {
   AnswerVersion,
   PendingPlacement,

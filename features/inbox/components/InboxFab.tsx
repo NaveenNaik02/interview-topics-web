@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { Bookmark } from 'lucide-react'
-import { useFabDrag } from '@/lib/useFabDrag'
+import { useFabDrag } from '@/lib/hooks'
 
 const InboxCaptureModal = dynamic(() => import('./InboxCaptureModal'), { ssr: false })
 

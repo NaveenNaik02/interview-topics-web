@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import { getSavedModel } from '@/lib/aiModels';
+import { getSavedModel } from '@/lib/ai/models';
 import { getActiveInstructionText } from '@/lib/instructionPresets';
 import { capAnswerVersions } from '../utils/markdownPreview';
 import type { AuthoringInit, AuthoringState, DraftSlice } from './types';

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useProgressStats } from '@/lib/useProgressStats';
+import { useProgressStats } from '@/lib/hooks';
 import { useAppStore } from '@/lib/stores/appStore';
 import ConfirmDialog from '@/components/ConfirmDialog';
 

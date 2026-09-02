@@ -1,15 +1,15 @@
 import type { StateCreator } from 'zustand';
-import { generateQuestion } from '@/lib/actions/generateQuestion';
-import { generateProblem } from '@/lib/actions/generateProblem';
-import { generateAnswer } from '@/lib/actions/generateAnswer';
-import { formatAnswer } from '@/lib/actions/formatAnswer';
-import { checkDuplicateQuestion } from '@/lib/actions/checkDuplicate';
-import { suggestPlacement } from '@/lib/actions/suggestPlacement';
+import { generateQuestion } from '@/lib/ai/generateQuestion';
+import { generateProblem } from '@/lib/ai/generateProblem';
+import { generateAnswer } from '@/lib/ai/generateAnswer';
+import { formatAnswer } from '@/lib/ai/formatAnswer';
+import { checkDuplicateQuestion } from '@/lib/ai/checkDuplicate';
+import { suggestPlacement } from '@/lib/ai/suggestPlacement';
 import {
   getSuggestionInstructionText,
   getProblemInstructionText,
 } from '@/lib/instructionPresets';
-import { AUTO_RUN_MODEL } from '@/lib/aiModels';
+import { AUTO_RUN_MODEL } from '@/lib/ai/models';
 import { PENDING_GROUP_SLUG, PENDING_SECTION_KEY } from '../types';
 import { selectPlacement } from './placementSlice';
 import type { AiSlice, AuthoringState } from './types';
