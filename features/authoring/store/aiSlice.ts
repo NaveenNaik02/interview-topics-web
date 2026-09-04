@@ -42,6 +42,8 @@ export const createAiSlice: StateCreator<AuthoringState, [], [], AiSlice> = (
     dupResult: null,
     suggestState: 'idle',
     suggestion: null,
+    history: [],
+    at: -1,
     stream: null,
 
     generateQuestion: async () => {
@@ -170,17 +172,22 @@ export const createAiSlice: StateCreator<AuthoringState, [], [], AiSlice> = (
       const s = get();
       set({ suggestState: 'loading', suggestion: null });
       try {
+        const next = await suggestPlacement({
+          title: s.title,
+          tags: s.tags,
+          groups: s.groups.map((g) => ({
+            groupSlug: g.slug,
+            groupName: g.groupName,
+            sections: g.sections,
+          })),
+          rejected: s.history,
+          model: modelFor(s),
+        });
+        const history = [...get().history, next];
         set({
-          suggestion: await suggestPlacement({
-            title: s.title,
-            tags: s.tags,
-            groups: s.groups.map((g) => ({
-              groupSlug: g.slug,
-              groupName: g.groupName,
-              sections: g.sections,
-            })),
-            model: modelFor(s),
-          }),
+          suggestion: next,
+          history,
+          at: history.length - 1,
           suggestState: 'idle',
         });
       } catch {
@@ -193,7 +200,7 @@ export const createAiSlice: StateCreator<AuthoringState, [], [], AiSlice> = (
     acceptSuggestion: () => {
       const s = get().suggestion;
       if (!s) return;
-      set({ suggestion: null });
+      set({ suggestion: null, history: [], at: -1 });
       if (s.mode === 'existing') {
         set({
           pending: null,
@@ -210,7 +217,25 @@ export const createAiSlice: StateCreator<AuthoringState, [], [], AiSlice> = (
       get().resetDuplicate();
     },
 
-    dismissSuggestion: () => set({ suggestion: null }),
+    dismissSuggestion: () => set({ suggestion: null, history: [], at: -1 }),
+
+    // Anything already offered is one step away; only a genuinely new
+    // placement costs a call, and that call gets the whole history to dodge.
+    rejectSuggestion: async () => {
+      const { suggestion, history, at } = get();
+      if (!suggestion) return;
+      if (at < history.length - 1) {
+        set({ at: at + 1, suggestion: history[at + 1] });
+        return;
+      }
+      await get().suggestPlacement();
+    },
+
+    backSuggestion: () => {
+      const { history, at } = get();
+      if (at < 1) return;
+      set({ at: at - 1, suggestion: history[at - 1] });
+    },
 
     // Called by the typewriter bridge once the text has finished playing in.
     finishStream: () => {

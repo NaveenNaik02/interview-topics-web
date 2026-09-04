@@ -120,6 +120,7 @@ export const PROMPTS = {
     'Weigh all three placements on their merits, none is a fallback: an existing subtopic, a new subtopic under an existing topic, or a new topic with its first subtopic.',
     'For "existing", copy groupSlug/topic/file exactly from the tree below, never invent them.',
     'Never force a fit — a keyword in common with an existing subtopic is not enough if the question really belongs elsewhere.',
+    'A "Rejected" list means the author has already turned those placements down — never suggest one of them again, nor a trivial variation of one. Give the best remaining home, and propose a new subtopic or new topic when that has become the honest answer.',
     '"label" and "topicName" are display names shown in a picker, like the existing subtopic names in the tree (e.g. "Redux", "Scalability Basics") — Title Case words with spaces, never a slug or hyphenated string.',
     'Keep reasoning under 12 words, no trailing period.',
   ].join(' '),

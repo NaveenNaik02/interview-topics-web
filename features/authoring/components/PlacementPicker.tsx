@@ -20,6 +20,10 @@ export const PlacementPicker = () => {
   const suggest = useAuthoring((s) => s.suggestPlacement);
   const accept = useAuthoring((s) => s.acceptSuggestion);
   const dismiss = useAuthoring((s) => s.dismissSuggestion);
+  const reject = useAuthoring((s) => s.rejectSuggestion);
+  const back = useAuthoring((s) => s.backSuggestion);
+  const history = useAuthoring((s) => s.history);
+  const at = useAuthoring((s) => s.at);
 
   const canSuggest = title.trim().length > 3 && suggestState !== 'loading';
   const groupName = (slug: string) => {
@@ -130,9 +134,22 @@ export const PlacementPicker = () => {
           {suggestion.reasoning && (
             <p className="aq-suggest-reason">{suggestion.reasoning}</p>
           )}
+          {history.length > 1 && (
+            <p className="aq-suggest-reason">
+              Suggestion {at + 1} of {history.length}
+            </p>
+          )}
           <div className="aq-suggest-actions">
             <button type="button" className="btn-cancel" onClick={dismiss}>
               Choose manually
+            </button>
+            {at > 0 && (
+              <button type="button" className="btn-cancel" onClick={back}>
+                Back
+              </button>
+            )}
+            <button type="button" className="btn-cancel" onClick={reject}>
+              Not this one
             </button>
             <button type="button" className="btn-primary" onClick={accept}>
               Use this placement

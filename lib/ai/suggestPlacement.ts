@@ -15,6 +15,9 @@ export interface SuggestPlacementInput {
   tags?: string;
   groups: SuggestPlacementGroup[];
   model?: string;
+  // Placements the author has already turned down in this session. Sent back
+  // so a re-run has to find a different home rather than repeat itself.
+  rejected?: PlacementSuggestion[];
 }
 
 export type PlacementSuggestion =
@@ -38,6 +41,19 @@ export type PlacementSuggestion =
       label: string;
       reasoning: string;
     };
+
+// Rejected placements go in as prose rather than identifiers: the model only
+// has to avoid them, not echo them back, and naming them the way the tree
+// does is enough for that.
+function describe(s: PlacementSuggestion): string {
+  if (s.mode === 'existing') {
+    return `the existing subtopic (topic: "${s.topic}", file: "${s.file}")`;
+  }
+  if (s.mode === 'new-subtopic') {
+    return `a new subtopic "${s.label}" under groupSlug "${s.groupSlug}"`;
+  }
+  return `a new topic "${s.topicName}" with subtopic "${s.label}"`;
+}
 
 // Serializes the curriculum with the exact identifiers (groupSlug/topic/file)
 // the model must echo back for an "existing" match — keeps the response
@@ -64,9 +80,12 @@ export async function suggestPlacement(
 
   const parsed = await geminiJson({
     system: PROMPTS.placement,
-    prompt: `Existing curriculum:\n${buildTree(input.groups)}\n\nNew question: "${title}"${
-      input.tags?.trim() ? `\nTags: ${input.tags.trim()}` : ''
-    }`,
+    prompt:
+      `Existing curriculum:\n${buildTree(input.groups)}\n\nNew question: "${title}"` +
+      (input.tags?.trim() ? `\nTags: ${input.tags.trim()}` : '') +
+      (input.rejected?.length
+        ? `\n\nRejected:\n${input.rejected.map((r) => `- ${describe(r)}`).join('\n')}`
+        : ''),
     model: input.model,
     // Low thinking force-fits the nearest existing subtopic instead of
     // proposing a new one — the only call here worth the extra tokens.

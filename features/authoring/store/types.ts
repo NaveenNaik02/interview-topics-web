@@ -118,6 +118,12 @@ export interface AiSlice {
   dupResult: DuplicateCheckResult | null;
   suggestState: 'idle' | 'loading' | 'error';
   suggestion: PlacementSuggestion | null;
+  // Every placement offered for this question, oldest first, with `at`
+  // marking the one on screen. Stepping back and forth through it is free;
+  // only running off the end costs another call. Also the "don't offer these
+  // again" list the next call is given.
+  history: PlacementSuggestion[];
+  at: number;
   stream: Stream | null;
 
   generateQuestion: () => Promise<void>;
@@ -129,6 +135,11 @@ export interface AiSlice {
   suggestPlacement: () => Promise<void>;
   acceptSuggestion: () => void;
   dismissSuggestion: () => void;
+  // Turn the current suggestion down: forward through history if there's
+  // anything ahead, otherwise ask for a new one.
+  rejectSuggestion: () => Promise<void>;
+  // Step back to the previously offered placement.
+  backSuggestion: () => void;
   finishStream: () => void;
 }
 
