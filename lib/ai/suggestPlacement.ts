@@ -68,6 +68,9 @@ export async function suggestPlacement(
       input.tags?.trim() ? `\nTags: ${input.tags.trim()}` : ''
     }`,
     model: input.model,
+    // Low thinking force-fits the nearest existing subtopic instead of
+    // proposing a new one — the only call here worth the extra tokens.
+    thinkingLevel: 'high',
     failure: 'Could not get a placement suggestion — try again.',
     parseFailure: 'Could not read the placement suggestion — try again.',
   });

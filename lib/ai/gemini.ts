@@ -11,6 +11,9 @@ interface GeminiCall {
   model?: string;
   // Shown when the request fails or comes back empty.
   failure: string;
+  // Overrides AQ_THINKING for calls that are a judgement rather than a
+  // transcription — placement has to weigh a whole tree against three modes.
+  thinkingLevel?: 'low' | 'high';
 }
 
 async function call(o: GeminiCall, json: boolean): Promise<string> {
@@ -34,7 +37,9 @@ async function call(o: GeminiCall, json: boolean): Promise<string> {
         generationConfig: {
           // These prompts don't need reasoning — skip Gemini 3's default
           // thinking pass, which otherwise burns ~10x the tokens of the answer.
-          thinkingConfig: AQ_THINKING,
+          thinkingConfig: o.thinkingLevel
+            ? { thinkingLevel: o.thinkingLevel }
+            : AQ_THINKING,
           ...(json ? { responseMimeType: 'application/json' } : {}),
         },
       }),
