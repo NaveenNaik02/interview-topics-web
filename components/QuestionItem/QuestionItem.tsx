@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import type { PriorityLevel } from '@/lib/offlineSync';
 import { Icon } from './icons';
 
@@ -52,8 +52,20 @@ export default function QuestionItem({
   actions,
   children,
 }: Props) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  // Code-output sections mount every row open, so scroll only on the
+  // closed -> open transition, never on the initial render.
+  const wasOpen = useRef(isOpen);
+  useEffect(() => {
+    if (isOpen && !wasOpen.current) {
+      rowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    wasOpen.current = isOpen;
+  }, [isOpen]);
+
   return (
     <div
+      ref={rowRef}
       className={`q-item ${isDone ? 'done' : ''} ${isOpen ? 'open' : ''} ${priority ? `pri-${priority}` : ''} ${reorderable ? 'reorderable' : ''}`}
       data-qid={id}
     >

@@ -2491,6 +2491,8 @@ div.drag-shadow.drag-shadow {
 
 .q-item {
   background: var(--bg-card);
+  /* clears the sticky topbar when an opened row scrolls itself into view */
+  scroll-margin-top: 84px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
