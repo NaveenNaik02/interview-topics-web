@@ -33,10 +33,14 @@ npm run dev          # Dev server on :3000 against LOCAL Docker Supabase
 npm run dev:remote   # Dev server on :3010 against the CLOUD project
 npm run db:start     # supabase start — local Docker stack (Postgres/GoTrue/Studio)
 npm run db:stop      # supabase stop
+npm run db:studio    # open Supabase Studio for the LOCAL stack — browse table data
+npm run db:psql      # psql shell into the LOCAL Docker Postgres (never cloud)
+npm run db:schema    # regenerate supabase/schema/ from the LOCAL stack
 npm run build        # Production build
 npm run start        # Serve production build
 npm run lint         # ESLint (flat config, eslint.config.mjs)
 npm test             # Vitest, single run (vitest.config.ts)
+npm run skills:install  # restore third-party agent skills from skills-lock.json
 ```
 
 - **`npm run dev` never touches the cloud.** It sources `.env.local.docker`, which points `NEXT_PUBLIC_SUPABASE_URL` at `http://127.0.0.1:54321` — the local Docker stack, nothing else.
@@ -66,7 +70,34 @@ Two more are run by hand, both one-time fixups from the owner-scoped pivot:
 
 ### Migrations
 
-Add a `.sql` file to `supabase/migrations/`, then `npm run migrate` to apply it to the **cloud** project. Local dev picks the same files up automatically via `supabase start`.
+`supabase/migrations/` is the source of truth for schema — the only files you hand-write and the only ones applied to any database. `supabase start` replays them into the local stack from scratch; `supabase migration up --local` applies just the pending ones to a running stack.
+
+Adding a table, start to finish:
+
+```bash
+supabase migration new add_foo   # real timestamp — several older filenames were hand-invented
+# write create table + enable RLS + policies + grants into the new file
+supabase migration up --local    # applies only pending migrations; NOT db reset
+npm run db:schema                # supabase/schema/foo.sql appears on its own
+npm run migrate                  # cloud — developer runs this, never an agent
+```
+
+Steps 1-3 are Supabase's own documented imperative flow. `--local` is already the
+default; it is spelled out because the same command takes `--linked`. The repo
+substitutes `npm run migrate` for `supabase db push`, and adds `npm run db:schema`,
+which is not a Supabase step.
+
+**Schema changes go in the migration, never in `supabase/schema/`.** Those files are
+outputs — `scripts/db-schema.sh` deletes the directory and re-dumps it from the live
+local DB on every run, so a hand-edit there is gone at the next `npm run db:schema`
+and never reaches any database. Wanting to edit one is the signal that a new
+migration is what you actually want.
+
+**`supabase/schema/` is a generated snapshot, never applied.** 24 chronological migrations don't tell you what the schema *is* right now; those files do — one per table or view (`questions.sql`, `progress.sql`, …), each carrying that relation's columns, constraints, indexes, RLS policies, and grants together. Regenerate with `npm run db:schema` (`scripts/db-schema.sh`, per-relation `pg_dump` against the local container) after applying a migration locally, and commit the result. The script wipes the directory first, so a dropped table's file disappears on its own. Nothing reads it at runtime and `scripts/migrate.js` only ever globs `supabase/migrations/`.
+
+**It is a picture of *local*, which is not identical to cloud.** `supabase/seed.sql` runs on `supabase start` and is never pushed, so anything it creates shows up in the snapshot while being absent from the hosted project. Before treating a policy or table in `supabase/schema/` as production reality, check it came from `supabase/migrations/` and not from the seed.
+
+**Declarative schemas (`supabase/schemas/` + `supabase db diff`) were considered and rejected.** Supabase's own caveat list for the diff engine excludes `alter policy` statements, `security_invoker` on views, and DML — which is most of what this repo's migrations contain (18 owner-scoping policies, the `question_counts` view, the static topic-group seed). Deploys also go through `scripts/migrate.js`, not `supabase db push`. The snapshot above buys the same per-table readability without adopting the workflow.
 
 ## CI/CD
 
@@ -136,8 +167,9 @@ components/               feature-independent UI
 └── Topbar/
 ```
 
-**Everything else** — `supabase/migrations/` (timestamped SQL), `scripts/`
-(migrate, set-admin, pull-remote, two one-time fixups), `public/` (`sw.js`,
+**Everything else** — `supabase/migrations/` (timestamped SQL) and `supabase/schema/`
+(generated snapshot, one file per relation), `scripts/`
+(migrate, set-admin, pull-remote, db-schema, two one-time fixups), `public/` (`sw.js`,
 `manifest.json`), `design/` (standalone HTML prototypes, not built or imported).
 
 See `components/AGENTS.md` for component conventions — feature-first organization, when to split a file, and the rule keeping root-level `components/` independent of any feature.
@@ -185,8 +217,8 @@ Routing:
 
 Nine slices compose one Zustand store (`lib/stores/appStore.ts`), six in `lib/stores/slices/` and three owned by their feature. Shared types in `lib/stores/types.ts`.
 
-| In `lib/stores/slices/` | In `features/` |
-| --- | --- |
+| In `lib/stores/slices/`                                                                                | In `features/`                                                                                       |
+| ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
 | `authSlice`, `progressSlice`, `setAsideSlice`, `flagCountsSlice`, `offlineSlice`, `questionOrderSlice` | `settings/store/settingsSlice`, `inbox/store/inboxSlice`, `section-view/store/sectionQuestionsSlice` |
 
 - **The store is NOT a module singleton.** `appStore.ts` exports `createAppStore(init)` (`createStore` from `zustand/vanilla`) plus a `StoreContext`; `StoreProvider.tsx` builds one per tree via a `useState` lazy initializer. A module-level `create()` in a Next server process is shared across every request — with owner-scoped content that's a cross-account leak waiting for the first render-phase write.
@@ -231,14 +263,14 @@ Everything Gemini-facing lives in `lib/ai/`, leaving `lib/actions/` as plain dat
 
 **Question flags are columns on `questions`, not join tables.** `20260804105557_merge_starred_priority_into_questions.sql` folded `starred_questions` and `priority` into `questions.starred`/`questions.priority` and dropped both tables; `20260827120000_grey_zone.sql` added `questions.grey_zone` the same way. Content is owner-scoped, so a per-user join row was always redundant with `created_by`. All three are written through `lib/actions/questionFlags.ts` and read through `lib/db/shortlist.ts`.
 
-| Feature | Where | Storage |
-| --- | --- | --- |
-| Inbox | `features/inbox/` | `inbox_items` |
-| Set aside | `lib/actions/setAside.ts`, `lib/db/setAside.ts` | `set_aside_items` |
-| Starred | `features/starred/` | `questions.starred` |
-| Grey Zone | `features/grey-zone/` | `questions.grey_zone` |
-| Priority Mix | `components/PriorityMixClient.tsx` | `questions.priority` (high/med/low) |
-| Manual order | `lib/actions/questionPosition.ts` | `question_position` |
+| Feature      | Where                                           | Storage                             |
+| ------------ | ----------------------------------------------- | ----------------------------------- |
+| Inbox        | `features/inbox/`                               | `inbox_items`                       |
+| Set aside    | `lib/actions/setAside.ts`, `lib/db/setAside.ts` | `set_aside_items`                   |
+| Starred      | `features/starred/`                             | `questions.starred`                 |
+| Grey Zone    | `features/grey-zone/`                           | `questions.grey_zone`               |
+| Priority Mix | `components/PriorityMixClient.tsx`              | `questions.priority` (high/med/low) |
+| Manual order | `lib/actions/questionPosition.ts`               | `question_position`                 |
 
 - **Inbox** — zero-friction capture of pasted text before picking a topic. `splitInboxText.ts` uses Gemini to split freeform text (e.g. a recruiter message) into distinct questions. Assigning an item reopens the add-question modal prefilled; saving deletes the source item.
 - **Set aside** — the kebab menu's soft delete. `setAsideQuestion()` inserts a full content snapshot into `set_aside_items` _before_ deleting from `questions`, so a mid-failure can never lose content, then best-effort cleans the user's progress rows. Reassigning restores the full saved answer, unlike inbox items which carry only a title.
