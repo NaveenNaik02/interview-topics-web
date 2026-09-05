@@ -1,33 +1,22 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase/client';
 
 // Read-only. Mutations live in '@/lib/actions/questionPosition' (Server Actions).
-export async function fetchQuestionPositions(
-  userId: string,
-): Promise<Record<string, number>> {
-  return fetchQuestionPositionsForIds(supabase, userId);
-}
-
-// Same table, but callable with a caller-supplied client (e.g. the cookie-scoped
-// server client) and narrowed to specific question ids — used by section pages
-// to seed manual order server-side, so the list renders pre-sorted instead of
-// jumping once the client store's own fetch resolves.
+//
+// Always narrowed to specific question ids: an unfiltered read of this table
+// would be capped at PostgREST's max_rows with no error, and an arbitrary 1000
+// of someone's positions is a silently wrong manual order, not a slow one.
 export async function fetchQuestionPositionsForIds(
   client: SupabaseClient,
   userId: string,
-  questionIds?: string[],
+  questionIds: string[],
 ): Promise<Record<string, number>> {
-  if (questionIds && questionIds.length === 0) return {};
+  if (questionIds.length === 0) return {};
 
-  let query = client
+  const { data } = await client
     .from('question_position')
     .select('question_id, position')
-    .eq('user_id', userId);
-  if (questionIds) {
-    query = query.in('question_id', questionIds);
-  }
-
-  const { data } = await query;
+    .eq('user_id', userId)
+    .in('question_id', questionIds);
   const store: Record<string, number> = {};
   data?.forEach((r) => {
     store[r.question_id] = r.position;

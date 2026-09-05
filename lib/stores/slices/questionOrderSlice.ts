@@ -1,11 +1,15 @@
 import type { StateCreator } from 'zustand'
-import * as questionPositionDb from '@/lib/db/questionPosition'
 import * as questionPositionActions from '@/lib/actions/questionPosition'
 import type { AppState, QuestionOrderSlice } from '../types'
 
 // Same reasoning as starredSlice: no offline pending-ops queue. Reordering
 // is a hand-curation action gated behind being online in the UI, not
 // something that needs to survive an offline session.
+//
+// Nothing preloads this map. Section pages seed their own positions server-side
+// (fetchSectionOrder), and useSectionFilters falls back to that seed, so
+// the store only has to carry positions the user has just dragged — the writes
+// don't revalidate, which is the one thing the seed can be stale about.
 export const createQuestionOrderSlice: StateCreator<AppState, [], [], QuestionOrderSlice> = (set, get) => ({
   orderStore: {},
 
@@ -26,10 +30,5 @@ export const createQuestionOrderSlice: StateCreator<AppState, [], [], QuestionOr
     if (!(oldId in orderStore)) return
     const { [oldId]: value, ...rest } = orderStore
     set({ orderStore: { ...rest, [newId]: value } })
-  },
-
-  loadQuestionOrder: async (uid: string) => {
-    const initial = await questionPositionDb.fetchQuestionPositions(uid)
-    set({ orderStore: initial })
   },
 })
