@@ -117,7 +117,6 @@ export interface QuestionOrderSlice {
   setQuestionOrder: (ids: string[]) => void;
   // Sibling of renameProgressId, for the order store.
   renameOrderId: (oldId: string, newId: string) => void;
-  loadQuestionOrder: (uid: string) => Promise<void>;
 }
 
 export interface OfflineSlice {

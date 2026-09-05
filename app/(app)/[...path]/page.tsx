@@ -9,7 +9,7 @@ import {
 } from '@/lib/content/topics';
 import { getAllGroups } from '@/lib/content/topicsData';
 import { parseSection } from '@/lib/content/parser';
-import { fetchInitialSectionOrder } from '@/lib/db/questionPositionServer';
+import { fetchSectionOrder } from '@/lib/db/questionPositionServer';
 import { SectionClient } from '@/features/section-view';
 
 interface Props {
@@ -36,21 +36,19 @@ export default async function Page({ params }: Props) {
   const section = findSection(groups, segments);
   if (!section) notFound();
 
-  const [questions, group] = await Promise.all([
+  // The manual order is keyed by section prefix, not by question id, so it no
+  // longer has to wait on parseSection — both queries go out together. Seeding
+  // it server-side is what stops rows visibly jumping into place once the
+  // client store resolves.
+  const [questions, initialOrder] = await Promise.all([
     parseSection(section),
-    Promise.resolve(findGroupForSection(groups, section)),
+    fetchSectionOrder(section),
   ]);
 
+  const group = findGroupForSection(groups, section);
   if (!group) notFound();
 
   const { prev, next } = findPrevNextSections(groups, section);
-
-  // Fetch this section's manual order server-side so the list renders
-  // pre-sorted on first paint — without it, the client store loads
-  // positions asynchronously and rows visibly jump into place.
-  const initialOrder = await fetchInitialSectionOrder(
-    questions.map((q) => q.id),
-  );
 
   return (
     <div className="space-y-12">

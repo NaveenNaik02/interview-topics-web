@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import { createClient } from '../supabase/server';
 import type { SectionMeta } from './topics';
 import type { PriorityLevel } from '../offlineSync';
@@ -32,23 +33,29 @@ export async function countQuestions(section: SectionMeta): Promise<number> {
   return count ?? 0;
 }
 
-export async function fetchAllCounts(): Promise<Record<string, number>> {
+export const fetchAllCounts = cache(async (): Promise<Record<string, number>> => {
   const supabase = await createClient();
-  // Fetch only topic and file for all questions and count them in memory
-  // This is much faster than 50 separate count queries
+  // One row per subtopic, not per question — counting in Postgres keeps this
+  // off the `max_rows` ceiling that silently truncated the old full-table
+  // read. The view is security_invoker, so RLS still scopes it to the caller
+  // (20260905071503_question_counts_view.sql).
   const { data, error } = await supabase
-    .from('questions')
-    .select('topic, file');
+    .from('question_counts')
+    .select('topic, file, count');
 
-  if (error || !data) return {};
+  if (error || !data) {
+    // A missing view reads identically to an empty account here, so say which
+    // it was — the counts land in the dashboard and sidebar as bare zeroes.
+    if (error) console.error('fetchAllCounts:', error.message);
+    return {};
+  }
 
   const counts: Record<string, number> = {};
-  data.forEach((r) => {
-    const key = `/${r.topic}/${r.file}`;
-    counts[key] = (counts[key] || 0) + 1;
-  });
+  for (const r of data) {
+    counts[`/${r.topic}/${r.file}`] = r.count;
+  }
   return counts;
-}
+});
 
 export async function parseSection(
   section: SectionMeta,

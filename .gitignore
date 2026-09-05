@@ -11,3 +11,6 @@ node_modules/
 /supabase/.temp
 
 .claude/skills/vercel-react-best-practices
+.claude/skills/supabase
+.claude/skills/supabase-postgres-best-practices
+.agents/
