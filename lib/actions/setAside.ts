@@ -61,20 +61,11 @@ export async function setAsideQuestion(id: string): Promise<SetAsideItem> {
     throw new Error('You can only set aside your own questions.');
   }
 
-  // Best-effort cleanup, same as deleteQuestion — this is the current user's
-  // own progress/priority/starred rows only.
+  // Best-effort cleanup, same as deleteQuestion — the current user's own
+  // progress rows only. Priority, starred and grey-zone need no cleanup: they
+  // are columns on `questions`, so they went with the row deleted above.
   await supabase
     .from('progress')
-    .delete()
-    .eq('user_id', user.id)
-    .eq('question_id', id);
-  await supabase
-    .from('priority')
-    .delete()
-    .eq('user_id', user.id)
-    .eq('question_id', id);
-  await supabase
-    .from('starred_questions')
     .delete()
     .eq('user_id', user.id)
     .eq('question_id', id);
