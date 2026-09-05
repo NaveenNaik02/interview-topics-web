@@ -106,18 +106,36 @@ export default function SearchResults() {
   const groups = useAppStore((s) => s.groups)
   const router = useRouter()
   const [questions, setQuestions] = useState<SearchQuestion[]>([])
-  const [loaded, setLoaded] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [openId, setOpenId] = useState<string | null>(null)
 
+  const trimmedQuery = query.trim()
+
+  // Only matching rows cross the wire. Fetching the whole table to filter in the
+  // browser cost ~685 kB a search and silently stopped at PostgREST's 1000-row
+  // cap. ilike is a broad prefilter — % and _ in the query are wildcards to it —
+  // and `results` below re-applies the exact substring match to the rows it sent.
   useEffect(() => {
-    if (loaded) return
-    supabase
-      .from('questions')
-      .select('id, title, body_html, topic, file')
-      .then(({ data }) => {
-        if (data) {
+    let cancelled = false
+    const timer = setTimeout(() => {
+      setLoading(true)
+      // Quoted, since a query can contain commas or parens — reserved in a
+      // PostgREST filter value. & < > become wildcards because body_html holds
+      // them as entities: searching `=>` has to reach a stored `=&gt;`, and
+      // this app is full of arrow functions.
+      const like = trimmedQuery
+        .replace(/[\\"]/g, '\\$&')
+        .replace(/[&<>]/g, '%')
+      const pattern = `"%${like}%"`
+      supabase
+        .from('questions')
+        .select('id, title, body_html, topic, file')
+        .or(`title.ilike.${pattern},body_html.ilike.${pattern}`)
+        .then(({ data, error }) => {
+          if (cancelled) return
+          if (error) console.error('search:', error.message)
           setQuestions(
-            data.map((r) => ({
+            (data ?? []).map((r) => ({
               id: r.id,
               title: r.title,
               bodyHtml: r.body_html,
@@ -125,12 +143,14 @@ export default function SearchResults() {
               file: r.file,
             })),
           )
-        }
-        setLoaded(true)
-      })
-  }, [loaded])
-
-  const trimmedQuery = query.trim()
+          setLoading(false)
+        })
+    }, 250)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [trimmedQuery])
 
   const sectionMap = useMemo(() => {
     const map: Record<string, { groupName: string; label: string }> = {}
@@ -178,7 +198,7 @@ export default function SearchResults() {
     router.push(url)
   }
 
-  if (!loaded && trimmedQuery.length >= 2) {
+  if (loading) {
     return (
       <div className="content-wrapper">
         <div className="subtopic-header">
@@ -208,7 +228,7 @@ export default function SearchResults() {
           <div className="empty-title">No matches</div>
           <p>
             Nothing matched &ldquo;{trimmedQuery}&rdquo;. Try a different
-            keyword — search looks across every loaded question and answer.
+            keyword — search looks across every question and answer.
           </p>
         </div>
       ) : (
