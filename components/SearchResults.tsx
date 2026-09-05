@@ -105,27 +105,44 @@ export default function SearchResults() {
   )
   const groups = useAppStore((s) => s.groups)
   const router = useRouter()
-  const [questions, setQuestions] = useState<SearchQuestion[]>([])
-  const [loading, setLoading] = useState(false)
+  // Kept with the query they belong to, so `loading` is derived rather than a
+  // second state — a plain flag is false during the debounce, which renders the
+  // previous query's rows as if they were this query's answer.
+  const [fetched, setFetched] = useState<{
+    query: string
+    rows: SearchQuestion[]
+  }>({ query: '', rows: [] })
   const [openId, setOpenId] = useState<string | null>(null)
 
   const trimmedQuery = query.trim()
+  const questions = fetched.rows
+  const loading = fetched.query !== trimmedQuery
 
   // Only matching rows cross the wire. Fetching the whole table to filter in the
   // browser cost ~685 kB a search and silently stopped at PostgREST's 1000-row
-  // cap. ilike is a broad prefilter — % and _ in the query are wildcards to it —
-  // and `results` below re-applies the exact substring match to the rows it sent.
+  // cap. ilike is a broad prefilter and `results` below re-applies the exact
+  // substring match to whatever it sent, so the pattern only ever has to avoid
+  // matching too *little* — every transform below widens it.
   useEffect(() => {
     let cancelled = false
     const timer = setTimeout(() => {
-      setLoading(true)
       // Quoted, since a query can contain commas or parens — reserved in a
-      // PostgREST filter value. & < > become wildcards because body_html holds
-      // them as entities: searching `=>` has to reach a stored `=&gt;`, and
-      // this app is full of arrow functions.
+      // PostgREST filter value.
+      //
+      // Two widenings, both because the filter runs on raw body_html while the
+      // client filter runs on stripped text:
+      //   & < >  are stored as entities, so `=>` has to reach a stored `=&gt;`
+      //   spaces may be a newline or an inline tag — `the DOM` has to reach
+      //          `the <strong>DOM</strong>`, which cost 7 of 25 matches
+      //
+      // ponytail: a query of only these characters widens to all-wildcard and
+      // re-opens the max_rows ceiling this file exists to close. Harmless at
+      // 575 rows; if the library passes ~1000, match on a stripped-text column
+      // instead of widening.
       const like = trimmedQuery
         .replace(/[\\"]/g, '\\$&')
         .replace(/[&<>]/g, '%')
+        .replace(/\s+/g, '%')
       const pattern = `"%${like}%"`
       supabase
         .from('questions')
@@ -134,16 +151,16 @@ export default function SearchResults() {
         .then(({ data, error }) => {
           if (cancelled) return
           if (error) console.error('search:', error.message)
-          setQuestions(
-            (data ?? []).map((r) => ({
+          setFetched({
+            query: trimmedQuery,
+            rows: (data ?? []).map((r) => ({
               id: r.id,
               title: r.title,
               bodyHtml: r.body_html,
               topic: r.topic,
               file: r.file,
             })),
-          )
-          setLoading(false)
+          })
         })
     }, 250)
     return () => {
