@@ -2,11 +2,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import type { SectionMeta } from '@/lib/content/topics';
 
-// Server-only: seeds a section page's manual order without touching Supabase
-// directly. Split out of questionPosition.ts because that file is also imported
-// by the client-side Zustand store, and this one pulls in next/headers.
-//
-// Keyed off the id prefix rather than the ids themselves — ids are
+// Server-only: seeds a section page's manual order. Keyed off the id prefix rather than the ids themselves — ids are
 // `{topic}/{file}/u-{uuid}`, so the section identifies its own rows and this
 // no longer has to wait for parseSection to resolve first. RLS scopes
 // question_position to the caller, so there is no user filter here.
