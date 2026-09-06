@@ -5,9 +5,6 @@ import { Dashboard, DashboardEmptyState } from '@/features/dashboard';
 interface HomeProps {
   searchParams: Promise<{
     'add-topic'?: string;
-    'add-subtopic'?: string;
-    'delete-topic'?: string;
-    label?: string;
   }>;
 }
 
@@ -42,7 +39,7 @@ export default async function Home({ searchParams }: HomeProps) {
           </p>
         </div>
       </header>
-      <Dashboard groups={groups} searchParams={resolvedSearchParams} />
+      <Dashboard groups={groups} />
     </div>
   );
 }

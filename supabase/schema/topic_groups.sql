@@ -42,9 +42,17 @@ CREATE POLICY topic_groups_insert_own ON public.topic_groups FOR INSERT TO authe
 
 CREATE POLICY topic_groups_select_own ON public.topic_groups FOR SELECT TO authenticated USING ((created_by = ( SELECT auth.uid() AS uid)));
 
+-- Name: topic_groups topic_groups_update_admin; Type: POLICY; Schema: public; Owner: postgres
+
+CREATE POLICY topic_groups_update_admin ON public.topic_groups FOR UPDATE TO authenticated USING (COALESCE((((( SELECT auth.jwt() AS jwt) -> 'app_metadata'::text) ->> 'is_admin'::text))::boolean, false)) WITH CHECK (COALESCE((((( SELECT auth.jwt() AS jwt) -> 'app_metadata'::text) ->> 'is_admin'::text))::boolean, false));
+
+-- Name: topic_groups topic_groups_update_own; Type: POLICY; Schema: public; Owner: postgres
+
+CREATE POLICY topic_groups_update_own ON public.topic_groups FOR UPDATE TO authenticated USING ((( SELECT auth.uid() AS uid) = created_by)) WITH CHECK ((( SELECT auth.uid() AS uid) = created_by));
+
 -- Name: TABLE topic_groups; Type: ACL; Schema: public; Owner: postgres
 
 GRANT SELECT,REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.topic_groups TO anon;
-GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.topic_groups TO authenticated;
+GRANT ALL ON TABLE public.topic_groups TO authenticated;
 GRANT ALL ON TABLE public.topic_groups TO service_role;
 

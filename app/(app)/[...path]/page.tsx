@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import {
   findGroup,
@@ -11,6 +11,8 @@ import { getAllGroups } from '@/lib/content/topicsData';
 import { parseSection } from '@/lib/content/parser';
 import { fetchSectionOrder } from '@/lib/db/questionPositionServer';
 import { SectionClient } from '@/features/section-view';
+import { TopicOverview } from '@/features/topic-view';
+import { fetchTopicFlagIds } from '@/lib/db/shortlistServer';
 
 interface Props {
   params: Promise<{ path: string[] }>;
@@ -20,16 +22,19 @@ export default async function Page({ params }: Props) {
   const { path: segments } = await params;
   const groups = await getAllGroups();
 
-  // Single segment → topic overview
+  // Single segment → topic overview. This used to redirect to the group's
+  // first section, which made the overview unreachable; it now always renders,
+  // including for a just-created topic with no subtopics yet.
   if (segments.length === 1) {
     const group = findGroup(groups, segments[0]);
     if (!group) notFound();
 
-    // Redirect straight to the first section — a just-created topic with no
-    // subtopics yet (see AddTopicModal) has nowhere to redirect to.
-    const s = group.sections[0];
-    if (!s) notFound();
-    redirect(`/${s.topic}/${s.file}`);
+    return (
+      <TopicOverview
+        slug={group.slug}
+        flagIds={await fetchTopicFlagIds(group.slug)}
+      />
+    );
   }
 
   // Multi-segment → section view

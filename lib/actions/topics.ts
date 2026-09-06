@@ -179,3 +179,55 @@ export async function deleteTopicGroup(slug: string): Promise<void> {
 
   revalidatePath('/');
 }
+
+// Renames a topic. `slug` is deliberately left alone — it's baked into every
+// question id under this topic (see the migration), so only the display text
+// moves. Blurb rides along because it's the same modal.
+export async function renameTopicGroup(
+  slug: string,
+  groupName: string,
+  blurb: string,
+): Promise<void> {
+  const { supabase } = await requireAuthor('rename a topic');
+
+  const name = groupName.trim();
+  if (name.length < 2) throw new Error('Topic name is too short');
+
+  const { data, error } = await supabase
+    .from('topic_groups')
+    .update({ group_name: name, blurb: blurb.trim() || null })
+    .eq('slug', slug)
+    .select('slug')
+    .single();
+  if (error || !data) throw new Error('You can only rename topics you created');
+
+  revalidatePath('/');
+  revalidatePath(`/${slug}`);
+}
+
+// Renames a subtopic. Same deal as above: `label` is display text, while
+// (topic, file) is the section's identity and stays put.
+export async function renameSection(
+  topic: string,
+  file: string,
+  label: string,
+): Promise<void> {
+  const { supabase } = await requireAuthor('rename a subtopic');
+
+  const trimmed = label.trim();
+  if (trimmed.length < 2) throw new Error('Subtopic name is too short');
+
+  const { data, error } = await supabase
+    .from('sections')
+    .update({ label: trimmed })
+    .eq('topic', topic)
+    .eq('file', file)
+    .select('group_slug')
+    .single();
+  if (error || !data)
+    throw new Error('You can only rename subtopics you created');
+
+  revalidatePath('/');
+  revalidatePath(`/${data.group_slug}`);
+  revalidatePath(`/${topic}/${file}`);
+}
