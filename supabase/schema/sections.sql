@@ -52,9 +52,17 @@ CREATE POLICY sections_insert_own ON public.sections FOR INSERT TO authenticated
 
 CREATE POLICY sections_select_own ON public.sections FOR SELECT TO authenticated USING ((created_by = ( SELECT auth.uid() AS uid)));
 
+-- Name: sections sections_update_admin; Type: POLICY; Schema: public; Owner: postgres
+
+CREATE POLICY sections_update_admin ON public.sections FOR UPDATE TO authenticated USING (COALESCE((((( SELECT auth.jwt() AS jwt) -> 'app_metadata'::text) ->> 'is_admin'::text))::boolean, false)) WITH CHECK (COALESCE((((( SELECT auth.jwt() AS jwt) -> 'app_metadata'::text) ->> 'is_admin'::text))::boolean, false));
+
+-- Name: sections sections_update_own; Type: POLICY; Schema: public; Owner: postgres
+
+CREATE POLICY sections_update_own ON public.sections FOR UPDATE TO authenticated USING ((( SELECT auth.uid() AS uid) = created_by)) WITH CHECK ((( SELECT auth.uid() AS uid) = created_by));
+
 -- Name: TABLE sections; Type: ACL; Schema: public; Owner: postgres
 
 GRANT SELECT,REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.sections TO anon;
-GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.sections TO authenticated;
+GRANT ALL ON TABLE public.sections TO authenticated;
 GRANT ALL ON TABLE public.sections TO service_role;
 

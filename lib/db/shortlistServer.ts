@@ -41,3 +41,23 @@ export async function fetchShortlistQuestions(
     .eq(flag, true);
   return (data ?? []).map(mapRow);
 }
+
+// The topic overview's "Unstar all" / "Clear grey zone" need the actual ids,
+// not just counts — they decide whether the button renders and are what gets
+// passed to bulkSetFlag. questions.group_slug is NOT NULL, so one equality
+// covers every subtopic under the topic without enumerating (topic, file).
+export async function fetchTopicFlagIds(
+  groupSlug: string,
+): Promise<Record<ShortlistFlag, string[]>> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('questions')
+    .select('id, starred, grey_zone')
+    .eq('group_slug', groupSlug)
+    .or('starred.eq.true,grey_zone.eq.true');
+  const rows = data ?? [];
+  return {
+    starred: rows.filter((r) => r.starred).map((r) => r.id),
+    grey_zone: rows.filter((r) => r.grey_zone).map((r) => r.id),
+  };
+}

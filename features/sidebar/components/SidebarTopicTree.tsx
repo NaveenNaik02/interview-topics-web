@@ -1,21 +1,37 @@
 'use client';
 
-import { createPortal } from 'react-dom';
+import { useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { sectionUrl } from '@/lib/content/topics';
 import { useAppStore } from '@/lib/stores/appStore';
-import ConfirmDialog from '@/components/ConfirmDialog';
-import { useDeleteTarget } from '../hooks';
 import { SidebarTopicGroup } from './SidebarTopicGroup';
 import { SidebarEmptyState } from './SidebarEmptyState';
 
 export const SidebarTopicTree = () => {
   const groups = useAppStore((s) => s.groups);
-  const { target, error, deleting, request, confirm, cancel } =
-    useDeleteTarget();
+  const pathname = usePathname();
+
+  // Which group the current route belongs to, if any.
+  const activeSlug =
+    groups.find(
+      (g) =>
+        pathname === `/${g.slug}` ||
+        g.sections.some((s) => pathname === sectionUrl(s)),
+    )?.slug ?? null;
+
+  // One open group at a time, so this lives here rather than per-group.
+  const [expandedSlug, setExpandedSlug] = useState(activeSlug);
+  const [wasActive, setWasActive] = useState(activeSlug);
+
+  // Navigating into a group opens it (and closes whichever was open). Adjusting
+  // state during render rather than in an effect avoids a flash of the old
+  // group still expanded.
+  if (activeSlug !== wasActive) {
+    setWasActive(activeSlug);
+    if (activeSlug) setExpandedSlug(activeSlug);
+  }
 
   if (groups.length === 0) return <SidebarEmptyState />;
-
-  const isGroup = target?.kind === 'group';
-  const noun = isGroup ? 'topic' : 'subtopic';
 
   return (
     <>
@@ -23,30 +39,12 @@ export const SidebarTopicTree = () => {
         <SidebarTopicGroup
           key={group.slug}
           group={group}
-          onRequestDelete={request}
+          expanded={expandedSlug === group.slug}
+          onToggle={() =>
+            setExpandedSlug((slug) => (slug === group.slug ? null : group.slug))
+          }
         />
       ))}
-
-      {/* Portaled to body: this tree sits under .sidebar, which gets a mobile-drawer
-          transform that would otherwise break the dialog's position:fixed. */}
-      {typeof document !== 'undefined' &&
-        createPortal(
-          <ConfirmDialog
-            open={!!target}
-            danger
-            title={target ? `Delete "${target.label}"?` : ''}
-            message={
-              target
-                ? `This permanently removes the "${target.label}" ${noun}. ${isGroup ? 'Topics' : 'Subtopics'} with questions can't be deleted — remove its questions first.`
-                : ''
-            }
-            confirmLabel={deleting ? 'Deleting…' : 'Delete'}
-            error={error}
-            onConfirm={confirm}
-            onCancel={cancel}
-          />,
-          document.body,
-        )}
     </>
   );
 };

@@ -2,6 +2,7 @@
 
 import { requireUser } from '@/lib/supabase/user';
 import type { PriorityLevel } from '@/lib/offlineSync';
+import type { ShortlistFlag } from '@/lib/db/shortlist';
 
 export async function setStarred(
   questionId: string,
@@ -62,6 +63,24 @@ export async function bulkClearPriority(ids: string[]): Promise<void> {
   const { error } = await supabase
     .from('questions')
     .update({ priority: null })
+    .in('id', ids)
+    .eq('created_by', user.id);
+  if (error) throw error;
+}
+
+// Clears (or sets) a shortlist flag across many questions in one statement —
+// the topic overview's "Unstar all" / "Clear grey zone". `flag` is a column
+// name, so it's constrained to ShortlistFlag rather than a bare string.
+export async function bulkSetFlag(
+  ids: string[],
+  flag: ShortlistFlag,
+  value: boolean,
+): Promise<void> {
+  if (ids.length === 0) return;
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase
+    .from('questions')
+    .update({ [flag]: value })
     .in('id', ids)
     .eq('created_by', user.id);
   if (error) throw error;

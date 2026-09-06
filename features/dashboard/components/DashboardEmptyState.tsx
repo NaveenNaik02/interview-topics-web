@@ -4,9 +4,6 @@ import AddTopicModalClient from './AddTopicModalClient';
 interface Props {
   searchParams?: {
     'add-topic'?: string;
-    'add-subtopic'?: string;
-    'delete-topic'?: string;
-    label?: string;
   };
 }
 

@@ -15,6 +15,20 @@ export const Icon = {
       <polyline points="6 4 10 8 6 12" />
     </svg>
   ),
+  Edit: () => (
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M10.5 2.5l3 3L5 14l-3.6.6L2 11l8.5-8.5z" />
+      <path d="M9 4l3 3" />
+    </svg>
+  ),
   Home: () => (
     <svg
       viewBox="0 0 16 16"
