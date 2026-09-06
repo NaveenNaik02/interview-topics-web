@@ -1,9 +1,10 @@
 import { getUser } from '@/lib/supabase/user';
-import { StarredClient, fetchStarredQuestions } from '@/features/starred';
+import { StarredClient } from '@/features/starred';
+import { fetchShortlistQuestions } from '@/lib/db/shortlistServer';
 
 export default async function StarredPage() {
-  const { supabase, user } = await getUser();
-  const questions = user ? await fetchStarredQuestions(supabase) : [];
+  const { user } = await getUser();
+  const questions = user ? await fetchShortlistQuestions('starred') : [];
 
   return (
     <div className="content-wrapper">

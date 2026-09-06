@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { IBM_Plex_Sans, IBM_Plex_Serif, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/lib/context/ThemeContext';
-import { themeClass, resolveServerTheme } from '@/lib/context/theme';
+import { themeClass, DEFAULT_THEME } from '@/lib/context/theme';
+import { fetchSettings } from '@/features/settings/db/dbServer';
 import { getUser } from '@/lib/supabase/user';
 import { FontSizeProvider } from '@/lib/context/FontSizeContext';
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
@@ -40,9 +41,14 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { supabase, user } = await getUser();
+  const { user } = await getUser();
 
-  const initialTheme = await resolveServerTheme(supabase, user?.id);
+  // undefined = no session to resolve a saved theme from; ThemeProvider then
+  // falls back to localStorage / prefers-color-scheme. The row itself is a
+  // cache hit for the app layout and /settings later in the same request.
+  const initialTheme = user
+    ? ((await fetchSettings())?.theme ?? DEFAULT_THEME)
+    : undefined;
 
   return (
     <html

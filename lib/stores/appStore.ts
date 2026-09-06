@@ -5,7 +5,10 @@ import { createStore } from 'zustand/vanilla';
 import { useStore } from 'zustand';
 import { createAuthSlice } from './slices/authSlice';
 import { createProgressSlice } from './slices/progressSlice';
-import { createSettingsSlice } from '@/features/settings/store/settingsSlice';
+import {
+  createSettingsSlice,
+  settingsStateFrom,
+} from '@/features/settings/store/settingsSlice';
 import { createInboxSlice } from '@/features/inbox/store/inboxSlice';
 import { createSetAsideSlice } from './slices/setAsideSlice';
 import { createFlagCountsSlice } from './slices/flagCountsSlice';
@@ -14,11 +17,18 @@ import { createQuestionOrderSlice } from './slices/questionOrderSlice';
 import { createSectionQuestionsSlice } from '@/features/section-view/store/sectionQuestionsSlice';
 import { computeStats } from './progressSelectors';
 import type { TopicGroup } from '@/lib/content/topics';
+import type { ShortlistFlag } from '@/lib/db/shortlist';
+import type { UserSettings } from '@/features/settings/db/db';
 import type { AppState } from './types';
 
 export interface StoreInit {
   groups: TopicGroup[];
   totals: Record<string, number>;
+  flagCounts?: Record<ShortlistFlag, number>;
+  inboxCount?: number;
+  setAsideCount?: number;
+  settingsRow?: UserSettings | null;
+  progressIds?: string[];
 }
 
 // One store per request/tree, not a module singleton: the store is constructed
@@ -27,22 +37,37 @@ export interface StoreInit {
 // also means a server render can never hand one account's owner-scoped topics
 // to the next request, which a module-level create() would risk the moment
 // anything wrote to it during render.
-export const createAppStore = (init: StoreInit) =>
-  createStore<AppState>()((...a) => ({
-    ...createAuthSlice(...a),
-    ...createProgressSlice(...a),
-    ...createSettingsSlice(...a),
-    ...createInboxSlice(...a),
-    ...createSetAsideSlice(...a),
-    ...createFlagCountsSlice(...a),
-    ...createOfflineSlice(...a),
-    ...createQuestionOrderSlice(...a),
-    ...createSectionQuestionsSlice(...a),
-    // Seeded after the slices so these win over their empty defaults.
-    groups: init.groups,
-    totals: init.totals,
-    stats: computeStats({}, init.totals, init.groups),
-  }));
+// `progressIds` is destructured out because it is the one StoreInit field
+// that is not an AppState field — it becomes the `store` map below.
+export const createAppStore = ({ progressIds, ...init }: StoreInit) =>
+  createStore<AppState>()((...a) => {
+    const store = Object.fromEntries((progressIds ?? []).map((id) => [id, true]));
+
+    return {
+      ...createAuthSlice(...a),
+      ...createProgressSlice(...a),
+      ...createSettingsSlice(...a),
+      ...createInboxSlice(...a),
+      ...createSetAsideSlice(...a),
+      ...createFlagCountsSlice(...a),
+      ...createOfflineSlice(...a),
+      ...createQuestionOrderSlice(...a),
+      ...createSectionQuestionsSlice(...a),
+      // Completed questions, server-fetched: without them every sidebar bar
+      // and dashboard percentage renders at 0% until a client fetch lands.
+      store,
+      mounted: progressIds !== undefined,
+      stats: computeStats(store, init.totals, init.groups),
+      // Every remaining StoreInit field is an AppState field, spread last so
+      // the server's values win over the slices' empty defaults. The optional
+      // ones are the Sidebar badge counts and the saved settings row, omitted
+      // by tests that don't care about them.
+      ...init,
+      // Derived from the seeded row, so the saved sort/theme/presets beat the
+      // slice's DEFAULT_SETTINGS placeholders on the very first render.
+      ...(init.settingsRow ? settingsStateFrom(init.settingsRow) : {}),
+    };
+  });
 
 export type AppStoreApi = ReturnType<typeof createAppStore>;
 

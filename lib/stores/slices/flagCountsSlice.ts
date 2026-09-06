@@ -1,10 +1,10 @@
 import type { StateCreator } from 'zustand';
-import { fetchShortlistCounts } from '@/lib/db/shortlist';
 import type { AppState, FlagCountsSlice } from '../types';
 
 // Counts only — the Sidebar badges are the only thing that reads these
 // globally. Full starred / grey-zone questions live page-side, fetched by
 // those pages themselves (see fetchShortlistQuestions) only when they render.
+// Seeded from the server by StoreProvider; bumpFlagCount keeps it live.
 // Mirrors InboxSlice/SetAsideSlice.
 export const createFlagCountsSlice: StateCreator<
   AppState,
@@ -19,9 +19,5 @@ export const createFlagCountsSlice: StateCreator<
     set({
       flagCounts: { ...counts, [flag]: Math.max(0, counts[flag] + delta) },
     });
-  },
-
-  loadFlagCounts: async (uid: string) => {
-    set({ flagCounts: await fetchShortlistCounts(uid) });
   },
 });

@@ -1,5 +1,4 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase/client';
 
 export interface InboxItem {
   id: string;
@@ -8,13 +7,7 @@ export interface InboxItem {
 }
 
 // Read-only. Mutations live in '@/features/inbox/actions' (Server Actions).
-export async function fetchInboxItems(userId: string): Promise<InboxItem[]> {
-  return fetchInboxItemsWithClient(supabase, userId);
-}
-
-// Same read, but callable with a caller-supplied client (e.g. the
-// cookie-scoped server client) instead of the browser singleton.
-export async function fetchInboxItemsWithClient(
+export async function fetchInboxItems(
   client: SupabaseClient,
   userId: string,
 ): Promise<InboxItem[]> {
@@ -28,14 +21,4 @@ export async function fetchInboxItemsWithClient(
     text: r.text,
     createdAt: r.created_at,
   }));
-}
-
-// Badge-only read: row count, no text bodies. Used by the global store so
-// every page pays for a number instead of every captured item's full text.
-export async function fetchInboxCount(userId: string): Promise<number> {
-  const { count } = await supabase
-    .from('inbox_items')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId);
-  return count ?? 0;
 }

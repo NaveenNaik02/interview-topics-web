@@ -162,6 +162,10 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
     loadProgress: async (uid: string) => {
       const offlineEnabled = getOfflineEnabled()
 
+      // Server-seeded at construction; nothing to fetch unless the offline
+      // cache still needs reconciling.
+      if (!offlineEnabled && get().mounted) return
+
       if (offlineEnabled) {
         const cached = getCachedProgress()
         // Hydrate immediately from cache if we have data or are offline

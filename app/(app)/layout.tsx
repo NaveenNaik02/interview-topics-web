@@ -7,6 +7,9 @@ import { getAllGroups } from '@/lib/content/topicsData';
 import { DrawerProvider } from '@/lib/context/DrawerContext';
 import { SearchProvider } from '@/lib/context/SearchContext';
 import { fetchAllCounts } from '@/lib/content/parser';
+import { fetchBadgeCounts } from '@/lib/db/badgeCounts';
+import { fetchSettings } from '@/features/settings/db/dbServer';
+import { fetchProgressIds } from '@/lib/db/progressServer';
 import OfflineToast from '@/components/OfflineToast';
 import ThemeSync from '@/components/ThemeSync';
 import AddQuestionFab from '@/components/AddQuestionFab';
@@ -17,14 +20,24 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [initialTotals, groups, { user }] = await Promise.all([
-    fetchAllCounts(),
-    getAllGroups(),
-    getUser(),
-  ]);
+  const [initialTotals, groups, badges, settingsRow, progressIds, { user }] =
+    await Promise.all([
+      fetchAllCounts(),
+      getAllGroups(),
+      fetchBadgeCounts(),
+      fetchSettings(),
+      fetchProgressIds(),
+      getUser(),
+    ]);
 
   return (
-    <StoreProvider groups={groups} totals={initialTotals}>
+    <StoreProvider
+      groups={groups}
+      totals={initialTotals}
+      settingsRow={settingsRow}
+      progressIds={progressIds}
+      {...badges}
+    >
       <ThemeSync />
       <OfflineToast />
       <AddQuestionFab />
