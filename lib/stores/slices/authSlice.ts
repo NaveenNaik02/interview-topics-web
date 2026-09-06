@@ -35,10 +35,6 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (
       if (loadedUserId === uid) return;
       loadedUserId = uid;
       get().loadProgress(uid);
-      get().loadSettings(uid);
-      get().loadInboxCount(uid);
-      get().loadSetAsideCount(uid);
-      get().loadFlagCounts(uid);
     };
 
     const {
@@ -62,6 +58,9 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (
         set({
           user: null,
           store: {},
+          // Clears the server seed too, so a sign-in that doesn't rebuild the
+          // store still refetches instead of tripping loadProgress's guard.
+          mounted: false,
           inboxCount: 0,
           setAsideCount: 0,
           flagCounts: { starred: 0, grey_zone: 0 },

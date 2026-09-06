@@ -1,5 +1,4 @@
 import type { StateCreator } from 'zustand';
-import * as setAsideDb from '@/lib/db/setAside';
 import * as setAsideActions from '@/lib/actions/setAside';
 import type { AppState, SetAsideSlice } from '../types';
 
@@ -27,10 +26,5 @@ export const createSetAsideSlice: StateCreator<
     setAsideActions
       .discardSetAsideItem(id)
       .catch((err) => console.error('[set-aside] delete failed:', err));
-  },
-
-  loadSetAsideCount: async (uid: string) => {
-    const count = await setAsideDb.fetchSetAsideCount(uid);
-    set({ setAsideCount: count });
   },
 });

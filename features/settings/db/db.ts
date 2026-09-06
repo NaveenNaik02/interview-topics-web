@@ -1,4 +1,3 @@
-import { supabase } from '@/lib/supabase/client';
 import type { SortMode } from '../types';
 import type { Theme } from '@/lib/context/ThemeContext';
 import type { PriorityLevel } from '@/lib/offlineSync';
@@ -30,17 +29,3 @@ export const DEFAULT_SETTINGS: UserSettings = {
   navigate_after_move: false,
   default_priority: 'med',
 };
-
-// Read-only. Mutations live in './actions' (Server Actions).
-export async function fetchSettings(
-  userId: string,
-): Promise<UserSettings | null> {
-  const { data } = await supabase
-    .from('user_settings')
-    .select(
-      'default_sort, remember_filters, theme, instruction_presets, active_instruction_preset_id, navigate_after_move, default_priority',
-    )
-    .eq('user_id', userId)
-    .single();
-  return data as UserSettings | null;
-}

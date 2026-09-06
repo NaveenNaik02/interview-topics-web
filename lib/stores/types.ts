@@ -7,6 +7,7 @@ import type { TopicGroup } from '@/lib/content/topics';
 import type { InstructionPreset } from '@/lib/instructionPresets';
 import type { InboxItem } from '@/features/inbox';
 import type { SetAsideItem } from '@/lib/db/setAside';
+import type { UserSettings } from '@/features/settings/db/db';
 import type { ShortlistFlag } from '@/lib/db/shortlist';
 import type { ProgressStats } from './progressSelectors';
 
@@ -49,6 +50,9 @@ export interface ProgressSlice {
 }
 
 export interface SettingsSlice {
+  // The server's saved user_settings row, seeded at construction; null means
+  // the account has none yet and hydrateSettings bootstraps one.
+  settingsRow: UserSettings | null;
   settingsLoaded: boolean;
   defaultSort: SortMode;
   rememberFilters: boolean;
@@ -74,8 +78,7 @@ export interface SettingsSlice {
   ) => void;
   deleteInstructionPreset: (id: string) => void;
   resetSettingsToDefaults: () => void;
-  loadSettings: (uid: string) => Promise<void>;
-  initSettingsFromLocalStorage: () => void;
+  hydrateSettings: () => void;
 }
 
 export interface InboxSlice {
@@ -86,7 +89,6 @@ export interface InboxSlice {
   appendInboxItem: (item: InboxItem) => void;
   appendInboxItems: (items: InboxItem[]) => void;
   removeInboxItem: (id: string) => void;
-  loadInboxCount: (uid: string) => Promise<void>;
 }
 
 export interface SetAsideSlice {
@@ -94,7 +96,6 @@ export interface SetAsideSlice {
   setAsideCount: number;
   appendSetAsideItem: (item: SetAsideItem) => void;
   removeSetAsideItem: (id: string) => void;
-  loadSetAsideCount: (uid: string) => Promise<void>;
 }
 
 export interface FlagCountsSlice {
@@ -103,7 +104,6 @@ export interface FlagCountsSlice {
   // of questions a page already fetched.
   flagCounts: Record<ShortlistFlag, number>;
   bumpFlagCount: (flag: ShortlistFlag, delta: number) => void;
-  loadFlagCounts: (uid: string) => Promise<void>;
 }
 
 export interface QuestionOrderSlice {

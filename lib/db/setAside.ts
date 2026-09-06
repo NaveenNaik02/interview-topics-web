@@ -1,5 +1,4 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase/client';
 
 export interface SetAsideItem {
   id: string;
@@ -17,14 +16,6 @@ export interface SetAsideItem {
 
 // Read-only. Mutations live in '@/lib/actions/setAside' (Server Actions).
 export async function fetchSetAsideItems(
-  userId: string,
-): Promise<SetAsideItem[]> {
-  return fetchSetAsideItemsWithClient(supabase, userId);
-}
-
-// Same read, but callable with a caller-supplied client (e.g. the
-// cookie-scoped server client) instead of the browser singleton.
-export async function fetchSetAsideItemsWithClient(
   client: SupabaseClient,
   userId: string,
 ): Promise<SetAsideItem[]> {
@@ -48,14 +39,4 @@ export async function fetchSetAsideItemsWithClient(
     label: r.label,
     createdAt: r.created_at,
   }));
-}
-
-// Badge-only read: row count, no bodies. Used by the global store so every
-// page pays for a number instead of every set-aside item's full markdown.
-export async function fetchSetAsideCount(userId: string): Promise<number> {
-  const { count } = await supabase
-    .from('set_aside_items')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId);
-  return count ?? 0;
 }

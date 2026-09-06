@@ -3,7 +3,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getUser } from '@/lib/supabase/user';
 import { getAllGroups } from '@/lib/content/topicsData';
 import { findGroupForSection } from '@/lib/content/topics';
-import { GreyZoneClient, fetchGreyZoneQuestions } from '@/features/grey-zone';
+import { GreyZoneClient } from '@/features/grey-zone';
+import { fetchShortlistQuestions } from '@/lib/db/shortlistServer';
 import type { ShortlistQuestion } from '@/lib/db/shortlist';
 
 interface Props {
@@ -16,11 +17,11 @@ interface Props {
 // them — grouped by main topic, topics shown first so you drill into just the
 // one you want instead of scrolling a flat list.
 export default async function GreyZonePage({ searchParams }: Props) {
-  const [{ supabase, user }, { topic: openSlug }] = await Promise.all([
+  const [{ user }, { topic: openSlug }] = await Promise.all([
     getUser(),
     searchParams,
   ]);
-  const questions = user ? await fetchGreyZoneQuestions(supabase) : [];
+  const questions = user ? await fetchShortlistQuestions('grey_zone') : [];
   const groups = await getAllGroups();
 
   const byTopic = new Map<

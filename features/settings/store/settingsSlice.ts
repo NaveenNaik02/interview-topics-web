@@ -1,8 +1,7 @@
 import type { StateCreator } from 'zustand';
 import type { SortMode } from '../types';
 import type { Theme } from '@/lib/context/ThemeContext';
-import * as settingsDb from '../db/db';
-import { DEFAULT_SETTINGS } from '../db/db';
+import { DEFAULT_SETTINGS, type UserSettings } from '../db/db';
 import * as settingsActions from '../actions';
 import {
   type InstructionPreset,
@@ -14,6 +13,40 @@ import {
   migratePresets,
 } from '@/lib/instructionPresets';
 import type { AppState, SettingsSlice } from '@/lib/stores/types';
+
+// Older saved preset lists (from before the built-in text/code/suggestion/
+// problem defaults existed) are migrated so all protected presets are always
+// present. Kept as its own function because hydrateSettings has to know
+// whether the migration actually added anything, to decide on the backfill.
+const presetsOf = (row: UserSettings) => {
+  const stored = row.instruction_presets?.length
+    ? row.instruction_presets
+    : DEFAULT_SETTINGS.instruction_presets;
+  return { stored, migrated: migratePresets(stored) };
+};
+
+// Pure: the slice fields a saved row implies. createAppStore applies this at
+// construction so the server's settings are right on the first render — no
+// post-mount fetch, and no flash of the DEFAULT_SETTINGS placeholders.
+export function settingsStateFrom(row: UserSettings) {
+  const { migrated } = presetsOf(row);
+  return {
+    settingsLoaded: true,
+    defaultSort: row.default_sort,
+    rememberFilters: row.remember_filters,
+    settingsTheme: row.theme,
+    navigateAfterMove: !!row.navigate_after_move,
+    // null is a real, saved choice here ("None" — see the migration that
+    // added this column), not a missing value to fall back from.
+    defaultPriority: row.default_priority,
+    instructionPresets: migrated,
+    activeInstructionPresetId: migrated.some(
+      (p) => p.id === row.active_instruction_preset_id,
+    )
+      ? row.active_instruction_preset_id
+      : migrated[0].id,
+  };
+}
 
 export const createSettingsSlice: StateCreator<
   AppState,
@@ -32,6 +65,7 @@ export const createSettingsSlice: StateCreator<
   };
 
   return {
+    settingsRow: null,
     settingsLoaded: false,
     defaultSort: DEFAULT_SETTINGS.default_sort,
     rememberFilters: DEFAULT_SETTINGS.remember_filters,
@@ -178,136 +212,89 @@ export const createSettingsSlice: StateCreator<
       }
     },
 
-    loadSettings: async (uid: string) => {
-      const data = await settingsDb.fetchSettings(uid);
+    // Browser-side follow-up to the server-seeded row, run once by
+    // StoreProvider. Two branches, split by what only the browser can do:
+    // mirroring the row into localStorage, or — when the account has no row
+    // yet — bootstrapping one from whatever localStorage already holds.
+    hydrateSettings: () => {
+      const row = get().settingsRow;
 
-      if (data) {
-        // Migrate older saved preset lists (from before the built-in text/code/
-        // suggestion/problem defaults existed) so all protected presets are
-        // always present.
-        const storedPresets = data.instruction_presets?.length
-          ? data.instruction_presets
-          : DEFAULT_SETTINGS.instruction_presets;
-        const presets = migratePresets(storedPresets);
-        const activeId = presets.some(
-          (p) => p.id === data.active_instruction_preset_id,
-        )
-          ? data.active_instruction_preset_id
-          : presets[0].id;
-        set({
-          defaultSort: data.default_sort,
-          rememberFilters: data.remember_filters,
-          settingsTheme: data.theme,
-          navigateAfterMove: !!data.navigate_after_move,
-          // null is a real, saved choice here ("None" — see the migration
-          // that added this column), not a missing value to fall back from.
-          defaultPriority: data.default_priority,
-          instructionPresets: presets,
-          activeInstructionPresetId: activeId,
-        });
+      if (row) {
         try {
-          localStorage.setItem('defaultSort', data.default_sort);
+          localStorage.setItem('defaultSort', row.default_sort);
           localStorage.setItem(
             'rememberFilters',
-            data.remember_filters ? '1' : '0',
+            row.remember_filters ? '1' : '0',
           );
         } catch {}
-        savePresets(presets);
-        saveActivePresetId(data.active_instruction_preset_id);
-        // Migration only changed the in-memory/local copy above — if it added
+        const { stored, migrated } = presetsOf(row);
+        savePresets(migrated);
+        saveActivePresetId(row.active_instruction_preset_id);
+        // The migration only changed the in-memory/local copy — if it added
         // any missing defaults, backfill the row now instead of waiting for
-        // the user to next touch a preset (which is the only other write path).
-        if (presets.length !== storedPresets.length) {
+        // the user to next touch a preset (the only other write path).
+        if (migrated.length !== stored.length) {
           settingsActions
-            .upsertSetting({ instruction_presets: presets })
+            .upsertSetting({ instruction_presets: migrated })
             .catch((err) => console.error('[settings] backfill failed:', err));
         }
-      } else {
-        // No row yet — bootstrap from localStorage so existing prefs aren't lost,
-        // falling back to DEFAULT_SETTINGS for anything not found there.
-        let lsTheme: Theme = DEFAULT_SETTINGS.theme;
-        let lsSort: SortMode = DEFAULT_SETTINGS.default_sort;
-        let lsRemember = DEFAULT_SETTINGS.remember_filters;
-        try {
-          const t = localStorage.getItem('theme');
-          if (t === 'dark' || t === 'sepia') {
-            lsTheme = t;
-          }
-          const s = localStorage.getItem('defaultSort');
-          if (s === 'high' || s === 'low') {
-            lsSort = s;
-          }
-          lsRemember = localStorage.getItem('rememberFilters') !== '0';
-        } catch {}
-        const lsPresets = loadPresets();
-        const lsActiveId = loadActivePresetId(lsPresets);
-        set({
-          defaultSort: lsSort,
-          rememberFilters: lsRemember,
-          settingsTheme: lsTheme,
-          navigateAfterMove: DEFAULT_SETTINGS.navigate_after_move,
-          defaultPriority: DEFAULT_SETTINGS.default_priority,
-          instructionPresets: lsPresets,
-          activeInstructionPresetId: lsActiveId,
-        });
-        const bootstrapSettings = {
-          default_sort: lsSort,
-          remember_filters: lsRemember,
-          theme: lsTheme,
-          instruction_presets: lsPresets,
-          active_instruction_preset_id: lsActiveId,
-          navigate_after_move: DEFAULT_SETTINGS.navigate_after_move,
-          default_priority: DEFAULT_SETTINGS.default_priority,
-        };
-        // insertSettings is a Server Action (cookie-based auth) called right
-        // after this callback's own client-side sign-in — the browser client's
-        // session is already updated in memory (that's why we got this far),
-        // but its cookie write can still be in flight, so the very next Server
-        // Action request can race it and see no session yet. One short-delayed
-        // retry is enough; the cookie is always settled by then.
-        settingsActions.insertSettings(bootstrapSettings).catch((err) => {
-          if (err instanceof Error && err.message === 'Not authenticated') {
-            setTimeout(() => {
-              settingsActions
-                .insertSettings(bootstrapSettings)
-                .catch((err2) =>
-                  console.error('[settings] insert failed:', err2),
-                );
-            }, 500);
-            return;
-          }
-          console.error('[settings] insert failed:', err);
-        });
+        return;
       }
-      set({ settingsLoaded: true });
-    },
 
-    // Hydrate settings from localStorage immediately on mount so the correct
-    // sort/filter defaults are available on first paint, instead of waiting on
-    // the Supabase round-trip in loadSettings (which caused sections to briefly
-    // — or on a slow connection, not-so-briefly — render in manual order even
-    // when a different default was saved).
-    initSettingsFromLocalStorage: () => {
+      // No row yet — bootstrap from localStorage so existing prefs aren't
+      // lost, falling back to DEFAULT_SETTINGS for anything not found there.
+      let lsTheme: Theme = DEFAULT_SETTINGS.theme;
+      let lsSort: SortMode = DEFAULT_SETTINGS.default_sort;
+      let lsRemember = DEFAULT_SETTINGS.remember_filters;
       try {
-        const s = localStorage.getItem('defaultSort');
-        if (s === 'manual' || s === 'high' || s === 'low') {
-          set({ defaultSort: s });
-        }
-        const r = localStorage.getItem('rememberFilters');
-        if (r !== null) {
-          set({ rememberFilters: r !== '0' });
-        }
         const t = localStorage.getItem('theme');
-        if (t === 'dark' || t === 'sepia' || t === 'light') {
-          set({ settingsTheme: t });
+        if (t === 'dark' || t === 'sepia') {
+          lsTheme = t;
         }
-        const presets = loadPresets();
-        set({
-          instructionPresets: presets,
-          activeInstructionPresetId: loadActivePresetId(presets),
-        });
-        set({ settingsLoaded: true });
+        const s = localStorage.getItem('defaultSort');
+        if (s === 'high' || s === 'low') {
+          lsSort = s;
+        }
+        lsRemember = localStorage.getItem('rememberFilters') !== '0';
       } catch {}
+      const lsPresets = loadPresets();
+      const lsActiveId = loadActivePresetId(lsPresets);
+      set({
+        defaultSort: lsSort,
+        rememberFilters: lsRemember,
+        settingsTheme: lsTheme,
+        navigateAfterMove: DEFAULT_SETTINGS.navigate_after_move,
+        defaultPriority: DEFAULT_SETTINGS.default_priority,
+        instructionPresets: lsPresets,
+        activeInstructionPresetId: lsActiveId,
+        settingsLoaded: true,
+      });
+      const bootstrapSettings = {
+        default_sort: lsSort,
+        remember_filters: lsRemember,
+        theme: lsTheme,
+        instruction_presets: lsPresets,
+        active_instruction_preset_id: lsActiveId,
+        navigate_after_move: DEFAULT_SETTINGS.navigate_after_move,
+        default_priority: DEFAULT_SETTINGS.default_priority,
+      };
+      // insertSettings is a Server Action (cookie-based auth) called right
+      // after a client-side sign-in — the browser client's session is already
+      // updated in memory, but its cookie write can still be in flight, so
+      // the very next Server Action request can race it and see no session
+      // yet. One short-delayed retry is enough; the cookie is always settled
+      // by then.
+      settingsActions.insertSettings(bootstrapSettings).catch((err) => {
+        if (err instanceof Error && err.message === 'Not authenticated') {
+          setTimeout(() => {
+            settingsActions
+              .insertSettings(bootstrapSettings)
+              .catch((err2) => console.error('[settings] insert failed:', err2));
+          }, 500);
+          return;
+        }
+        console.error('[settings] insert failed:', err);
+      });
     },
   };
 };
