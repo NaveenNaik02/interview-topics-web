@@ -10,24 +10,28 @@ import {
   findGroupForSection,
 } from '@/lib/content/topics';
 
-// isSettings/isPriorityMix must be checked before the generic section lookup
+// Routes that are their own crumb. Matched before the generic section lookup
 // below, since findSection(['settings']) etc. return null (they're not real
-// topic/section paths) and would otherwise leave breadcrumbs blank instead of
-// falling through to the Dashboard label.
+// topic/section paths) and would otherwise leave the breadcrumb blank.
+const FLAT_CRUMBS: Record<string, string> = {
+  '/': 'Dashboard',
+  '/settings': 'Settings',
+  '/inbox': 'Inbox',
+  '/priority-mix': 'Priority Mix',
+  '/starred': 'Starred',
+  '/grey-zone': 'Grey Zone',
+};
+
 export default function Breadcrumbs() {
   const pathname = usePathname();
   const { query } = useSearch();
   const groups = useAppStore((s) => s.groups);
 
   const searching = query.trim().length >= 2;
-  const isHome = pathname === '/';
-  const isSettings = pathname === '/settings';
-  const isPriorityMix = pathname === '/priority-mix';
+  const flat = FLAT_CRUMBS[pathname];
 
   if (searching) return <span className="crumb">Search results</span>;
-  if (isSettings) return <span className="crumb">Settings</span>;
-  if (isPriorityMix) return <span className="crumb">Priority Mix</span>;
-  if (isHome) return <span className="crumb">Dashboard</span>;
+  if (flat) return <span className="crumb">{flat}</span>;
 
   const dashboardCrumb = (
     <>
