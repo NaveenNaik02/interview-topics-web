@@ -1,1 +1,0 @@
-export { StarredClient } from './StarredClient';

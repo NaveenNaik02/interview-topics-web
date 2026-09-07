@@ -1,5 +1,5 @@
-import { SectionSkeleton } from '@/features/section-view'
+import { ShortlistSkeleton } from '@/components/ShortlistPage';
 
 export default function Loading() {
-  return <SectionSkeleton />
+  return <ShortlistSkeleton />;
 }
