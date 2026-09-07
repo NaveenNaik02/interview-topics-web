@@ -1,10 +1,11 @@
-import type { Config } from 'tailwindcss'
+import type { Config } from 'tailwindcss';
 
 const config: Config = {
   darkMode: ['class'],
   content: [
     './app/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
+    './features/**/*.{ts,tsx}',
     './lib/**/*.{ts,tsx}',
   ],
   theme: {
@@ -61,10 +62,7 @@ const config: Config = {
       },
     },
   },
-  plugins: [
-    require('tailwindcss-animate'),
-    require('@tailwindcss/typography'),
-  ],
-}
+  plugins: [require('tailwindcss-animate'), require('@tailwindcss/typography')],
+};
 
-export default config
+export default config;

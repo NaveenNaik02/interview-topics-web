@@ -1,5 +1,5 @@
-import { SectionSkeleton } from '@/features/section-view'
+import { InboxSkeleton } from '@/features/inbox';
 
 export default function Loading() {
-  return <SectionSkeleton />
+  return <InboxSkeleton />;
 }
