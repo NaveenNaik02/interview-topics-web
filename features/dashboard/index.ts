@@ -1,2 +1,2 @@
 export { default as Dashboard } from './Dashboard';
-export { DashboardEmptyState } from './components';
+export { DashboardEmptyState, DashboardSkeleton } from './components';

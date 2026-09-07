@@ -1,13 +1,31 @@
+'use client';
+
 import Link from 'next/link';
-import { TopicGroup } from '@/lib/content/topics';
-import TopicCardProgress from './TopicCardProgress';
+import { CSSProperties } from 'react';
+import { TopicGroup, sectionUrl } from '@/lib/content/topics';
+import { topicHue, topicIcon } from '@/lib/content/topicMeta';
+import { useProgressStats } from '@/lib/hooks';
 
 interface TopicCardProps {
   group: TopicGroup;
 }
 
 export default function TopicCard({ group }: TopicCardProps) {
+  const stats = useProgressStats();
   const hasSections = group.sections.length > 0;
+
+  let done = 0;
+  let total = 0;
+  group.sections.forEach((s) => {
+    const sStats = stats.bySection[sectionUrl(s)];
+    if (sStats) {
+      done += sStats.completed;
+      total += sStats.total;
+    }
+  });
+
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  const hue = topicHue(group.groupName);
 
   return (
     <div className="topic-card">
@@ -16,19 +34,36 @@ export default function TopicCard({ group }: TopicCardProps) {
           otherwise fire one per card — and two per tool link, which only ever
           open a modal. Same reason the sidebar's links opt out. */}
       <Link href={`/${group.slug}`} className="tc-main" prefetch={false}>
+        <div className="tc-top">
+          <div
+            className="tc-badge"
+            style={{ '--h': hue } as CSSProperties}
+            aria-hidden="true"
+          >
+            {topicIcon(group.groupName)}
+          </div>
+          <div
+            className="tc-ring"
+            style={{ '--h': hue, '--p': pct } as CSSProperties}
+          >
+            <span>{pct}%</span>
+          </div>
+        </div>
         <div className="tc-head">
           <span className="tc-name">{group.groupName}</span>
-          {hasSections && (
-            <span className="tc-count">{group.sections.length} sections</span>
-          )}
         </div>
         <p className="tc-blurb">{group.blurb}</p>
         {hasSections ? (
-          <TopicCardProgress group={group} />
+          <div className="tc-foot">
+            <span>
+              {done}/{total} done
+            </span>
+            <span>{total} Q</span>
+          </div>
         ) : (
-          <p className="tc-blurb" style={{ opacity: 0.7 }}>
-            No subtopics yet
-          </p>
+          <div className="tc-foot">
+            <span>No subtopics yet</span>
+          </div>
         )}
       </Link>
     </div>

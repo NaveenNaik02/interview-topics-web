@@ -1,5 +1,5 @@
 import { TopicGroup } from '@/lib/content/topics';
-import { TopicCard, OverallProgressCard } from './components';
+import { TopicCard, DashboardHero } from './components';
 
 interface Props {
   groups: TopicGroup[];
@@ -8,7 +8,7 @@ interface Props {
 export default function Dashboard({ groups }: Props) {
   return (
     <>
-      <OverallProgressCard />
+      <DashboardHero />
 
       <div className="dash-grid">
         {groups.map((group) => (
