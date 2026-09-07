@@ -3830,9 +3830,7 @@ div.drag-shadow.drag-shadow {
   width: 100%;
 }
 
-.dash-hero {
-  margin-bottom: var(--s-5);
-}
+/* Also used by the login, signup, and empty-state headers. */
 .dash-eyebrow {
   font-size: 12px;
   text-transform: uppercase;
@@ -3841,9 +3839,49 @@ div.drag-shadow.drag-shadow {
   font-weight: 600;
   margin-bottom: var(--s-3);
 }
+
+.dash-hero-ring {
+  display: flex;
+  align-items: center;
+  gap: var(--s-6);
+  margin-bottom: var(--s-7);
+}
+.dash-ring {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: conic-gradient(
+    var(--accent) calc(var(--p) * 1%),
+    var(--bg-soft) 0
+  );
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+.dash-ring::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: var(--bg);
+}
+.dash-ring span {
+  position: relative;
+  font-family: var(--f-serif);
+  font-size: 24px;
+  font-weight: 600;
+}
+.dash-hero-text {
+  flex: 1;
+  min-width: 0;
+}
+.dash-hero-ring .reset-all {
+  flex-shrink: 0;
+}
 .dash-title {
   font-family: var(--f-serif);
-  font-size: 56px;
+  font-size: 30px;
   font-weight: 600;
   letter-spacing: -0.03em;
   line-height: 1;
@@ -3906,54 +3944,15 @@ div.drag-shadow.drag-shadow {
   cursor: pointer;
 }
 
-.overall-row-card {
-  display: flex;
-  align-items: center;
-  gap: var(--s-6);
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: var(--s-5) var(--s-6);
-  margin-bottom: var(--s-7);
-}
-.orc-stat {
-  flex-shrink: 0;
-}
-.orc-stat .label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--text-subtle);
-  font-weight: 600;
-  margin-bottom: var(--s-2);
-}
-.overall-row {
-  display: flex;
-  align-items: baseline;
-  gap: var(--s-3);
-}
-.overall-num {
-  font-family: var(--f-serif);
-  font-size: 34px;
-  font-weight: 600;
-  letter-spacing: -0.025em;
-  line-height: 1;
-}
-.overall-of {
-  font-size: 13.5px;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.orc-bar {
-  flex: 1;
-  height: 8px;
-}
-
 .dash-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--s-4);
+}
+@media (max-width: 640px) {
+  .dash-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .topic-card {
@@ -3985,13 +3984,6 @@ div.drag-shadow.drag-shadow {
   letter-spacing: -0.015em;
 }
 
-.tc-count {
-  font-family: var(--f-mono);
-  font-size: 12px;
-  color: var(--text-subtle);
-  font-variant-numeric: tabular-nums;
-}
-
 .tc-blurb {
   font-size: 13.5px;
   color: var(--text-muted);
@@ -3999,16 +3991,88 @@ div.drag-shadow.drag-shadow {
   flex: 1;
 }
 
-.tc-progress {
+.tc-top {
   display: flex;
-  align-items: center;
-  gap: var(--s-3);
-  font-size: 12px;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
+  align-items: flex-start;
+  justify-content: space-between;
 }
-.tc-progress .bar {
-  flex: 1;
+
+/* --h is set inline per topic; lightness and chroma stay in CSS so each theme
+   can pick its own without the inline style winning. */
+.tc-badge {
+  --bl: 0.94;
+  --bc: 0.03;
+  --fl: 0.5;
+  --fc: 0.14;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: oklch(var(--bl) var(--bc) var(--h));
+  color: oklch(var(--fl) var(--fc) var(--h));
+}
+.tc-badge svg {
+  width: 19px;
+  height: 19px;
+}
+.tc-badge-letter {
+  font-family: var(--f-serif);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.tc-ring {
+  --rl: 0.55;
+  --rc: 0.14;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: conic-gradient(
+    oklch(var(--rl) var(--rc) var(--h)) calc(var(--p) * 1%),
+    var(--bg-soft) 0
+  );
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+.tc-ring::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--bg-card);
+}
+.tc-ring span {
+  position: relative;
+  font-family: var(--f-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.dark .tc-badge,
+.theme-sepia .tc-badge {
+  --bl: 0.28;
+  --bc: 0.05;
+  --fl: 0.78;
+  --fc: 0.12;
+}
+.dark .tc-ring,
+.theme-sepia .tc-ring {
+  --rl: 0.68;
+  --rc: 0.13;
+}
+
+.tc-foot {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--f-mono);
+  font-size: 12px;
+  color: var(--text-subtle);
+  font-variant-numeric: tabular-nums;
 }
 
 /* =========================================================
@@ -4088,19 +4152,18 @@ div.drag-shadow.drag-shadow {
   .dashboard-view {
     padding: var(--s-5) var(--s-4) 80px;
   }
-  .overall-row-card {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--s-4);
+  .dash-hero-ring {
+    flex-wrap: wrap;
   }
-  .orc-bar {
-    order: 3;
+  .dash-ring {
+    width: 72px;
+    height: 72px;
   }
   .reset-all {
     align-self: flex-start;
   }
   .dash-title {
-    font-size: 38px;
+    font-size: 24px;
   }
   .subtopic-title {
     font-size: 30px;
