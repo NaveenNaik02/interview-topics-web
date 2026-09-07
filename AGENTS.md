@@ -138,8 +138,6 @@ features/
 ├── dashboard/            topic cards + overall progress
 ├── sidebar/              topic tree
 ├── inbox/                capture pasted text before filing it
-├── starred/              ─┐ hand-curated shortlists, shared UI
-├── grey-zone/            ─┘ via components/QuestionShortlist/
 ├── settings/             theme, AI model, instruction presets
 └── login/  signup/       auth forms + their server actions
 ```
@@ -171,6 +169,13 @@ components/               feature-independent UI
 (generated snapshot, one file per relation), `scripts/`
 (migrate, set-admin, pull-remote, db-schema, two one-time fixups), `public/` (`sw.js`,
 `manifest.json`), `design/` (standalone HTML prototypes, not built or imported).
+
+**In `design/`, `app.jsx` is the source of truth for what a page looks like** — the
+built prototype of the whole app, decisions already made. The `*.html` files are
+option explorations (`Starred Grouping Options.html`, `Topic View Options v3.html`,
+…), often several variants of one decision that may never have been taken. Read
+`app.jsx` first when asked to match "the design"; treat an options file as the answer
+only when `app.jsx` doesn't cover that screen.
 
 See `components/AGENTS.md` for component conventions — feature-first organization, when to split a file, and the rule keeping root-level `components/` independent of any feature.
 
@@ -267,14 +272,14 @@ Everything Gemini-facing lives in `lib/ai/`, leaving `lib/actions/` as plain dat
 | ------------ | ----------------------------------------------- | ----------------------------------- |
 | Inbox        | `features/inbox/`                               | `inbox_items`                       |
 | Set aside    | `lib/actions/setAside.ts`, `lib/db/setAside.ts` | `set_aside_items`                   |
-| Starred      | `features/starred/`                             | `questions.starred`                 |
-| Grey Zone    | `features/grey-zone/`                           | `questions.grey_zone`               |
+| Starred      | `components/ShortlistPage.tsx`                   | `questions.starred`                 |
+| Grey Zone    | `components/ShortlistPage.tsx`                   | `questions.grey_zone`               |
 | Priority Mix | `components/PriorityMixClient.tsx`              | `questions.priority` (high/med/low) |
 | Manual order | `lib/actions/questionPosition.ts`               | `question_position`                 |
 
 - **Inbox** — zero-friction capture of pasted text before picking a topic. `splitInboxText.ts` uses Gemini to split freeform text (e.g. a recruiter message) into distinct questions. Assigning an item reopens the add-question modal prefilled; saving deletes the source item.
 - **Set aside** — the kebab menu's soft delete. `setAsideQuestion()` inserts a full content snapshot into `set_aside_items` _before_ deleting from `questions`, so a mid-failure can never lose content, then best-effort cleans the user's progress rows. Reassigning restores the full saved answer, unlike inbox items which carry only a title.
-- **Starred / Grey Zone** — hand-curated shortlists sharing the `ShortlistFlag` type and the `components/QuestionShortlist/` UI. Optimistic local update, no offline queue.
+- **Starred / Grey Zone** — hand-curated shortlists sharing the `ShortlistFlag` type and the `components/QuestionShortlist/` UI. Both routes are the same page: `components/ShortlistPage.tsx` takes the flag plus its copy and renders topic cards, drilling into one topic via `?topic=<slug>` so the page stays a server component. Optimistic local update, no offline queue.
 - **Priority** — `user_settings.default_priority` (migration `20260718130000_default_priority.sql`) sets what's pre-selected on new questions.
 - **Manual reordering** — drag logic in `features/section-view/hooks/useSectionDrag.ts`: native Pointer Events, no drag library, a floating clone tracking the pointer, drop slot from the pointer's Y against each row's midpoint. Only in `'manual'` sort mode with no active filters.
   - **Touch pointers bail out** (`if (e.pointerType !== 'mouse') return`) so dragging doesn't fight scroll gestures — reordering is mouse-only.

@@ -1,32 +1,21 @@
-import { getUser } from '@/lib/supabase/user';
-import { StarredClient } from '@/features/starred';
-import { fetchShortlistQuestions } from '@/lib/db/shortlistServer';
+import { ShortlistPage } from '@/components/ShortlistPage';
 
-export default async function StarredPage() {
-  const { user } = await getUser();
-  const questions = user ? await fetchShortlistQuestions('starred') : [];
+interface Props {
+  searchParams: Promise<{ topic?: string }>;
+}
+
+export default async function StarredPage({ searchParams }: Props) {
+  const { topic } = await searchParams;
 
   return (
-    <div className="content-wrapper">
-      <div className="subtopic-header" style={{ marginBottom: 'var(--s-5)' }}>
-        <div className="eyebrow">Shortlist</div>
-        <h1 className="subtopic-title">Starred</h1>
-        <p className="build-lede">
-          Your hand-picked questions for a quick pass right before the
-          interview.
-        </p>
-      </div>
-      {questions.length === 0 ? (
-        <div className="empty-set">
-          <div className="es-title">Nothing starred yet</div>
-          <div className="es-sub">
-            Star a question from any topic — look for the star icon on each row
-            — to build your pre-interview shortlist.
-          </div>
-        </div>
-      ) : (
-        <StarredClient questions={questions} />
-      )}
-    </div>
+    <ShortlistPage
+      flag="starred"
+      basePath="/starred"
+      title="Starred"
+      lede="Your hand-picked questions for a quick pass right before the interview."
+      emptyTitle="Nothing starred yet"
+      emptySub="Star a question from any topic — look for the star icon on each row — to build your pre-interview shortlist."
+      openSlug={topic}
+    />
   );
 }

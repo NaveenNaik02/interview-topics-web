@@ -9,6 +9,7 @@ import {
   type SectionMeta,
 } from '@/lib/content/topics';
 import { setAsideQuestion } from '@/lib/actions/setAside';
+import { bulkSetFlag } from '@/lib/actions/questionFlags';
 import type { ShortlistQuestion, ShortlistFlag } from '@/lib/db/shortlist';
 import ShortlistList, { type ShortlistRowData } from './ShortlistList';
 import { EditQuestionModal, type EditingQuestion } from '@/features/authoring';
@@ -20,17 +21,15 @@ import { htmlToMarkdown } from '@/lib/htmlToMarkdown';
 interface Props {
   questions: ShortlistQuestion[];
   flag: ShortlistFlag;
-  // Taking the question off this shortlist — the write and the badge bump
-  // belong to whichever feature owns the flag, so they come in as a prop.
-  onRemove: (id: string) => Promise<void>;
 }
 
 // A flat, manually-curated shortlist — starred (a last-look pass before the
 // interview) or grey zone (still shaky) — orthogonal to priority/status, no
 // filters. Mirrors PriorityMixClient's question-list wiring
 // (edit/move/delete/set-aside) minus its builder UI.
-export const QuestionShortlist = ({ questions, flag, onRemove }: Props) => {
+export const QuestionShortlist = ({ questions, flag }: Props) => {
   const navigateAfterMove = useAppStore((s) => s.navigateAfterMove);
+  const bumpFlagCount = useAppStore((s) => s.bumpFlagCount);
   const appendSetAsideItem = useAppStore((s) => s.appendSetAsideItem);
   const groups = useAppStore((s) => s.groups);
   const router = useRouter();
@@ -44,6 +43,14 @@ export const QuestionShortlist = ({ questions, flag, onRemove }: Props) => {
   } | null>(null);
   const [moveToast, setMoveToast] = useState<string | null>(null);
   const [asideToast, setAsideToast] = useState(false);
+
+  const unflag = useCallback(
+    async (id: string) => {
+      await bulkSetFlag([id], flag, false);
+      bumpFlagCount(flag, -1);
+    },
+    [flag, bumpFlagCount],
+  );
 
   const handleEdit = useCallback(({ q, section }: ShortlistRowData) =>
     setEditingQuestion({
@@ -73,7 +80,7 @@ export const QuestionShortlist = ({ questions, flag, onRemove }: Props) => {
       <ShortlistList
         questions={questions}
         flag={flag}
-        onRemove={onRemove}
+        onRemove={unflag}
         onEdit={handleEdit}
         onMove={handleMove}
         onSetAside={handleSetAside}
