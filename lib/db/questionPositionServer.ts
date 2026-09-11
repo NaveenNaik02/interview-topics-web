@@ -2,20 +2,15 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import type { SectionMeta } from '@/lib/content/topics';
 
-// Server-only: seeds a section page's manual order. Keyed off the id prefix rather than the ids themselves — ids are
-// `{topic}/{file}/u-{uuid}`, so the section identifies its own rows and this
-// no longer has to wait for parseSection to resolve first. RLS scopes
-// question_position to the caller, so there is no user filter here.
+// Keyed off the id prefix, not the ids: ids are `{topic}/{file}/u-{uuid}`, so
+// this needs no question list and can run alongside parseSection.
 export async function fetchSectionOrder(
-  section: SectionMeta,
+  section: Pick<SectionMeta, 'topic' | 'file'>,
 ): Promise<Record<string, number>> {
   const supabase = await createClient();
   // `_` and `%` are LIKE wildcards and the reserved `code_output` subtopic has
   // one, so the prefix is escaped rather than interpolated raw.
-  const prefix = `${section.topic}/${section.file}/`.replace(
-    /[\\%_]/g,
-    '\\$&',
-  );
+  const prefix = `${section.topic}/${section.file}/`.replace(/[\\%_]/g, '\\$&');
 
   const { data, error } = await supabase
     .from('question_position')
