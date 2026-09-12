@@ -10,7 +10,7 @@ const THEMES: { k: Theme; label: string; icon: React.ReactNode }[] = [
   { k: 'dark', label: 'Dark', icon: <Moon size={13} /> },
 ];
 
-export default function ThemePicker() {
+const ThemePicker = () => {
   const { theme, setTheme } = useTheme();
   const setThemeSetting = useAppStore((s) => s.setThemeSetting);
 
@@ -32,4 +32,6 @@ export default function ThemePicker() {
       ))}
     </div>
   );
-}
+};
+
+export default ThemePicker;

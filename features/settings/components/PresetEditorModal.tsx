@@ -5,7 +5,7 @@ import { X } from 'lucide-react';
 
 export type PresetDraft = { id?: string; name: string; text: string };
 
-export default function PresetEditorModal({
+const PresetEditorModal = ({
   initial,
   onClose,
   onSave,
@@ -13,7 +13,7 @@ export default function PresetEditorModal({
   initial: PresetDraft;
   onClose: () => void;
   onSave: (name: string, text: string) => void;
-}) {
+}) => {
   const [name, setName] = useState(initial.name);
   const [text, setText] = useState(initial.text);
 
@@ -99,4 +99,6 @@ export default function PresetEditorModal({
       </div>
     </div>
   );
-}
+};
+
+export default PresetEditorModal;

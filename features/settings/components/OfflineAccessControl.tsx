@@ -16,7 +16,7 @@ function relativeTime(isoStr: string | null) {
 // Whole row is dynamic (download state, progress, cached-at time), unlike
 // the other settings rows — so it owns its own settings-row-text/label
 // rather than splitting the static label out into the server-rendered parent.
-export default function OfflineAccessControl() {
+const OfflineAccessControl = () => {
   const stats = useProgressStats();
   const {
     isOnline,
@@ -81,4 +81,6 @@ export default function OfflineAccessControl() {
       )}
     </>
   );
-}
+};
+
+export default OfflineAccessControl;

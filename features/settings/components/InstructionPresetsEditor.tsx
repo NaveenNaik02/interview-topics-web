@@ -5,7 +5,7 @@ import { useAppStore } from '@/lib/stores/appStore';
 import PresetEditorModal, { type PresetDraft } from './PresetEditorModal';
 import PresetRow from './PresetRow';
 
-export default function InstructionPresetsEditor() {
+const InstructionPresetsEditor = () => {
   const presets = useAppStore((s) => s.instructionPresets);
   const addPreset = useAppStore((s) => s.addInstructionPreset);
   const updatePreset = useAppStore((s) => s.updateInstructionPreset);
@@ -44,4 +44,6 @@ export default function InstructionPresetsEditor() {
       )}
     </div>
   );
-}
+};
+
+export default InstructionPresetsEditor;

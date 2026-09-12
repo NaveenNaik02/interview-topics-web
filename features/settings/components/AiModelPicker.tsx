@@ -18,7 +18,7 @@ const serverModel = () => AQ_MODELS[0].id;
 // Which model every AI action generates with. localStorage rather than
 // user_settings: this tracks the rate limits the current browser has been
 // hitting, so syncing it across devices would be the wrong behaviour.
-export default function AiModelPicker() {
+const AiModelPicker = () => {
   const saved = useSyncExternalStore(noSubscribe, getSavedModel, serverModel);
   const [picked, setPicked] = useState<AqModelId | null>(null);
   const model = picked ?? saved;
@@ -41,4 +41,6 @@ export default function AiModelPicker() {
       }))}
     />
   );
-}
+};
+
+export default AiModelPicker;

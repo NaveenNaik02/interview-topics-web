@@ -10,15 +10,9 @@ const PRIORITY_OPTIONS: { k: PriorityLevel | null; label: string }[] = [
   { k: null, label: 'None' },
 ];
 
-export default function DefaultPriorityPicker({
-  initial,
-}: {
-  initial: PriorityLevel | null;
-}) {
-  const settingsLoaded = useAppStore((s) => s.settingsLoaded);
-  const liveDefaultPriority = useAppStore((s) => s.defaultPriority);
+const DefaultPriorityPicker = () => {
+  const defaultPriority = useAppStore((s) => s.defaultPriority);
   const setDefaultPriority = useAppStore((s) => s.setDefaultPriority);
-  const defaultPriority = settingsLoaded ? liveDefaultPriority : initial;
 
   return (
     <div className="sort-pill-group">
@@ -34,4 +28,6 @@ export default function DefaultPriorityPicker({
       ))}
     </div>
   );
-}
+};
+
+export default DefaultPriorityPicker;

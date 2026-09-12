@@ -11,7 +11,7 @@ const KIND_LABEL = {
   'code-explanation': 'Code explanation default',
 } as const;
 
-export default function PresetRow({
+const PresetRow = ({
   preset: p,
   canDelete,
   onEdit,
@@ -21,7 +21,7 @@ export default function PresetRow({
   canDelete: boolean;
   onEdit: () => void;
   onDelete: () => void;
-}) {
+}) => {
   const kindLabel = p.kind && KIND_LABEL[p.kind];
 
   return (
@@ -64,4 +64,6 @@ export default function PresetRow({
       </div>
     </div>
   );
-}
+};
+
+export default PresetRow;
