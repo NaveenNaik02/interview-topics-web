@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { HoverPrefetchLink } from '@/components/HoverPrefetchLink';
 import { SectionMeta, sectionUrl } from '@/lib/content/topics';
 import { useProgressStats } from '@/lib/hooks';
 import { Icon } from '@/components/SidebarIcons';
@@ -19,10 +19,7 @@ export const SubtopicRow = ({ section, onRename, onDelete }: Props) => {
 
   return (
     <div className="tv-h-row">
-      {/* prefetch={false} for the same reason the dashboard cards opt out —
-          every route here is owner-scoped and dynamic, so a prefetch is a
-          full server render. */}
-      <Link href={url} className="tv-h-row-main" prefetch={false}>
+      <HoverPrefetchLink href={url} className="tv-h-row-main">
         <span className="tv-h-row-name">{section.label}</span>
         {total > 0 ? (
           <>
@@ -36,7 +33,7 @@ export const SubtopicRow = ({ section, onRename, onDelete }: Props) => {
         ) : (
           <span className="placeholder-tag">soon</span>
         )}
-      </Link>
+      </HoverPrefetchLink>
       <div className="tv-h-row-tools">
         <button
           className="tv-h-ghost"

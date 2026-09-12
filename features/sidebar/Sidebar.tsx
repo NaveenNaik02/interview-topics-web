@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { HoverPrefetchLink } from '@/components/HoverPrefetchLink';
 import { useProgressStats } from '@/lib/hooks';
 import { useAppStore } from '@/lib/stores/appStore';
 import { useDrawer } from '@/lib/context/DrawerContext';
@@ -26,11 +26,10 @@ export const Sidebar = () => {
       />
       <aside className={`sidebar ${drawerOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
-          <Link
+          <HoverPrefetchLink
             href="/"
             className="brand"
             onClick={closeDrawer}
-            prefetch={false}
           >
             <div className="brand-mark">P</div>
             <div>
@@ -39,7 +38,7 @@ export const Sidebar = () => {
                 Interview Prep · {totalCount} Q&apos;s
               </div>
             </div>
-          </Link>
+          </HoverPrefetchLink>
         </div>
 
         <nav className="sidebar-nav">
