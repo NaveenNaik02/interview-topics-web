@@ -1,1 +1,1 @@
-export { insertSettings, upsertSetting } from './settings'
+export { insertSettings, upsertSetting } from './settings';

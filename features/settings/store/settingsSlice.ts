@@ -155,7 +155,9 @@ export const createSettingsSlice: StateCreator<
       set({ instructionPresets: next });
       savePresets(next);
       const nextActiveId =
-        activeInstructionPresetId === id ? next[0].id : activeInstructionPresetId;
+        activeInstructionPresetId === id
+          ? next[0].id
+          : activeInstructionPresetId;
       if (nextActiveId !== activeInstructionPresetId) {
         set({ activeInstructionPresetId: nextActiveId });
         saveActivePresetId(nextActiveId);
@@ -289,7 +291,9 @@ export const createSettingsSlice: StateCreator<
           setTimeout(() => {
             settingsActions
               .insertSettings(bootstrapSettings)
-              .catch((err2) => console.error('[settings] insert failed:', err2));
+              .catch((err2) =>
+                console.error('[settings] insert failed:', err2),
+              );
           }, 500);
           return;
         }

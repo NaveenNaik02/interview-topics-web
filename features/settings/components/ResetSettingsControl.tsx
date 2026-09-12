@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useAppStore } from '@/lib/stores/appStore';
 import ConfirmDialog from '@/components/ConfirmDialog';
 
-export default function ResetSettingsControl() {
+const ResetSettingsControl = () => {
   const resetSettingsToDefaults = useAppStore((s) => s.resetSettingsToDefaults);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
 
@@ -26,4 +26,6 @@ export default function ResetSettingsControl() {
       />
     </>
   );
-}
+};
+
+export default ResetSettingsControl;

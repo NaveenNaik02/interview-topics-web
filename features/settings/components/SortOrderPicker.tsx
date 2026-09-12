@@ -12,7 +12,7 @@ const SORT_OPTIONS: { k: SortMode; label: string }[] = [
 // `initial` is the server-fetched value, rendered until the store finishes
 // hydrating (see SettingsClient) so returning users don't see a flash of
 // the wrong pill selected.
-export default function SortOrderPicker({ initial }: { initial: SortMode }) {
+const SortOrderPicker = ({ initial }: { initial: SortMode }) => {
   const settingsLoaded = useAppStore((s) => s.settingsLoaded);
   const liveDefaultSort = useAppStore((s) => s.defaultSort);
   const setDefaultSort = useAppStore((s) => s.setDefaultSort);
@@ -32,4 +32,6 @@ export default function SortOrderPicker({ initial }: { initial: SortMode }) {
       ))}
     </div>
   );
-}
+};
+
+export default SortOrderPicker;

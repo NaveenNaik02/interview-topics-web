@@ -10,11 +10,11 @@ const PRIORITY_OPTIONS: { k: PriorityLevel | null; label: string }[] = [
   { k: null, label: 'None' },
 ];
 
-export default function DefaultPriorityPicker({
+const DefaultPriorityPicker = ({
   initial,
 }: {
   initial: PriorityLevel | null;
-}) {
+}) => {
   const settingsLoaded = useAppStore((s) => s.settingsLoaded);
   const liveDefaultPriority = useAppStore((s) => s.defaultPriority);
   const setDefaultPriority = useAppStore((s) => s.setDefaultPriority);
@@ -34,4 +34,6 @@ export default function DefaultPriorityPicker({
       ))}
     </div>
   );
-}
+};
+
+export default DefaultPriorityPicker;

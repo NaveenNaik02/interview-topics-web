@@ -3,11 +3,7 @@
 import { useAppStore } from '@/lib/stores/appStore';
 import ToggleSwitch from './ToggleSwitch';
 
-export default function NavigateAfterMoveToggle({
-  initial,
-}: {
-  initial: boolean;
-}) {
+const NavigateAfterMoveToggle = ({ initial }: { initial: boolean }) => {
   const settingsLoaded = useAppStore((s) => s.settingsLoaded);
   const liveNavigateAfterMove = useAppStore((s) => s.navigateAfterMove);
   const setNavigateAfterMove = useAppStore((s) => s.setNavigateAfterMove);
@@ -20,4 +16,6 @@ export default function NavigateAfterMoveToggle({
       onChange={setNavigateAfterMove}
     />
   );
-}
+};
+
+export default NavigateAfterMoveToggle;

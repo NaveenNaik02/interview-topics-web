@@ -1,6 +1,6 @@
 'use client';
 
-export default function ToggleSwitch({
+const ToggleSwitch = ({
   on,
   onChange,
   id,
@@ -8,7 +8,7 @@ export default function ToggleSwitch({
   on: boolean;
   onChange: (v: boolean) => void;
   id: string;
-}) {
+}) => {
   return (
     <button
       id={id}
@@ -20,4 +20,6 @@ export default function ToggleSwitch({
       <span className="toggle-knob" />
     </button>
   );
-}
+};
+
+export default ToggleSwitch;
