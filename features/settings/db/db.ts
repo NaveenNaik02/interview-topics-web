@@ -1,6 +1,6 @@
 import type { SortMode } from '../types';
 import type { Theme } from '@/lib/context/ThemeContext';
-import type { PriorityLevel } from '@/lib/offlineSync';
+import type { PriorityLevel } from '@/lib/types';
 import {
   DEFAULT_PRESETS,
   type InstructionPreset,

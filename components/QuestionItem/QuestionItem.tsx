@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import type { PriorityLevel } from '@/lib/offlineSync';
+import type { PriorityLevel } from '@/lib/types';
 import { Icon } from './icons';
 
 interface Props {

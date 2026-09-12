@@ -1,4 +1,4 @@
-import type { PriorityLevel } from '@/lib/offlineSync';
+import type { PriorityLevel } from '@/lib/types';
 
 // The two hand-curated shortlists a question can be on. Spelled as the
 // `questions` columns they are, so they pass straight into a query. Lives

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Copy, Pencil, FolderInput, Archive, Trash2, MoreVertical, Star, Contrast } from 'lucide-react'
-import type { PriorityLevel } from '@/lib/offlineSync'
+import type { PriorityLevel } from '@/lib/types'
 
 interface Props {
   getText: () => string

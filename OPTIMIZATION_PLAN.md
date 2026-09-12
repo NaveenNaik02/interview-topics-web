@@ -324,9 +324,10 @@ migration — it will never be generated for you.
 
 ### 2.1 `enableOfflineMode()` runs two sequential loops `[-]`
 
-**Dropped 2026-09-05 — not being worked on.** Offline is on hold as a feature, so
-paying down its latency is spending on something that may not stay. The finding
-below is still accurate if that changes; nothing about it decays.
+**Moot as of 2026-09-12 — the code is gone.** Offline support was removed entirely
+(`offlineSlice.ts`, `offlineSync.ts`, `sw.js` and the rest), so there is no longer
+anything here to optimise. Kept for the record; the finding below describes deleted
+code.
 
 **Issue**
 

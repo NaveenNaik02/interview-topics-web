@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
-import type { PriorityLevel } from '@/lib/offlineSync';
+import type { PriorityLevel } from '@/lib/types';
 
 export interface PriorityMixQuestion {
   id: string;

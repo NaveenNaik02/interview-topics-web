@@ -12,7 +12,7 @@ import { useAppStore } from '@/lib/stores/appStore';
 import { useDeleteToast } from '@/components/useDeleteToast';
 import { setPriority as setPriorityAction } from '@/lib/actions/questionFlags';
 import type { ShortlistQuestion, ShortlistFlag } from '@/lib/db/shortlist';
-import type { PriorityLevel } from '@/lib/offlineSync';
+import type { PriorityLevel } from '@/lib/types';
 import SaveToast from '@/components/SaveToast';
 import { buildRows, type ShortlistRowData } from './buildRows';
 import ShortlistRow from './ShortlistRow';

@@ -2,7 +2,7 @@
 
 import { memo } from 'react';
 import { useAppStore } from '@/lib/stores/appStore';
-import type { PriorityLevel } from '@/lib/offlineSync';
+import type { PriorityLevel } from '@/lib/types';
 import QuestionItem, {
   QuestionAnswerBody,
   QuestionCrumb,

@@ -10,7 +10,6 @@ import { fetchAllCounts } from '@/lib/content/parser';
 import { fetchBadgeCounts } from '@/lib/db/badgeCounts';
 import { fetchSettings } from '@/features/settings/db/dbServer';
 import { fetchProgressIds } from '@/lib/db/progressServer';
-import OfflineToast from '@/components/OfflineToast';
 import ThemeSync from '@/components/ThemeSync';
 import AddQuestionFab from '@/components/AddQuestionFab';
 import { InboxFab } from '@/features/inbox';
@@ -39,7 +38,6 @@ export default async function AppLayout({
       {...badges}
     >
       <ThemeSync />
-      <OfflineToast />
       <AddQuestionFab />
       <InboxFab />
       <DrawerProvider>

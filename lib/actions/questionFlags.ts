@@ -1,7 +1,7 @@
 'use server';
 
 import { requireUser } from '@/lib/supabase/user';
-import type { PriorityLevel } from '@/lib/offlineSync';
+import type { PriorityLevel } from '@/lib/types';
 import type { ShortlistFlag } from '@/lib/db/shortlist';
 
 export async function setStarred(

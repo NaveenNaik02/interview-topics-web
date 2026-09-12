@@ -1,7 +1,6 @@
 import AppearanceSection from './components/AppearanceSection';
 import StudyDefaultsSection from './components/StudyDefaultsSection';
 import AiInstructionsSection from './components/AiInstructionsSection';
-import OfflineAccessSection from './components/OfflineAccessSection';
 import ResetSection from './components/ResetSection';
 
 // Server component: everything here (headings, labels, hint copy) renders
@@ -24,7 +23,6 @@ const SettingsClient = () => {
       <AppearanceSection />
       <StudyDefaultsSection />
       <AiInstructionsSection />
-      <OfflineAccessSection />
       <ResetSection />
     </div>
   );

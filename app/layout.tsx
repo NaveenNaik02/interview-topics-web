@@ -6,7 +6,6 @@ import { themeClass, DEFAULT_THEME } from '@/lib/context/theme';
 import { fetchSettings } from '@/features/settings/db/dbServer';
 import { getUser } from '@/lib/supabase/user';
 import { FontSizeProvider } from '@/lib/context/FontSizeContext';
-import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
 
 const ibmSans = IBM_Plex_Sans({
   subsets: ['latin'],
@@ -58,7 +57,6 @@ export default async function RootLayout({
       className={`${ibmSans.variable} ${ibmSerif.variable} ${ibmMono.variable} ${initialTheme ? themeClass(initialTheme) : ''}`}
     >
       <body>
-        <ServiceWorkerRegistration />
         <ThemeProvider initialTheme={initialTheme}>
           <FontSizeProvider>{children}</FontSizeProvider>
         </ThemeProvider>

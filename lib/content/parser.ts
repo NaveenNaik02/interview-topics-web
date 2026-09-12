@@ -2,7 +2,7 @@ import 'server-only';
 import { cache } from 'react';
 import { createClient } from '../supabase/server';
 import type { SectionMeta } from './topics';
-import type { PriorityLevel } from '../offlineSync';
+import type { PriorityLevel } from '../types';
 
 export interface ParsedQuestion {
   id: string;

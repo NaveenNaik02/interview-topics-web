@@ -164,8 +164,8 @@ lib/
 ├── stores/               Zustand store, slices, selectors
 ├── supabase/             client, server, middleware, user helpers
 └── *.ts                  standalone modules with no sibling:
-                          offlineSync, instructionPresets, htmlToMarkdown,
-                          utils (shadcn's cn)
+                          instructionPresets, htmlToMarkdown, types
+                          (PriorityLevel), utils (shadcn's cn)
 
 components/               feature-independent UI
 ├── ui/                   shadcn primitives
@@ -176,8 +176,7 @@ components/               feature-independent UI
 
 **Everything else** — `supabase/migrations/` (timestamped SQL) and `supabase/schema/`
 (generated snapshot, one file per relation), `scripts/`
-(migrate, set-admin, pull-remote, db-schema, two one-time fixups), `public/` (`sw.js`,
-`manifest.json`), `design/` (standalone HTML prototypes, not built or imported).
+(migrate, set-admin, pull-remote, db-schema, two one-time fixups), `public/` (`manifest.json`), `design/` (standalone HTML prototypes, not built or imported).
 
 **In `design/`, `app.jsx` is the source of truth for what a page looks like** — the
 built prototype of the whole app, decisions already made. The `*.html` files are
@@ -203,7 +202,7 @@ See `components/AGENTS.md` for component conventions — feature-first organizat
 ### Auth & admin roles
 
 - **Anonymous auth is gone.** Nothing calls `signInAnonymously` any more.
-- **Every route is gated.** `lib/supabase/middleware.ts` checks `!!user && !user.is_anonymous` and redirects to `/login`. Only `/login`, `/signup`, `/auth/*`, `/manifest.json`, and `/sw.js` are exempt.
+- **Every route is gated.** `lib/supabase/middleware.ts` checks `!!user && !user.is_anonymous` and redirects to `/login`. Only `/login`, `/signup`, `/auth/*`, and `/manifest.json` are exempt.
 - **Sign-in is email/password, Google, or GitHub** — all in `features/login/actions/auth.ts`, surfaced by `app/login/page.tsx` and `app/signup/page.tsx`. OAuth returns through `/auth/callback`, which calls `exchangeCode`.
 - **`authSlice` holds only** `signInWithGitHub`/`signOut` and the `onAuthStateChange` subscription.
 - **Three helpers in `lib/supabase/user.ts`** — `getUser()`, `requireUser()`, `requireAuthor(message)`. Authoring and AI actions call `requireAuthor()`, which throws unless the caller is signed in and non-anonymous. Middleware already enforces that on every route, so it's defence-in-depth.
@@ -229,17 +228,17 @@ Routing:
 
 ### State management: one store per request tree
 
-Nine slices compose one Zustand store (`lib/stores/appStore.ts`), six in `lib/stores/slices/` and three owned by their feature. Shared types in `lib/stores/types.ts`.
+Eight slices compose one Zustand store (`lib/stores/appStore.ts`), five in `lib/stores/slices/` and three owned by their feature. Shared types in `lib/stores/types.ts`.
 
 | In `lib/stores/slices/`                                                                                | In `features/`                                                                                       |
 | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
-| `authSlice`, `progressSlice`, `setAsideSlice`, `flagCountsSlice`, `offlineSlice`, `questionOrderSlice` | `settings/store/settingsSlice`, `inbox/store/inboxSlice`, `section-view/store/sectionQuestionsSlice` |
+| `authSlice`, `progressSlice`, `setAsideSlice`, `flagCountsSlice`, `questionOrderSlice` | `settings/store/settingsSlice`, `inbox/store/inboxSlice`, `section-view/store/sectionQuestionsSlice` |
 
 - **The store is NOT a module singleton.** `appStore.ts` exports `createAppStore(init)` (`createStore` from `zustand/vanilla`) plus a `StoreContext`; `StoreProvider.tsx` builds one per tree via a `useState` lazy initializer. A module-level `create()` in a Next server process is shared across every request — with owner-scoped content that's a cross-account leak waiting for the first render-phase write.
 - **Server data is seeded at construction, not by an effect.** `app/(app)/layout.tsx` passes `getAllGroups()` + `fetchAllCounts()` into `<StoreProvider groups totals>`, so `groups`/`totals`/`stats` are right on the first render.
   - `totals` is seeded once and never re-synced — `setSectionTotal()` refines it as sections mount, and re-seeding would wipe those refinements.
   - `groups` _is_ re-synced by a `StoreProvider` effect; it's a fresh server value on every `router.refresh()`, which is how a new topic reaches the tree.
-  - `initAuth`/`initOfflineState`/`initSettingsFromLocalStorage` stay in effects — they read `localStorage` and register subscriptions, effects on their own merits.
+  - `initAuth`/`initSettingsFromLocalStorage` stay in effects — they read `localStorage` and register subscriptions, effects on their own merits.
 - **Consuming it** — `useAppStore(selector)` (`useShallow` works), or `useAppStoreApi()` for imperative `getState`/`subscribe` outside render. There is no importable store instance; slices reach their own state via `get()`.
 - **Plain Context still owns client-only UI state** — `UIContext` (drawer/search), `ThemeContext`, `FontSizeContext`. Self-contained, no server dependency.
 - **`features/authoring/store/` is a separate store** for the authoring modals, not part of `useAppStore`.
@@ -288,11 +287,11 @@ Everything Gemini-facing lives in `lib/ai/`, leaving `lib/actions/` as plain dat
 
 - **Inbox** — zero-friction capture of pasted text before picking a topic. `splitInboxText.ts` uses Gemini to split freeform text (e.g. a recruiter message) into distinct questions. Assigning an item reopens the add-question modal prefilled; saving deletes the source item.
 - **Set aside** — the kebab menu's soft delete. `setAsideQuestion()` inserts a full content snapshot into `set_aside_items` _before_ deleting from `questions`, so a mid-failure can never lose content, then best-effort cleans the user's progress rows. Reassigning restores the full saved answer, unlike inbox items which carry only a title.
-- **Starred / Grey Zone** — hand-curated shortlists sharing the `ShortlistFlag` type and the `components/QuestionShortlist/` UI. Both routes are the same page: `components/ShortlistPage.tsx` takes the flag plus its copy and renders topic cards, drilling into one topic via `?topic=<slug>` so the page stays a server component. Optimistic local update, no offline queue.
+- **Starred / Grey Zone** — hand-curated shortlists sharing the `ShortlistFlag` type and the `components/QuestionShortlist/` UI. Both routes are the same page: `components/ShortlistPage.tsx` takes the flag plus its copy and renders topic cards, drilling into one topic via `?topic=<slug>` so the page stays a server component. Optimistic local update.
 - **Priority** — `user_settings.default_priority` (migration `20260718130000_default_priority.sql`) sets what's pre-selected on new questions.
 - **Manual reordering** — drag logic in `features/section-view/hooks/useSectionDrag.ts`: native Pointer Events, no drag library, a floating clone tracking the pointer, drop slot from the pointer's Y against each row's midpoint. Only in `'manual'` sort mode with no active filters.
   - **Touch pointers bail out** (`if (e.pointerType !== 'mouse') return`) so dragging doesn't fight scroll gestures — reordering is mouse-only.
-- **Only progress and priority get offline pending-ops treatment.** Starring, reordering, inbox, and set-aside are deliberately online-only.
+- **Every mutation is online-only.** There is no pending-ops queue or local write buffer; a failed write rolls the store back.
 
 ### Instruction presets
 
@@ -301,14 +300,11 @@ Everything Gemini-facing lives in `lib/ai/`, leaving `lib/actions/` as plain dat
 - **Stored in `user_settings.instruction_presets`** (jsonb) + `active_instruction_preset_id` (migration `20260716220000_instruction_presets.sql`) so presets sync across devices.
 - **`settingsSlice.loadSettings` still falls back to localStorage** for accounts with no `user_settings` row yet. Managed from `/settings`.
 
-### Offline support / PWA
+### PWA
 
-- **`public/sw.js` is hand-written**, not generated by Serwist. `@serwist/next`/`serwist` are in `package.json` but `next.config.js` never wraps the config with `withSerwist` — treat Serwist as installed-but-unwired, not the build mechanism.
-- **Its cache names are duplicated by hand** in `lib/offlineSync.ts`, since a plain script can't import.
-- **`components/ServiceWorkerRegistration.tsx` registers `/sw.js` in production only.** In dev it actively unregisters any existing worker so stale caches can't mask local changes.
-- **`lib/offlineSync.ts` is a localStorage-backed layer** — cached progress/priority/question content per section, plus two pending-ops queues replayed through the normal bulk server actions once back online.
-- **`offlineSlice.enableOfflineMode()`** snapshots state, caches every section's questions via the browser client, and stores full page responses in Cache Storage so navigation works offline. `disableOfflineMode()` flushes pending ops, then clears everything.
-- **`OfflineStatusPill.tsx`/`OfflineToast.tsx`** are the UI surfaces.
+- **The app is installable, not offline-capable.** `public/manifest.json` + `metadata.manifest` in `app/layout.tsx` are all that remain; there is no service worker.
+- **Offline support was removed on 2026-09-12.** `public/sw.js`, `lib/offlineSync.ts`, `offlineSlice`, `OfflineStatusPill`, `OfflineToast`, `ServiceWorkerRegistration`, the settings "Offline access" section, and the `@serwist/next`/`serwist` deps are all gone. **Do not re-add a service worker or a localStorage write queue** without a deliberate decision — the pending-ops paths in `progressSlice` were the main source of divergence between local and server state.
+- **Browsers that installed the old worker keep it.** A 404 on `/sw.js` does not unregister a registration ([w3c/ServiceWorker#204](https://github.com/w3c/ServiceWorker/issues/204), closed `wontfix`), so anyone who loaded production before the removal keeps serving from the stale `interview-pages-v2` cache until they clear site data. Accepted knowingly; no unregister shim was shipped.
 
 ---
 

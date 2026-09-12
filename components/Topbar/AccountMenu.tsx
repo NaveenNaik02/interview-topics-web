@@ -17,7 +17,6 @@ import {
 import { useTheme, type Theme } from '@/lib/context/ThemeContext';
 import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '@/lib/stores/appStore';
-import OfflineStatusPill from '../OfflineStatusPill';
 
 const THEME_ICONS = { light: Book, sepia: Moon, dark: Sun };
 const THEME_ORDER: Theme[] = ['light', 'sepia', 'dark'];
@@ -30,25 +29,11 @@ export default function AccountMenu({
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const setThemeSetting = useAppStore((s) => s.setThemeSetting);
-  const {
-    user,
-    signOut,
-    mounted,
-    isOnline,
-    offlineModeEnabled,
-    isSyncing,
-    isCaching,
-    pendingOpsCount,
-  } = useAppStore(
+  const { user, signOut, mounted } = useAppStore(
     useShallow((s) => ({
       user: s.user,
       signOut: s.signOut,
       mounted: s.mounted,
-      isOnline: s.isOnline,
-      offlineModeEnabled: s.offlineModeEnabled,
-      isSyncing: s.isSyncing,
-      isCaching: s.isCaching,
-      pendingOpsCount: s.pendingOpsCount,
     })),
   );
 
@@ -96,17 +81,6 @@ export default function AccountMenu({
         .toUpperCase()
     : '';
 
-  // Small status dot on the account avatar reflects offline/sync state at a glance
-  const dotVariant = !isOnline
-    ? 'offline'
-    : isSyncing || isCaching
-      ? 'busy'
-      : offlineModeEnabled && pendingOpsCount > 0
-        ? 'busy'
-        : offlineModeEnabled
-          ? 'ready'
-          : '';
-
   const handleThemeChange = (t: Theme) => {
     setTheme(t);
     setThemeSetting(t);
@@ -132,15 +106,12 @@ export default function AccountMenu({
           ) : (
             <User size={15} />
           )}
-          {dotVariant && <span className={`acct-dot is-${dotVariant}`} />}
         </span>
         <ChevronDown className="acct-chevron" />
       </button>
 
       {open && (
         <div className="more-menu acct-menu" role="menu">
-          <OfflineStatusPill />
-          <div className="acct-menu-sep" />
           <div className="acct-theme-row">
             <span className="lbl">Theme</span>
             <div className="acct-theme-opts">
