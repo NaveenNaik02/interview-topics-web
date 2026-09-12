@@ -327,6 +327,22 @@ Everything Gemini-facing lives in `lib/ai/`, leaving `lib/actions/` as plain dat
   const toOption = (g) => ({ value: g.slug, label: g.groupName });
   ```
 
+- **Named intermediates** — an object literal, JSX prop, or argument reads as a list of fields; a reader scanning it should get each one at a glance. Any value needing a ternary, a chained `.some()/.find()`, or a multi-line expression gets a named `const` above the `return` instead, and the literal names it. The name is the point: it says what the value *means*, which the expression only implies. New code only; don't retrofit.
+
+  ```ts
+  // no — the reader parses a predicate to learn one field
+  return {
+    activeInstructionPresetId: migrated.some((p) => p.id === row.active_id)
+      ? row.active_id
+      : migrated[0].id,
+  };
+
+  // yes — the field list stays scannable, the why moves to a name
+  const savedIdExists = migrated.some((p) => p.id === row.active_id);
+  const activeInstructionPresetId = savedIdExists ? row.active_id : migrated[0].id;
+  return { activeInstructionPresetId };
+  ```
+
 ### Odds and ends
 
 - **Syntax highlighting** — `components/QuestionItem/highlight.ts` wraps Prism.js, highlighting the `<pre><code class="language-xxx">` DOM `marked` already produced, so no re-render is needed. Lazy-loaded at its call sites.
