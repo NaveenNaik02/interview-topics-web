@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { HoverPrefetchLink } from '@/components/HoverPrefetchLink'
 import { usePathname } from 'next/navigation'
 
 export const SidebarNavLink = ({
@@ -21,12 +21,11 @@ export const SidebarNavLink = ({
 
   if (badge === undefined) {
     return (
-      <Link
+      <HoverPrefetchLink
         href={href}
         className={`subtopic-row ${isActive ? 'active' : ''}`}
         onClick={onClick}
         style={{ marginBottom: 8 }}
-        prefetch={false}
       >
         <span
           style={{
@@ -39,17 +38,16 @@ export const SidebarNavLink = ({
           {icon}
         </span>
         <span className="subtopic-name">{label}</span>
-      </Link>
+      </HoverPrefetchLink>
     )
   }
 
   return (
-    <Link
+    <HoverPrefetchLink
       href={href}
       className={`subtopic-row ${isActive ? 'active' : ''}`}
       onClick={onClick}
       style={{ marginBottom: 8, justifyContent: 'space-between' }}
-      prefetch={false}
     >
       <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span
@@ -65,6 +63,6 @@ export const SidebarNavLink = ({
         <span className="subtopic-name">{label}</span>
       </span>
       {badge > 0 && <span className="ic-nav-badge">{badge}</span>}
-    </Link>
+    </HoverPrefetchLink>
   )
 };

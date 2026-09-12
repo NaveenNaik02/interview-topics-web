@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { HoverPrefetchLink } from '@/components/HoverPrefetchLink';
 import { usePathname } from 'next/navigation';
 import { SectionMeta, sectionUrl } from '@/lib/content/topics';
 import { useProgressStats } from '@/lib/hooks';
@@ -23,11 +23,10 @@ export const SidebarSubtopicRow = ({ section }: Props) => {
 
   return (
     <li>
-      <Link
+      <HoverPrefetchLink
         href={url}
         className={`subtopic-row ${pathname === url ? 'active' : ''}`}
         onClick={() => setDrawerOpen(false)}
-        prefetch={false}
       >
         <span
           className={`progress-ring ${total > 0 && done === total ? 'complete' : ''}`}
@@ -41,7 +40,7 @@ export const SidebarSubtopicRow = ({ section }: Props) => {
         ) : (
           <span className="placeholder-tag">soon</span>
         )}
-      </Link>
+      </HoverPrefetchLink>
     </li>
   );
 };

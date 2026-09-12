@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { HoverPrefetchLink } from '@/components/HoverPrefetchLink';
 import { CSSProperties } from 'react';
 import { TopicGroup, sectionUrl } from '@/lib/content/topics';
 import { topicHue, topicIcon } from '@/lib/content/topicMeta';
@@ -29,11 +29,7 @@ export default function TopicCard({ group }: TopicCardProps) {
 
   return (
     <div className="topic-card">
-      {/* Every route here is dynamic (owner-scoped, nothing cacheable), so a
-          prefetch is a full server render. Scrolling the dashboard would
-          otherwise fire one per card — and two per tool link, which only ever
-          open a modal. Same reason the sidebar's links opt out. */}
-      <Link href={`/${group.slug}`} className="tc-main" prefetch={false}>
+      <HoverPrefetchLink href={`/${group.slug}`} className="tc-main">
         <div className="tc-top">
           <div
             className="tc-badge"
@@ -65,7 +61,7 @@ export default function TopicCard({ group }: TopicCardProps) {
             <span>No subtopics yet</span>
           </div>
         )}
-      </Link>
+      </HoverPrefetchLink>
     </div>
   );
 }
