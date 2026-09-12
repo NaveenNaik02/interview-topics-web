@@ -1,7 +1,7 @@
 'use client';
 
 import { useAppStore } from '@/lib/stores/appStore';
-import type { PriorityLevel } from '@/lib/offlineSync';
+import type { PriorityLevel } from '@/lib/types';
 
 const PRIORITY_OPTIONS: { k: PriorityLevel | null; label: string }[] = [
   { k: 'high', label: 'High' },

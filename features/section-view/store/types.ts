@@ -1,6 +1,6 @@
 import type { ParsedQuestion } from '@/lib/content/parser';
 import type { SectionMeta } from '@/lib/content/topics';
-import type { PriorityLevel } from '@/lib/offlineSync';
+import type { PriorityLevel } from '@/lib/types';
 import type { SortMode } from '@/features/settings';
 
 export type PriorityFilterKey = 'high' | 'med' | 'low' | 'none';

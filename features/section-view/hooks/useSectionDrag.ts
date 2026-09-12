@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import type { ParsedQuestion } from '@/lib/content/parser';
-import type { PriorityLevel } from '@/lib/offlineSync';
+import type { PriorityLevel } from '@/lib/types';
 
 const DRAG_THRESHOLD = 6;
 

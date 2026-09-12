@@ -23,7 +23,7 @@ import {
   type SectionMeta,
 } from '@/lib/content/topics';
 import type { ParsedQuestion } from '@/lib/content/parser';
-import type { PriorityLevel } from '@/lib/offlineSync';
+import type { PriorityLevel } from '@/lib/types';
 import type {
   EditingCodeQuestion,
   EditingQuestion,

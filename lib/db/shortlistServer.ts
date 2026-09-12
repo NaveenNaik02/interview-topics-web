@@ -1,6 +1,6 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
-import type { PriorityLevel } from '@/lib/offlineSync';
+import type { PriorityLevel } from '@/lib/types';
 import type { ShortlistFlag, ShortlistQuestion } from './shortlist';
 
 // Split from shortlist.ts because that file is type-imported all over the

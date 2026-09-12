@@ -2,7 +2,7 @@ import type { User } from '@supabase/supabase-js';
 import type { SortMode } from '@/features/settings';
 import type { SectionQuestionsSlice } from '@/features/section-view/store/types';
 import type { Theme } from '@/lib/context/ThemeContext';
-import type { PriorityLevel } from '@/lib/offlineSync';
+import type { PriorityLevel } from '@/lib/types';
 import type { TopicGroup } from '@/lib/content/topics';
 import type { InstructionPreset } from '@/lib/instructionPresets';
 import type { InboxItem } from '@/features/inbox';
@@ -26,8 +26,7 @@ export interface ProgressSlice {
   totals: Record<string, number>;
   // Merged static + DB-backed topic tree. Seeded from the server at store
   // construction (see createAppStore) and re-synced by StoreProvider on
-  // router.refresh(), so stats/offline caching reflect dynamically added
-  // topics/subtopics, not just the static curriculum.
+  // router.refresh(), so stats reflect dynamically added topics/subtopics.
   groups: TopicGroup[];
   stats: ProgressStats;
   mounted: boolean;
@@ -119,29 +118,11 @@ export interface QuestionOrderSlice {
   renameOrderId: (oldId: string, newId: string) => void;
 }
 
-export interface OfflineSlice {
-  isOnline: boolean;
-  offlineModeEnabled: boolean;
-  isCaching: boolean;
-  cachingProgress: { done: number; total: number } | null;
-  pendingOpsCount: number;
-  isSyncing: boolean;
-  cachedAt: string | null;
-  enableOfflineMode: () => Promise<void>;
-  disableOfflineMode: () => Promise<void>;
-  syncNow: () => Promise<void>;
-  // Hydrates from localStorage + wires online/offline listeners; returns cleanup.
-  initOfflineState: () => () => void;
-}
-
-
-
 export type AppState = AuthSlice &
   ProgressSlice &
   SettingsSlice &
   InboxSlice &
   SetAsideSlice &
   FlagCountsSlice &
-  OfflineSlice &
   QuestionOrderSlice &
   SectionQuestionsSlice;

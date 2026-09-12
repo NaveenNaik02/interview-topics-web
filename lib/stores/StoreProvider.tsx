@@ -29,8 +29,6 @@ export default function StoreProvider({
     store.getState().hydrateSettings();
   }, [store]);
 
-  useEffect(() => store.getState().initOfflineState(), [store]);
-
   useEffect(() => store.getState().initAuth(), [store]);
 
   return (

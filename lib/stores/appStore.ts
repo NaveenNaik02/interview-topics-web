@@ -12,7 +12,6 @@ import {
 import { createInboxSlice } from '@/features/inbox/store/inboxSlice';
 import { createSetAsideSlice } from './slices/setAsideSlice';
 import { createFlagCountsSlice } from './slices/flagCountsSlice';
-import { createOfflineSlice } from './slices/offlineSlice';
 import { createQuestionOrderSlice } from './slices/questionOrderSlice';
 import { createSectionQuestionsSlice } from '@/features/section-view/store/sectionQuestionsSlice';
 import { computeStats } from './progressSelectors';
@@ -50,7 +49,6 @@ export const createAppStore = ({ progressIds, ...init }: StoreInit) =>
       ...createInboxSlice(...a),
       ...createSetAsideSlice(...a),
       ...createFlagCountsSlice(...a),
-      ...createOfflineSlice(...a),
       ...createQuestionOrderSlice(...a),
       ...createSectionQuestionsSlice(...a),
       // Completed questions, server-fetched: without them every sidebar bar

@@ -10,7 +10,7 @@ import {
 import { useAppStore } from '@/lib/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
 import type { ParsedQuestion } from '@/lib/content/parser';
-import type { PriorityLevel } from '@/lib/offlineSync';
+import type { PriorityLevel } from '@/lib/types';
 import type { SectionMeta } from '@/lib/content/topics';
 import type { PriorityFilterKey, StatusFilter } from '../store/types';
 import { computePriorityStats } from '@/lib/stores/progressSelectors';

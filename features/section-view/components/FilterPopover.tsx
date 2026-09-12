@@ -8,7 +8,7 @@ import { computePriorityStats } from '@/lib/stores/progressSelectors';
 import { findSection } from '@/lib/content/topics';
 import * as Icon from '@/components/Icons';
 import type { PriorityFilterKey } from '../store/types';
-import type { PriorityLevel } from '@/lib/offlineSync';
+import type { PriorityLevel } from '@/lib/types';
 import type { ParsedQuestion } from '@/lib/content/parser';
 
 const EMPTY_ARRAY: ParsedQuestion[] = [];

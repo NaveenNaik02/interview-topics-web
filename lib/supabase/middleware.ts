@@ -76,7 +76,6 @@ export async function updateSession(request: NextRequest) {
   // job is to exchange the code for the session that doesn't exist yet.
   const isExempt =
     pathname === '/manifest.json' ||
-    pathname === '/sw.js' ||
     pathname.startsWith('/auth/');
   const isAuthed = !!claims && !claims.is_anonymous;
 

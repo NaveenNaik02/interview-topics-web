@@ -1,5 +1,5 @@
 import type { TopicGroup } from '@/lib/content/topics';
-import type { PriorityLevel } from '@/lib/offlineSync';
+import type { PriorityLevel } from '@/lib/types';
 
 export interface ProgressStats {
   completed: number;

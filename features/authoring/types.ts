@@ -1,6 +1,6 @@
 import type { SectionMeta } from '@/lib/content/topics';
 import type { PlacementSuggestion } from '@/lib/ai/suggestPlacement';
-import type { PriorityLevel } from '@/lib/offlineSync';
+import type { PriorityLevel } from '@/lib/types';
 import type { ParsedQuestion } from '@/lib/content/parser';
 
 export interface EditingQuestion {

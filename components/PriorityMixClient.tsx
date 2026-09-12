@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, X, Send } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { useAppStore } from '@/lib/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
 import {
@@ -18,7 +18,7 @@ import {
   setPriority as setPriorityAction,
 } from '@/lib/actions/questionFlags';
 import type { PriorityMixQuestion } from '@/lib/db/priority';
-import type { PriorityLevel } from '@/lib/offlineSync';
+import type { PriorityLevel } from '@/lib/types';
 import QuestionItem, {
   QuestionAnswerBody,
   QuestionCrumb,
@@ -244,20 +244,10 @@ function SubtopicPicker({
 export default function PriorityMixClient({
   questions: serverQuestions,
 }: Props) {
-  const {
-    toggle,
-    isOnline,
-    offlineModeEnabled,
-    mounted,
-    user,
-    appendSetAsideItem,
-    bumpFlagCount,
-    store,
-  } = useAppStore(
+  const { toggle, mounted, user, appendSetAsideItem, bumpFlagCount, store } =
+    useAppStore(
     useShallow((s) => ({
       toggle: s.toggle,
-      isOnline: s.isOnline,
-      offlineModeEnabled: s.offlineModeEnabled,
       mounted: s.mounted,
       user: s.user,
       appendSetAsideItem: s.appendSetAsideItem,
@@ -288,7 +278,6 @@ export default function PriorityMixClient({
   const router = useRouter();
   const { remove, toast: deleteToast } = useDeleteToast();
   const [openId, setOpenId] = useState<string | null>(null);
-  const [showOfflineModal, setShowOfflineModal] = useState(false);
   const [editingQuestion, setEditingQuestion] =
     useState<EditingQuestion | null>(null);
   const [movingQuestion, setMovingQuestion] = useState<{
@@ -432,14 +421,6 @@ export default function PriorityMixClient({
       ? 'Nothing selected yet — pick a priority and subtopics'
       : `${priTxt} · ${subTxt} · ${STATUS_LABEL[status]}${hasBoth ? ` — ${matched.length} question${matched.length === 1 ? '' : 's'}` : ''}`;
 
-  const requireOnline = () => {
-    if (!isOnline && !offlineModeEnabled) {
-      setShowOfflineModal(true);
-      return true;
-    }
-    return false;
-  };
-
   return (
     <div className="content-wrapper">
       <div className="subtopic-header" style={{ marginBottom: 'var(--s-5)' }}>
@@ -559,14 +540,10 @@ export default function PriorityMixClient({
                 isDone={isComplete(r.q.id)}
                 isOpen={openId === r.q.id}
                 priority={r.priority}
-                onToggleOpen={() => {
-                  if (requireOnline()) return;
-                  setOpenId(openId === r.q.id ? null : r.q.id);
-                }}
-                onToggleDone={() => {
-                  if (requireOnline()) return;
-                  toggle(r.q.id);
-                }}
+                onToggleOpen={() =>
+                  setOpenId(openId === r.q.id ? null : r.q.id)
+                }
+                onToggleDone={() => toggle(r.q.id)}
                 subtitle={
                   <QuestionCrumb
                     topicLabel={group?.groupName ?? r.q.groupSlug}
@@ -646,47 +623,6 @@ export default function PriorityMixClient({
         </div>
       )}
 
-      {showOfflineModal && (
-        <div
-          className="confirm-overlay"
-          onClick={() => setShowOfflineModal(false)}
-        >
-          <div
-            className="confirm-dialog"
-            role="dialog"
-            aria-modal="true"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="offline-notavail-icon">
-              <Send size={22} />
-            </div>
-            <h2 className="confirm-title">Not available offline</h2>
-            <p className="confirm-message">
-              You&apos;re offline and haven&apos;t downloaded this content yet,
-              so questions and answers can&apos;t be opened right now.
-              Reconnect, or download an offline copy next time you&apos;re
-              online to study anywhere.
-            </p>
-            <div className="confirm-actions">
-              <button
-                className="btn btn-ghost"
-                onClick={() => setShowOfflineModal(false)}
-              >
-                Dismiss
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={() => {
-                  setShowOfflineModal(false);
-                  document.dispatchEvent(new Event('open-offline-options'));
-                }}
-              >
-                Offline options
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {editingQuestion && (
         <EditQuestionModal
