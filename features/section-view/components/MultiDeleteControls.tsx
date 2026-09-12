@@ -5,12 +5,12 @@ import { usePathname } from 'next/navigation';
 import { Trash2 } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '@/lib/stores/appStore';
-import { canManage } from '../canManage';
-import { isVisible } from '../hooks/useSectionFilters';
 import type { ParsedQuestion } from '@/lib/content/parser';
 import { useDeleteToast } from '@/components/useDeleteToast';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import * as Icon from '@/components/Icons';
+import { isVisible } from '../hooks/useSectionFilters';
+import { canManage } from '../canManage';
 
 // Multi-select delete for the section list: the chip flips the rows' check
 // column into selection checkboxes (QuestionList/QuestionItem), and this is

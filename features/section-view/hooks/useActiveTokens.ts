@@ -1,8 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useAppStore } from '@/lib/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
+import { useAppStore } from '@/lib/stores/appStore';
 import type { PriorityFilterKey } from '../store/types';
 
 const PRI_MC: { k: PriorityFilterKey; label: string }[] = [

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { buildRows } from './buildRows';
 import type { ShortlistQuestion } from '@/lib/db/shortlist';
 import type { TopicGroup } from '@/lib/content/topics';
+import { buildRows } from './buildRows';
 
 function makeQuestion(
   overrides: Partial<ShortlistQuestion> = {},

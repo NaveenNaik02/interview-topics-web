@@ -2,13 +2,13 @@
 
 import { useState, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import { usePathname } from 'next/navigation';
 import { useAppStore } from '@/lib/stores/appStore';
 import { computeSectionStats } from '@/lib/stores/progressSelectors';
 import { findSection } from '@/lib/content/topics';
-import { usePathname } from 'next/navigation';
 import * as Icon from '@/components/Icons';
-import BulkConfirmDialog from './BulkConfirmDialog';
 import type { ParsedQuestion } from '@/lib/content/parser';
+import BulkConfirmDialog from './BulkConfirmDialog';
 
 const EMPTY_ARRAY: ParsedQuestion[] = [];
 

@@ -14,8 +14,8 @@ import {
   User,
   ChevronDown,
 } from 'lucide-react';
-import { useTheme, type Theme } from '@/lib/context/ThemeContext';
 import { useShallow } from 'zustand/react/shallow';
+import { useTheme, type Theme } from '@/lib/context/ThemeContext';
 import { useAppStore } from '@/lib/stores/appStore';
 
 const THEME_ICONS = { light: Book, sepia: Moon, dark: Sun };

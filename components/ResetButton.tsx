@@ -1,8 +1,8 @@
 'use client';
 
+import { RotateCcw } from 'lucide-react';
 import { useAppStore } from '@/lib/stores/appStore';
 import { Button } from '@/components/ui/button';
-import { RotateCcw } from 'lucide-react';
 
 export default function ResetButton() {
   const resetAll = useAppStore((s) => s.resetAll);

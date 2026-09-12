@@ -1,15 +1,15 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useAppStore } from '@/lib/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
 import { usePathname } from 'next/navigation';
+import { useAppStore } from '@/lib/stores/appStore';
 import { computePriorityStats } from '@/lib/stores/progressSelectors';
 import { findSection } from '@/lib/content/topics';
 import * as Icon from '@/components/Icons';
-import type { PriorityFilterKey } from '../store/types';
 import type { PriorityLevel } from '@/lib/types';
 import type { ParsedQuestion } from '@/lib/content/parser';
+import type { PriorityFilterKey } from '../store/types';
 
 const EMPTY_ARRAY: ParsedQuestion[] = [];
 
