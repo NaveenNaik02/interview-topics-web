@@ -1,8 +1,8 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useAppStore } from '@/lib/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
+import { useAppStore } from '@/lib/stores/appStore';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { findSection } from '@/lib/content/topics';
 import type { ParsedQuestion } from '@/lib/content/parser';

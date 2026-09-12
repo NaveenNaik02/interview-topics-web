@@ -1,7 +1,7 @@
 'use client';
 
-import { HoverPrefetchLink } from '@/components/HoverPrefetchLink';
 import { usePathname } from 'next/navigation';
+import { HoverPrefetchLink } from '@/components/HoverPrefetchLink';
 import { SectionMeta, sectionUrl } from '@/lib/content/topics';
 import { useProgressStats } from '@/lib/hooks';
 import { useDrawer } from '@/lib/context/DrawerContext';

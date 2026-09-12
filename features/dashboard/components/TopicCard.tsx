@@ -1,7 +1,7 @@
 'use client';
 
-import { HoverPrefetchLink } from '@/components/HoverPrefetchLink';
 import { CSSProperties } from 'react';
+import { HoverPrefetchLink } from '@/components/HoverPrefetchLink';
 import { TopicGroup, sectionUrl } from '@/lib/content/topics';
 import { topicHue, topicIcon } from '@/lib/content/topicMeta';
 import { useProgressStats } from '@/lib/hooks';

@@ -1,7 +1,7 @@
 import { memo, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
-import { useAppStore } from '@/lib/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
+import { useAppStore } from '@/lib/stores/appStore';
 import { computeSectionStats } from '@/lib/stores/progressSelectors';
 import { findSection, findGroupForSection } from '@/lib/content/topics';
 import type { ParsedQuestion } from '@/lib/content/parser';

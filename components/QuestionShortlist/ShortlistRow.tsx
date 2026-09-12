@@ -10,8 +10,8 @@ import QuestionItem, {
   stripHtml,
 } from '@/components/QuestionItem';
 import RowActions from '@/components/RowActions';
-import type { ShortlistRowData } from './buildRows';
 import type { ShortlistFlag } from '@/lib/db/shortlist';
+import type { ShortlistRowData } from './buildRows';
 
 interface ShortlistRowProps {
   row: ShortlistRowData;

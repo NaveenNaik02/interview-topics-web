@@ -1,7 +1,7 @@
 'use client'
 
-import { HoverPrefetchLink } from '@/components/HoverPrefetchLink'
 import { usePathname } from 'next/navigation'
+import { HoverPrefetchLink } from '@/components/HoverPrefetchLink'
 
 export const SidebarNavLink = ({
   href,

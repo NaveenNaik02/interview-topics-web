@@ -3,21 +3,21 @@
 import { createContext, useContext } from 'react';
 import { createStore } from 'zustand/vanilla';
 import { useStore } from 'zustand';
-import { createAuthSlice } from './slices/authSlice';
-import { createProgressSlice } from './slices/progressSlice';
 import {
   createSettingsSlice,
   settingsStateFrom,
 } from '@/features/settings/store/settingsSlice';
 import { createInboxSlice } from '@/features/inbox/store/inboxSlice';
-import { createSetAsideSlice } from './slices/setAsideSlice';
-import { createFlagCountsSlice } from './slices/flagCountsSlice';
-import { createQuestionOrderSlice } from './slices/questionOrderSlice';
 import { createSectionQuestionsSlice } from '@/features/section-view/store/sectionQuestionsSlice';
-import { computeStats } from './progressSelectors';
 import type { TopicGroup } from '@/lib/content/topics';
 import type { ShortlistFlag } from '@/lib/db/shortlist';
 import type { UserSettings } from '@/features/settings/db/db';
+import { createAuthSlice } from './slices/authSlice';
+import { createProgressSlice } from './slices/progressSlice';
+import { createSetAsideSlice } from './slices/setAsideSlice';
+import { createFlagCountsSlice } from './slices/flagCountsSlice';
+import { createQuestionOrderSlice } from './slices/questionOrderSlice';
+import { computeStats } from './progressSelectors';
 import type { AppState } from './types';
 
 export interface StoreInit {

@@ -29,6 +29,24 @@ const eslintConfig = [
     },
   },
   {
+    // External packages, then `@/`-aliased internals, then relative paths,
+    // as one unbroken block — the only blank line is the one after the last
+    // import. Auto-fixable, so `--fix` keeps it true without anyone thinking
+    // about it. `alphabetize` is deliberately off: inside a group, imports
+    // are ordered so a module appears above the ones that import it, which
+    // alphabetical sorting would fight.
+    rules: {
+      'import/order': [
+        'warn',
+        {
+          groups: [['builtin', 'external'], 'internal', ['parent', 'sibling', 'index']],
+          pathGroups: [{ pattern: '@/**', group: 'internal', position: 'before' }],
+          'newlines-between': 'never',
+        },
+      ],
+    },
+  },
+  {
     // These three rules come from eslint-config-next's React-Compiler-era
     // purity/component-structure checks, introduced when lint was first
     // wired into CI here — the existing codebase predates them and has many

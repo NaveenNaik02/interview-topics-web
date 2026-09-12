@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Code2 } from 'lucide-react';
-import { useAppStore } from '@/lib/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
+import { useAppStore } from '@/lib/stores/appStore';
 import QuestionItem, {
   QuestionAnswerBody,
   StarButton,
@@ -15,7 +15,6 @@ import RowActions from '@/components/RowActions';
 import SaveToast from '@/components/SaveToast';
 import { useDeleteToast } from '@/components/useDeleteToast';
 import { setAsideQuestion } from '@/lib/actions/setAside';
-import { useSectionDrag } from '../hooks';
 import {
   sectionUrl,
   findGroupForSection,
@@ -28,6 +27,7 @@ import type {
   EditingCodeQuestion,
   EditingQuestion,
 } from '@/features/authoring';
+import { useSectionDrag } from '../hooks';
 import { canManage } from '../canManage';
 
 const EditQuestionModal = dynamic(

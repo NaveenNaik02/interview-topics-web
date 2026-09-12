@@ -1,12 +1,12 @@
 import type { StateCreator } from 'zustand';
 import type { AppState } from '@/lib/stores/types';
-import type { SectionQuestionsSlice, PriorityFilterKey } from './types';
 import {
   setStarred,
   setGreyZone,
   setPriority as setPriorityAction,
 } from '@/lib/actions/questionFlags';
 import type { ShortlistFlag } from '@/lib/db/shortlist';
+import type { SectionQuestionsSlice, PriorityFilterKey } from './types';
 
 export const createSectionQuestionsSlice: StateCreator<
   AppState,

@@ -7,13 +7,13 @@ import {
   useMemo,
   useRef,
 } from 'react';
-import { useAppStore } from '@/lib/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
+import { useAppStore } from '@/lib/stores/appStore';
 import type { ParsedQuestion } from '@/lib/content/parser';
 import type { PriorityLevel } from '@/lib/types';
 import type { SectionMeta } from '@/lib/content/topics';
-import type { PriorityFilterKey, StatusFilter } from '../store/types';
 import { computePriorityStats } from '@/lib/stores/progressSelectors';
+import type { PriorityFilterKey, StatusFilter } from '../store/types';
 
 // Membership half of `processed`, split out so the delete toolbar's
 // "select all" covers exactly the rows the list is showing.
