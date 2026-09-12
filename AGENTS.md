@@ -69,6 +69,14 @@ One more is run by hand, a one-time fixup from the owner-scoped pivot:
 
 `.env.local` needs `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_ACCESS_TOKEN` (a personal access token, used by `scripts/migrate.js`). AI authoring additionally needs `FREE_GEM_API_KEY`.
 
+**`SUPABASE_ACCESS_TOKEN` expires, and lives in two places.** It is a Supabase personal access token (`sbp_…`) with a real expiry date and no warning before it passes. It is needed in **both** `web/.env.local` (local `migrate` / `set-admin` / `pull-remote`) and as the repo's `SUPABASE_ACCESS_TOKEN` GitHub secret (`deploy.yml`) — update both together, or the next deploy fails even though local works.
+
+When it lapses, the deploy's "Run database migrations" step fails with `401 Unauthorized` from the Management API and nothing else. `scripts/migrate.js` special-cases that status and prints what to do. Manage tokens at <https://supabase.com/dashboard/account/tokens>.
+
+| Rotated on | Expires                        | Notes                                                               |
+| ---------- | ------------------------------ | ------------------------------------------------------------------- |
+| 2026-09-12 | _(fill in from the dashboard)_ | Previous token expired ~2026-09-08 and broke the 2026-09-12 deploy. |
+
 ### Migrations
 
 `supabase/migrations/` is the source of truth for schema — the only files you hand-write and the only ones applied to any database. `supabase start` replays them into the local stack from scratch; `supabase migration up --local` applies just the pending ones to a running stack.
@@ -103,7 +111,7 @@ migration is what you actually want.
 ## CI/CD
 
 - `.github/workflows/ci.yml` — `lint` and `test` as separate jobs on every push to `main`.
-- `.github/workflows/deploy.yml` — **manual only** (`workflow_dispatch`); never fires on push. Runs `scripts/migrate.js` before building and deploying to Vercel production, so a new build never meets a schema it doesn't expect. Needs `SUPABASE_ACCESS_TOKEN` and `NEXT_PUBLIC_SUPABASE_URL` repo secrets alongside the Vercel ones.
+- `.github/workflows/deploy.yml` — **manual only** (`workflow_dispatch`); never fires on push. Runs `scripts/migrate.js` before building and deploying to Vercel production, so a new build never meets a schema it doesn't expect. Needs `SUPABASE_ACCESS_TOKEN` and `NEXT_PUBLIC_SUPABASE_URL` repo secrets alongside the Vercel ones. If this step fails with `401 Unauthorized`, the token has expired — see "Environment" above.
 - `vercel.json` sets `git.deploymentEnabled: false` — pushing to GitHub builds nothing. Production ships only via the manual workflow. `package.json`'s `engines.node` pins Node 24.
 
 ---

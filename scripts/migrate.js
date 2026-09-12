@@ -30,6 +30,17 @@ async function runQuery(ref, token, query) {
   })
   const body = await res.json().catch(() => null)
   if (!res.ok) {
+    if (res.status === 401) {
+      throw new Error(
+        'Unauthorized (401) from the Supabase Management API.\n' +
+        'SUPABASE_ACCESS_TOKEN is almost certainly expired \u2014 these tokens have an\n' +
+        'expiry date and give no warning before it. Check yours at:\n' +
+        '  https://supabase.com/dashboard/account/tokens\n' +
+        'Generate a replacement and update it in BOTH places:\n' +
+        '  - web/.env.local          (local runs)\n' +
+        "  - the repo's GitHub secret SUPABASE_ACCESS_TOKEN (deploy.yml)"
+      )
+    }
     throw new Error(`Query failed (${res.status}): ${JSON.stringify(body)}`)
   }
   return body
