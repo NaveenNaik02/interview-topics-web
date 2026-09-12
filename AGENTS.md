@@ -68,6 +68,14 @@ Two more are run by hand, both one-time fixups from the owner-scoped pivot:
 
 `.env.local` needs `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_ACCESS_TOKEN` (a personal access token, used by `scripts/migrate.js`). AI authoring additionally needs `FREE_GEM_API_KEY`.
 
+**`SUPABASE_ACCESS_TOKEN` expires, and lives in two places.** It is a Supabase personal access token (`sbp_…`) with a real expiry date and no warning before it passes. It is needed in **both** `web/.env.local` (local `migrate` / `set-admin` / `pull-remote`) and as the repo's `SUPABASE_ACCESS_TOKEN` GitHub secret (`deploy.yml`) — update both together, or the next deploy fails even though local works.
+
+When it lapses, the deploy's "Run database migrations" step fails with `401 Unauthorized` from the Management API and nothing else. `scripts/migrate.js` special-cases that status and prints what to do. Manage tokens at <https://supabase.com/dashboard/account/tokens>.
+
+| Rotated on | Expires                        | Notes                                                               |
+| ---------- | ------------------------------ | ------------------------------------------------------------------- |
+| 2026-09-12 | _(fill in from the dashboard)_ | Previous token expired ~2026-09-08 and broke the 2026-09-12 deploy. |
+
 ### Migrations
 
 `supabase/migrations/` is the source of truth for schema — the only files you hand-write and the only ones applied to any database. `supabase start` replays them into the local stack from scratch; `supabase migration up --local` applies just the pending ones to a running stack.
@@ -93,16 +101,16 @@ local DB on every run, so a hand-edit there is gone at the next `npm run db:sche
 and never reaches any database. Wanting to edit one is the signal that a new
 migration is what you actually want.
 
-**`supabase/schema/` is a generated snapshot, never applied.** 24 chronological migrations don't tell you what the schema *is* right now; those files do — one per table or view (`questions.sql`, `progress.sql`, …), each carrying that relation's columns, constraints, indexes, RLS policies, and grants together. Regenerate with `npm run db:schema` (`scripts/db-schema.sh`, per-relation `pg_dump` against the local container) after applying a migration locally, and commit the result. The script wipes the directory first, so a dropped table's file disappears on its own. Nothing reads it at runtime and `scripts/migrate.js` only ever globs `supabase/migrations/`.
+**`supabase/schema/` is a generated snapshot, never applied.** 24 chronological migrations don't tell you what the schema _is_ right now; those files do — one per table or view (`questions.sql`, `progress.sql`, …), each carrying that relation's columns, constraints, indexes, RLS policies, and grants together. Regenerate with `npm run db:schema` (`scripts/db-schema.sh`, per-relation `pg_dump` against the local container) after applying a migration locally, and commit the result. The script wipes the directory first, so a dropped table's file disappears on its own. Nothing reads it at runtime and `scripts/migrate.js` only ever globs `supabase/migrations/`.
 
-**It is a picture of *local*, which is not identical to cloud.** `supabase/seed.sql` runs on `supabase start` and is never pushed, so anything it creates shows up in the snapshot while being absent from the hosted project. Before treating a policy or table in `supabase/schema/` as production reality, check it came from `supabase/migrations/` and not from the seed.
+**It is a picture of _local_, which is not identical to cloud.** `supabase/seed.sql` runs on `supabase start` and is never pushed, so anything it creates shows up in the snapshot while being absent from the hosted project. Before treating a policy or table in `supabase/schema/` as production reality, check it came from `supabase/migrations/` and not from the seed.
 
 **Declarative schemas (`supabase/schemas/` + `supabase db diff`) were considered and rejected.** Supabase's own caveat list for the diff engine excludes `alter policy` statements, `security_invoker` on views, and DML — which is most of what this repo's migrations contain (18 owner-scoping policies, the `question_counts` view, the static topic-group seed). Deploys also go through `scripts/migrate.js`, not `supabase db push`. The snapshot above buys the same per-table readability without adopting the workflow.
 
 ## CI/CD
 
 - `.github/workflows/ci.yml` — `lint` and `test` as separate jobs on every push to `main`.
-- `.github/workflows/deploy.yml` — **manual only** (`workflow_dispatch`); never fires on push. Runs `scripts/migrate.js` before building and deploying to Vercel production, so a new build never meets a schema it doesn't expect. Needs `SUPABASE_ACCESS_TOKEN` and `NEXT_PUBLIC_SUPABASE_URL` repo secrets alongside the Vercel ones.
+- `.github/workflows/deploy.yml` — **manual only** (`workflow_dispatch`); never fires on push. Runs `scripts/migrate.js` before building and deploying to Vercel production, so a new build never meets a schema it doesn't expect. Needs `SUPABASE_ACCESS_TOKEN` and `NEXT_PUBLIC_SUPABASE_URL` repo secrets alongside the Vercel ones. If this step fails with `401 Unauthorized`, the token has expired — see "Environment" above.
 - `vercel.json` sets `git.deploymentEnabled: false` — pushing to GitHub builds nothing. Production ships only via the manual workflow. `package.json`'s `engines.node` pins Node 24.
 
 ---
@@ -272,8 +280,8 @@ Everything Gemini-facing lives in `lib/ai/`, leaving `lib/actions/` as plain dat
 | ------------ | ----------------------------------------------- | ----------------------------------- |
 | Inbox        | `features/inbox/`                               | `inbox_items`                       |
 | Set aside    | `lib/actions/setAside.ts`, `lib/db/setAside.ts` | `set_aside_items`                   |
-| Starred      | `components/ShortlistPage.tsx`                   | `questions.starred`                 |
-| Grey Zone    | `components/ShortlistPage.tsx`                   | `questions.grey_zone`               |
+| Starred      | `components/ShortlistPage.tsx`                  | `questions.starred`                 |
+| Grey Zone    | `components/ShortlistPage.tsx`                  | `questions.grey_zone`               |
 | Priority Mix | `components/PriorityMixClient.tsx`              | `questions.priority` (high/med/low) |
 | Manual order | `lib/actions/questionPosition.ts`               | `question_position`                 |
 
