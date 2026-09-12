@@ -5,6 +5,7 @@ import {
   findSection,
   findGroupForSection,
   findPrevNextSections,
+  sectionPath,
   sectionUrl,
 } from '@/lib/content/topics';
 import { getAllGroups } from '@/lib/content/topicsData';
@@ -20,35 +21,27 @@ interface Props {
 
 export default async function Page({ params }: Props) {
   const { path: segments } = await params;
-  const groups = await getAllGroups();
 
-  // Single segment → topic overview. This used to redirect to the group's
-  // first section, which made the overview unreachable; it now always renders,
-  // including for a just-created topic with no subtopics yet.
   if (segments.length === 1) {
+    const [groups, flagIds] = await Promise.all([
+      getAllGroups(),
+      fetchTopicFlagIds(segments[0]),
+    ]);
+
     const group = findGroup(groups, segments[0]);
     if (!group) notFound();
 
-    return (
-      <TopicOverview
-        slug={group.slug}
-        flagIds={await fetchTopicFlagIds(group.slug)}
-      />
-    );
+    return <TopicOverview slug={group.slug} flagIds={flagIds} />;
   }
 
-  // Multi-segment → section view
+  const [groups, questions, initialOrder] = await Promise.all([
+    getAllGroups(),
+    parseSection(sectionPath(segments)),
+    fetchSectionOrder(sectionPath(segments)),
+  ]);
+
   const section = findSection(groups, segments);
   if (!section) notFound();
-
-  // The manual order is keyed by section prefix, not by question id, so it no
-  // longer has to wait on parseSection — both queries go out together. Seeding
-  // it server-side is what stops rows visibly jumping into place once the
-  // client store resolves.
-  const [questions, initialOrder] = await Promise.all([
-    parseSection(section),
-    fetchSectionOrder(section),
-  ]);
 
   const group = findGroupForSection(groups, section);
   if (!group) notFound();

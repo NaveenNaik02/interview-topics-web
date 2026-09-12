@@ -1,7 +1,21 @@
 # Optimization Plan
 
-Findings from a read-only audit on 2026-09-05. **1.1 and 1.4 are applied locally**
-(cloud still pending `npm run migrate`); everything else is unapplied.
+Findings from a read-only audit on 2026-09-05, extended 2026-09-11. **Phase 1 is
+fully applied, local and cloud**; 2.1 is dropped, 2.2/2.3/2.4 are applied, 2.5 is
+open, and Phase 3 is applied except 3.4. Per-item `[x]` marks in the body are
+authoritative — trust those over this paragraph.
+
+Cloud migrations went out via the `deploy.yml` pipeline on 2026-09-05T17:08Z (run
+`33979965062`), not by hand. The run ten minutes earlier failed on exactly this
+migration — cloud's policy names differed from local's — which is what commit
+`42338ee` ("discover RLS policies instead of naming them literally") fixed. Deploys
+since report `No pending migrations.`
+
+> An earlier version of this header said cloud was still pending. It was written
+> before that same day's deploy and never updated, and it misled a later reader into
+> re-recommending work that was already done. **When an item lands, update its status
+> here in the same change.**
+
 Each item states the **issue**, the **fix**, and the **impact** so the item can be
 judged on its own and dropped without affecting the others.
 
@@ -106,7 +120,7 @@ Take A.
 - Fixes silent undercounting permanently, at any scale. Currently **425 questions
   away** from breaking (575 of a 1000 ceiling).
 - **Two independent reasons to do this, only one of which involves the ceiling.**
-  The 25 kB per navigation is a cost paid *today* at 575 questions — worth fixing
+  The 25 kB per navigation is a cost paid _today_ at 575 questions — worth fixing
   even if the library never grew again. The 1000 ceiling is the deadline, not the
   justification.
 - Per-navigation payload drops from **25 kB to roughly 2 kB** — 575 rows become 46,
@@ -173,16 +187,16 @@ have stopped matching mid-word (`criptio` -> `description`).
 
 Measured payloads after (same account, 575 questions):
 
-| Search | Transferred |
-| --- | --- |
-| before, *any* query | 696 kB |
-| `memoization` | 7 kB |
-| `useState` | 47 kB |
-| `=>` (entity-widened prefilter) | 333 kB |
-| `&&` (worst case) | 696 kB — no worse than before |
+| Search                          | Transferred                   |
+| ------------------------------- | ----------------------------- |
+| before, _any_ query             | 696 kB                        |
+| `memoization`                   | 7 kB                          |
+| `useState`                      | 47 kB                         |
+| `=>` (entity-widened prefilter) | 333 kB                        |
+| `&&` (worst case)               | 696 kB — no worse than before |
 
 **One trap found and fixed during implementation.** The client filter matched against
-*stripped* text while `ilike` matches raw `body_html`, where `>` is stored as `&gt;`.
+_stripped_ text while `ilike` matches raw `body_html`, where `>` is stored as `&gt;`.
 Searching `=>` returned 108 of 117 real matches — nine arrow-function questions silently
 missing. `& < >` are now mapped to `%` in the prefilter, and the existing client-side
 substring filter narrows the widened result back to the exact set. Verified in the
@@ -229,7 +243,7 @@ only reader is `useSectionFilters`, which always has the server-seeded `initialO
 alongside it (`[...path]/page.tsx` -> `fetchInitialSectionOrder`, already narrowed to
 the section's ids). So the sign-in preload was supplying values the section page
 fetches anyway, fresher. Removed `loadQuestionOrder` and the unfiltered
-`fetchQuestionPositions` wrapper; `fetchQuestionPositionsForIds` now *requires* ids
+`fetchQuestionPositions` wrapper; `fetchQuestionPositionsForIds` now _requires_ ids
 rather than accepting `undefined`, so the unbounded query is unspellable rather than
 merely unused. `orderStore` starts empty and holds only what the session has dragged
 — which is all it was ever needed for, since `bulkUpsertQuestionPosition` doesn't
@@ -287,13 +301,13 @@ evaluation frequency changes.
 A/B on the app's real query (`select * from question_counts` as an authenticated
 caller), with the policy change applied inside a transaction and rolled back:
 
-| Policy style | Execution time |
-| --- | --- |
-| `created_by = auth.uid()` (current) | 29.287 ms |
-| `created_by = (select auth.uid())` | 3.659 ms |
+| Policy style                        | Execution time |
+| ----------------------------------- | -------------- |
+| `created_by = auth.uid()` (current) | 29.287 ms      |
+| `created_by = (select auth.uid())`  | 3.659 ms       |
 
 **8x faster at 575 rows**, and the gap widens as rows grow — the per-row cost is
-linear, the cached cost is constant. This lands on *every* query the app makes,
+linear, the cached cost is constant. This lands on _every_ query the app makes,
 not one code path, which makes it the highest-leverage item in this document.
 
 It also compounds with 1.1: that fix cut the payload, this one cuts the time spent
@@ -301,7 +315,7 @@ producing it.
 
 **Risk:** low. `alter policy` is a metadata change requiring a brief lock per table;
 run it off-peak. Note that `alter policy` is on the list of statements Supabase's
-schema-diff engine does *not* track, so this must be a hand-written versioned
+schema-diff engine does _not_ track, so this must be a hand-written versioned
 migration — it will never be generated for you.
 
 ---
@@ -418,6 +432,134 @@ moved question's position resolves correctly, since moves mint new ids
 
 ---
 
+### 2.3 `getAllGroups()` blocks the section queries that don't need it `[x]`
+
+**Issue**
+
+2.2 put `parseSection` and `fetchSectionOrder` in one `Promise.all`, but both still
+sat behind `const groups = await getAllGroups()` on the line above — so a section
+navigation was three serial hops, not two:
+
+```
+proxy  getUser()
+  └─ getAllGroups()
+       └─ parseSection + fetchSectionOrder
+```
+
+Neither query actually depends on `groups`. Both need only `{topic, file}`, and
+`findSection` derives those from the URL segments by pure string manipulation
+(`topic = segments.slice(0,-1).join('/')`, `file = segments.at(-1)`). `groups` is
+needed only _afterwards_, to confirm the section exists and to build prev/next links.
+
+**Fix**
+
+Extract that derivation as `sectionPath(segments)` in `lib/content/topics.ts` and
+have `findSection` call it, so there is one source of truth rather than a copy that
+can drift. The page then fires all three together.
+
+`parseSection`/`fetchSectionOrder` take `Pick<SectionMeta, 'topic' | 'file'>` — what
+they always read — so no fake `label` has to be invented to satisfy the type.
+
+The topic-overview branch got the same treatment: `fetchTopicFlagIds(segments[0])`
+no longer waits on `getAllGroups()` either.
+
+**Impact**
+
+- One serial DB round trip removed from every section navigation and every topic
+  overview — together, the most frequent actions in the app.
+- No schema change, no UI change.
+
+**Speculating on an unverified path is safe here.** RLS scopes `questions` and
+`question_position` to the caller, so a path naming no real section returns zero rows
+and can never surface another account's data; the existing `notFound()` checks still
+reject it before anything renders.
+
+**Risk:** low. The derivation is shared with `findSection`, so the two cannot disagree.
+
+---
+
+### 2.4 Delete `TOPIC_GROUPS` and `scripts/backfill-static-sections.js` `[x]`
+
+**Issue**
+
+`lib/content/topics.ts` carried a 121-line static `TOPIC_GROUPS` array — half the
+file — with **zero runtime consumers**. Its only reader was
+`scripts/backfill-static-sections.js`, a one-time fixup from the owner-scoped pivot
+that had already done its job on cloud.
+
+Worse than dead, it was **stale and load-bearing in the docs**. Measured against the
+local DB: the constant described 10 groups / 43 sections; the database held 11 / 47,
+including a `cloud` topic the constant had never heard of. In-app authoring writes
+straight to Supabase and never touches the file, so drift was structural.
+
+Meanwhile the workspace root `CLAUDE.md` still instructed a three-way manual sync —
+`content/`, `TOPIC_GROUPS`, and `etl.js`'s `SECTIONS` — for a constant nothing read.
+
+**Fix**
+
+Delete the constant and the script. Repoint the four comments that named it. Rewrite
+the root `CLAUDE.md` sync section to say the database is the only source of the
+curriculum, with an explicit **do not re-add a static curriculum constant**.
+
+Also removed: `SectionMeta.custom` / `TopicGroup.custom`. The flag existed only to
+distinguish DB rows from static ones; with the static seed gone it was written
+unconditionally in `topicsData.ts` and read nowhere. Its comment claimed "only custom
+sections can be deleted", but `deleteSection` gates on question count and RLS and
+never looked at it — the comment described an intention never implemented.
+
+**Impact**
+
+- `lib/content/topics.ts`: **242 → ~115 lines**, now types and pure helpers only.
+- Removes a standing three-way sync obligation from the root `CLAUDE.md`.
+- No bundle change: `TOPIC_GROUPS` was already tree-shaken out of the client bundle.
+  Verified by grepping `.next/static/` for strings unique to it (`AgilePoint`,
+  `ust-global` → 0 hits) against controls that do ship (`Prep Tracker`, `Grey Zone`).
+
+**Risk:** none at runtime — confirmed zero readers before deleting. The one
+prerequisite was that the backfill had already run against cloud, which the developer
+confirmed on 2026-09-11.
+
+---
+
+### 2.5 `proxy.ts` makes a network auth call on every request `[ ]`
+
+**Issue**
+
+`lib/supabase/middleware.ts:38` calls `auth.getUser()` — a network round trip to
+GoTrue — purely to decide serve-or-redirect. `proxy.ts`'s matcher catches nearly
+everything including RSC navigations, so this blocks rendering on every page load and
+every soft nav. With 2.3 applied it is the **first of the two remaining serial hops**.
+
+**Fix**
+
+`getClaims()` verifies the JWT signature locally via WebCrypto instead of asking the
+auth server.
+
+**This is gated on one fact and is a no-op without it.** If the project signs with
+the legacy symmetric HS256 secret, `getClaims()` falls back to `getUser()`
+internally — same latency, no error, no warning. Only asymmetric (ES256/RS256)
+signing keys make it a real change. The local Docker stack is HS256 and always will
+be, so **local timings cannot validate this**; it has to be measured against cloud.
+
+**Full write-up in `AUTH_MIDDLEWARE_LATENCY.md`** — why a JWT can be verified without
+a network call, the symmetric/asymmetric distinction, the per-request JWKS cache
+trap, a code sketch, and the `curl` that settles the gate.
+
+**Impact**
+
+- If asymmetric: removes a network round trip from _every_ request in the app — the
+  largest remaining per-navigation win, since nothing else is on literally every path.
+- If symmetric: zero. Migrating signing keys becomes the actual prerequisite, which
+  is a bigger decision than a middleware tweak.
+
+**Risk:** moderate, and the reason this is still `[ ]`. `middleware.ts:36` warns that
+the `getUser()` call is what refreshes an expiring session cookie. `getClaims()` calls
+`getSession()` internally, which _should_ preserve that — but "should" is not good
+enough for a change that logs everyone out if wrong. Test: sign in, let the access
+token pass expiry, navigate, confirm no bounce to `/login`.
+
+---
+
 ## Phase 3 — Cleanup
 
 Small, independent, low-risk. Reasonable to do in one sweep — with one exception:
@@ -429,7 +571,6 @@ runtime behavior.
 **Applied.** Zero-reference grep re-run at deletion time: nothing imports
 `check_counts.ts`, and it was still the only importer of `lib/supabase/public.ts`.
 Both deleted.
-
 
 **Issue**
 
@@ -471,7 +612,6 @@ a rolled-back transaction, `progress` falls back to an **Index Only Scan** on
 `progress_pkey` (cheaper than what it replaced — the PK covers both columns) and
 `question_position` to an Index Scan on its PK. At current row counts the planner
 seq-scans regardless.
-
 
 **Issue**
 
@@ -522,7 +662,6 @@ DELETE /rest/v1/progress          -> 204
 `deleteQuestion` in `lib/actions/questions.ts` was checked as this item asked and does
 **not** carry the same pattern — it touches `progress` and `question_position` only.
 
-
 **Issue — this one is a live bug, not a cleanup.**
 
 `lib/actions/setAside.ts:71-80` issues deletes against `priority` and
@@ -565,7 +704,7 @@ the same stale pattern before closing this out.
 
 ---
 
-### 3.4 Split `components/PriorityMixClient.tsx`
+### 3.4 Split `components/PriorityMixClient.tsx` `[ ]`
 
 **Issue**
 
@@ -598,12 +737,14 @@ review noisy. Do it alone, not bundled with a behavior change.
 
 Recorded so these are not re-investigated later.
 
-| Area                                          | Finding                                                                                                                                            |
-| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Zustand selectors                             | **Healthy.** Zero selectorless `useAppStore()` calls; `useShallow` used across 20 files. Expected to find re-render problems here; there are none. |
-| `questions(topic, file)` index                | **Exists** — `20240101000000_init.sql:13`.                                                                                                         |
-| `select('*', { count: 'exact', head: true })` | **Fine.** `head: true` transfers no rows. Used in `parser.ts:29` and `actions/topics.ts:133,165`.                                                  |
-| Route-level caching                           | Correctly avoided. The `generateStaticParams` comment at `[...path]/page.tsx:101` is accurate about why. See the note below.                       |
+| Area                                          | Finding                                                                                                                                                                                                                                                                                                                                                              |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Zustand selectors                             | **Healthy.** Zero selectorless `useAppStore()` calls; `useShallow` used across 20 files. Expected to find re-render problems here; there are none.                                                                                                                                                                                                                   |
+| `questions(topic, file)` index                | **Exists** — `20240101000000_init.sql:13`.                                                                                                                                                                                                                                                                                                                           |
+| `select('*', { count: 'exact', head: true })` | **Fine.** `head: true` transfers no rows. Used in `parser.ts:29` and `actions/topics.ts:133,165`.                                                                                                                                                                                                                                                                    |
+| Route-level caching                           | Correctly avoided. The `generateStaticParams` comment in `[...path]/page.tsx` is accurate about why. See the note below.                                                                                                                                                                                                                                             |
+| Sidebar server rendering                      | **Already server-rendered.** `'use client'` marks a hydration boundary, not browser-only execution — the layout seeds the store at construction, so counts and the topic tree are in the first HTML. What remains client-side (`usePathname`, live progress, expand/collapse, drawer) all genuinely needs to be. Converting buys only bundle, and see the row below. |
+| `@next/bundle-analyzer`                       | **Do not install.** Next 16 builds with Turbopack, which the plugin detects (`process.env.TURBOPACK`) and then emits no report. Use the built-in `npx next experimental-analyze`, already present in the installed CLI.                                                                                                                                              |
 
 ---
 
@@ -613,13 +754,29 @@ Not recommended right now — recorded because a documented constraint has expir
 
 `CLAUDE.md` states that nothing can be cached because `getAllGroups()` reads
 `cookies()`, which forces dynamic rendering. That was true. Next.js 16 added
-`'use cache: private'`, which **can** read `cookies()` inside a cached function
-(per current Next.js 16.2 docs) — precisely the blocker described.
+`'use cache: private'`, which **can** read `cookies()` inside a cached function —
+precisely the blocker described.
 
-That would allow caching `getAllGroups()` and the counts per session. But it requires
-enabling Cache Components across the app, which is a real migration against a working
-system, and the wins above are cheaper and more certain.
+**Re-checked 2026-09-11 against the installed Next 16.2.4, not the docs.** The
+conclusion stands, and one assumption turned out weaker than it read:
 
-**Action: none.** Revisit only if per-request Supabase latency becomes the measured
-bottleneck after Phases 1-2. If this is taken up, update the `CLAUDE.md` claim at the
-same time — it is now stale.
+- `'use cache: private'` **is** present (`node_modules/next/dist/server/config.js`),
+  and `cacheComponents` is a real config flag.
+- **It does not reduce first-visit server work.** Its own bundled docs are explicit
+  that results are _never stored on the server_ — only in the browser's router memory
+  for the `stale` window. Same queries, every request. It speeds up _revisits_.
+- **`partialPrefetching` is not in 16.2.4** — grepped `node_modules`, canary only. So
+  the feature that would let the five `prefetch={false}` opt-outs be undone (their
+  comments correctly note a prefetch is a full server render) is unavailable
+  regardless, which removes most of the reason to adopt the flag now.
+- Enabling `cacheComponents` makes every uncached dynamic access a build error unless
+  wrapped in `<Suspense>` or a cache scope. `app/(app)/layout.tsx` reads cookies six
+  ways before rendering, so this is a Suspense refactor of the whole shell, not a
+  config line. The directive is also still marked `version: experimental`.
+
+**Action: none.** Revisit when `partialPrefetching` ships stable — at that point the
+prefetch opt-outs and the private cache land together and the payoff is real. Prefer
+2.5 first: it is smaller, not experimental, and helps cold loads rather than revisits.
+
+If this is ever taken up, update the `CLAUDE.md` claim at the same time — it is now
+stale.

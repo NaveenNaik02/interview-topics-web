@@ -57,12 +57,13 @@ npm run set-admin    # scripts/set-admin.js <email> [--revoke]
 npm run pull-remote  # Copy CLOUD data into local Docker, re-owned to DEV_USER
 ```
 
-Two more are run by hand, both one-time fixups from the owner-scoped pivot:
+One more is run by hand, a one-time fixup from the owner-scoped pivot:
 
-- `node --env-file=.env.local scripts/backfill-static-sections.js <email>` — the static curriculum's subtopics never had `sections` rows, so they're unreachable under owner-scoped reads until real rows exist owned by a real account. Not yet run against cloud.
 - `node --env-file=.env.local scripts/reassign-owner.js <from-email> <to-email>` — moves all content and study data from one account to another (e.g. questions authored under an old OAuth account onto a new one). Excludes `user_settings`, which stays per-account.
 
-`scripts/pull-remote.js` is upsert-only and never writes to the remote. It derives `sections` rows from imported questions (broader than `backfill-static-sections.js`, which only knows the static list).
+(`scripts/backfill-static-sections.js` was its sibling — it created `sections` rows for the static curriculum's subtopics, which had none and so were unreachable once reads became owner-scoped. It finished its job on cloud and was deleted along with the `TOPIC_GROUPS` constant it read.)
+
+`scripts/pull-remote.js` is upsert-only and never writes to the remote. It derives the `sections` rows it needs from the questions it imports.
 
 ### Environment
 
@@ -93,9 +94,9 @@ local DB on every run, so a hand-edit there is gone at the next `npm run db:sche
 and never reaches any database. Wanting to edit one is the signal that a new
 migration is what you actually want.
 
-**`supabase/schema/` is a generated snapshot, never applied.** 24 chronological migrations don't tell you what the schema *is* right now; those files do — one per table or view (`questions.sql`, `progress.sql`, …), each carrying that relation's columns, constraints, indexes, RLS policies, and grants together. Regenerate with `npm run db:schema` (`scripts/db-schema.sh`, per-relation `pg_dump` against the local container) after applying a migration locally, and commit the result. The script wipes the directory first, so a dropped table's file disappears on its own. Nothing reads it at runtime and `scripts/migrate.js` only ever globs `supabase/migrations/`.
+**`supabase/schema/` is a generated snapshot, never applied.** 24 chronological migrations don't tell you what the schema _is_ right now; those files do — one per table or view (`questions.sql`, `progress.sql`, …), each carrying that relation's columns, constraints, indexes, RLS policies, and grants together. Regenerate with `npm run db:schema` (`scripts/db-schema.sh`, per-relation `pg_dump` against the local container) after applying a migration locally, and commit the result. The script wipes the directory first, so a dropped table's file disappears on its own. Nothing reads it at runtime and `scripts/migrate.js` only ever globs `supabase/migrations/`.
 
-**It is a picture of *local*, which is not identical to cloud.** `supabase/seed.sql` runs on `supabase start` and is never pushed, so anything it creates shows up in the snapshot while being absent from the hosted project. Before treating a policy or table in `supabase/schema/` as production reality, check it came from `supabase/migrations/` and not from the seed.
+**It is a picture of _local_, which is not identical to cloud.** `supabase/seed.sql` runs on `supabase start` and is never pushed, so anything it creates shows up in the snapshot while being absent from the hosted project. Before treating a policy or table in `supabase/schema/` as production reality, check it came from `supabase/migrations/` and not from the seed.
 
 **Declarative schemas (`supabase/schemas/` + `supabase db diff`) were considered and rejected.** Supabase's own caveat list for the diff engine excludes `alter policy` statements, `security_invoker` on views, and DML — which is most of what this repo's migrations contain (18 owner-scoping policies, the `question_counts` view, the static topic-group seed). Deploys also go through `scripts/migrate.js`, not `supabase db push`. The snapshot above buys the same per-table readability without adopting the workflow.
 
@@ -206,7 +207,7 @@ See `components/AGENTS.md` for component conventions — feature-first organizat
 
 `lib/content/` is the curriculum layer:
 
-- **`topics.ts`** — `TopicGroup`/`SectionMeta` types, pure helpers (`findGroup`, `sectionUrl`, `slugify`, …) that take a `groups` array as an explicit parameter, plus the static `TOPIC_GROUPS` seed. **`TOPIC_GROUPS` is not read at runtime**; its only consumer is `scripts/backfill-static-sections.js`.
+- **`topics.ts`** — `TopicGroup`/`SectionMeta` types plus pure helpers (`findGroup`, `sectionPath`, `sectionUrl`, `slugify`, …) that take a `groups` array as an explicit parameter. No data of its own: the static `TOPIC_GROUPS` seed was deleted once the DB became the only source of the curriculum, so there is nothing here to keep in sync with anything.
 - **`topicsData.ts`** (`server-only`) — `getAllGroups()`, request-memoized via React `cache()`, returns **only the caller's own** `topic_groups` + `sections` rows. Empty for a brand-new account. Every reader of the curriculum goes through it.
 - **`parser.ts`** (`server-only`) — `countQuestions`/`parseSection`/`fetchAllCounts` against `questions`. Answer HTML is rendered at write time (`marked` + `isomorphic-dompurify`), not query time.
 - **No barrel on this folder** — most of `topics.ts`'s consumers are client components, and an `index.ts` re-exporting all three would drag the two `server-only` siblings into client bundles.
@@ -272,8 +273,8 @@ Everything Gemini-facing lives in `lib/ai/`, leaving `lib/actions/` as plain dat
 | ------------ | ----------------------------------------------- | ----------------------------------- |
 | Inbox        | `features/inbox/`                               | `inbox_items`                       |
 | Set aside    | `lib/actions/setAside.ts`, `lib/db/setAside.ts` | `set_aside_items`                   |
-| Starred      | `components/ShortlistPage.tsx`                   | `questions.starred`                 |
-| Grey Zone    | `components/ShortlistPage.tsx`                   | `questions.grey_zone`               |
+| Starred      | `components/ShortlistPage.tsx`                  | `questions.starred`                 |
+| Grey Zone    | `components/ShortlistPage.tsx`                  | `questions.grey_zone`               |
 | Priority Mix | `components/PriorityMixClient.tsx`              | `questions.priority` (high/med/low) |
 | Manual order | `lib/actions/questionPosition.ts`               | `question_position`                 |
 
