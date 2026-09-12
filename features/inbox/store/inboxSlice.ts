@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand';
-import * as inboxActions from '../actions';
 import type { AppState, InboxSlice } from '@/lib/stores/types';
+import * as inboxActions from '../actions';
 
 // No offline cache here — capturing/assigning inbox items is an
 // authoring-adjacent action (like addQuestion itself), which this app

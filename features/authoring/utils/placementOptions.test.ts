@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
+import type { TopicGroup } from '@/lib/content/topics';
 import { buildPlacementOptions } from './placementOptions';
 import { PENDING_GROUP_SLUG, PENDING_SECTION_KEY } from '../types';
-import type { TopicGroup } from '@/lib/content/topics';
 
 const groups: TopicGroup[] = [
   {

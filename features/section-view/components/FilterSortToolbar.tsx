@@ -1,14 +1,15 @@
 'use client';
 
-import { useAppStore } from '@/lib/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
+import { useAppStore } from '@/lib/stores/appStore';
+import * as Icon from '@/components/Icons';
+import type { SortMode } from '@/features/settings';
 import { MarkAllDoneToggle } from './MarkAllDoneToggle';
 import { MultiDeleteControls } from './MultiDeleteControls';
 import { ActiveFilterChips } from './ActiveFilterChips';
 import { FilterMenu } from './FilterMenu';
 import { useActiveTokens } from '../hooks';
-import * as Icon from '@/components/Icons';
-import type { SortMode } from '@/features/settings';
+
 
 const SORT_LABEL: Record<SortMode, string> = {
   manual: 'Manual',

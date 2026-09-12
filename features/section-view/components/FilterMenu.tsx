@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useAppStore } from '@/lib/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
-import { FilterPopover } from './FilterPopover';
+import { useAppStore } from '@/lib/stores/appStore';
 import * as Icon from '@/components/Icons';
+import { FilterPopover } from './FilterPopover';
+
 
 export const FilterMenu = () => {
   const [open, setOpen] = useState(false);

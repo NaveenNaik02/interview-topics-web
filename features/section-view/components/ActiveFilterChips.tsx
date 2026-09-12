@@ -1,9 +1,10 @@
 'use client';
 
-import { useAppStore } from '@/lib/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
-import { useActiveTokens } from '../hooks';
+import { useAppStore } from '@/lib/stores/appStore';
 import * as Icon from '@/components/Icons';
+import { useActiveTokens } from '../hooks';
+
 
 export const ActiveFilterChips = () => {
   const { clearFilters } = useAppStore(

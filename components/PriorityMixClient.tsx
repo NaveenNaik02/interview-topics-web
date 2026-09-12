@@ -3,14 +3,13 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, X } from 'lucide-react';
-import { useAppStore } from '@/lib/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
+import { useAppStore } from '@/lib/stores/appStore';
 import {
   sectionUrl,
   findGroupForSection,
   type SectionMeta,
 } from '@/lib/content/topics';
-import { useDeleteToast } from './useDeleteToast';
 import { setAsideQuestion } from '@/lib/actions/setAside';
 import {
   setStarred,
@@ -19,6 +18,8 @@ import {
 } from '@/lib/actions/questionFlags';
 import type { PriorityMixQuestion } from '@/lib/db/priority';
 import type { PriorityLevel } from '@/lib/types';
+import { EditQuestionModal, type EditingQuestion } from '@/features/authoring';
+import { htmlToMarkdown } from '@/lib/htmlToMarkdown';
 import QuestionItem, {
   QuestionAnswerBody,
   QuestionCrumb,
@@ -26,10 +27,9 @@ import QuestionItem, {
   stripHtml,
 } from './QuestionItem';
 import RowActions from './RowActions';
-import { EditQuestionModal, type EditingQuestion } from '@/features/authoring';
 import MoveQuestionModal from './MoveQuestionModal';
 import SaveToast from './SaveToast';
-import { htmlToMarkdown } from '@/lib/htmlToMarkdown';
+import { useDeleteToast } from './useDeleteToast';
 
 interface Props {
   questions: PriorityMixQuestion[];

@@ -1,10 +1,10 @@
-import type { SortMode } from '../types';
 import type { Theme } from '@/lib/context/ThemeContext';
 import type { PriorityLevel } from '@/lib/types';
 import {
   DEFAULT_PRESETS,
   type InstructionPreset,
 } from '@/lib/instructionPresets';
+import type { SortMode } from '../types';
 
 export interface UserSettings {
   default_sort: SortMode;

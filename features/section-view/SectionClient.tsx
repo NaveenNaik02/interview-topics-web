@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useAppStore } from '@/lib/stores/appStore';
 import { useShallow } from 'zustand/react/shallow';
+import { useAppStore } from '@/lib/stores/appStore';
 import type { ParsedQuestion } from '@/lib/content/parser';
 import { type SectionMeta } from '@/lib/content/topics';
 import { useSectionFilters } from './hooks';
