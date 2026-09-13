@@ -125,7 +125,9 @@ app/
 ├── (app)/
 │   ├── layout.tsx        seeds the store with groups + totals
 │   ├── page.tsx          dashboard
-│   ├── [...path]/        catch-all: topic overview + section view
+│   ├── [topic]/
+│   │   ├── (overview)/   topic overview (route group scopes its loading.tsx)
+│   │   └── [file]/       section view
 │   ├── inbox/
 │   ├── starred/
 │   ├── grey-zone/
@@ -221,9 +223,10 @@ See `components/AGENTS.md` for component conventions — feature-first organizat
 
 Routing:
 
-- **One catch-all does the real work.** `app/(app)/[...path]/page.tsx` handles `/{slug}` (topic overview, auto-redirecting single-section groups) and `/{topic}/{file}` (section view).
+- **Two dynamic routes, not one catch-all.** `app/(app)/[topic]/(overview)/page.tsx` renders the topic overview (auto-redirecting single-section groups); `app/(app)/[topic]/[file]/page.tsx` renders the section view.
+- **The `(overview)` route group exists for `loading.tsx`.** A `loading.tsx` at `[topic]/` wraps that segment *and its children*, so it would show the topic skeleton on the way to a question page too. The group is a tree node that contributes no URL segment, which scopes the boundary to the overview page alone. Don't flatten it away.
 - **Five sibling routes** under `(app)/`: `inbox` and `settings` do no server fetch (their data is client-side in the store); `starred`, `grey-zone`, and `priority-mix` fetch the user's rows server-side before handing assembled data to a client component.
-- **Nothing is prerendered.** Content is per-account, so `generateStaticParams()` returns `[]`. `getAllGroups()` reads `cookies()`, which forces dynamic rendering — no shared cache entry can serve one account's topics to another — and makes build-time evaluation impossible.
+- **Nothing is prerendered, and neither page exports `generateStaticParams()`** — exporting it *at all*, even returning `[]`, opts the route into static generation, and unlisted paths are then generated on demand statically, so `cookies()` throws `DYNAMIC_SERVER_USAGE`. Both page files carry a comment saying so. `getAllGroups()` reads `cookies()`, which forces dynamic rendering — no shared cache entry can serve one account's topics to another — and makes build-time evaluation impossible.
 - **Don't add `export const revalidate` to these routes.** Mutating server actions still `revalidatePath` the section and its topic overview.
 
 ### State management: one store per request tree

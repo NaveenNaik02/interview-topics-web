@@ -11,10 +11,11 @@ import { getAllGroups } from '@/lib/content/topicsData';
 import type { ParsedQuestion } from '@/lib/content/parser';
 import type { PriorityLevel } from '@/lib/types';
 
-// Section pages are ISR-cached (`export const revalidate` in
-// app/[...path]/page.tsx) — without this, a successful write is invisible
-// until the cache naturally expires. Revalidates both the section itself and
-// its topic overview (counts shown there would otherwise go stale too).
+// These routes are dynamic, not ISR. The call still matters: a Server Action
+// evicts the client's prefetch cache only when it revalidates something, and
+// links here hover-prefetch, so a write could otherwise stay invisible behind
+// a stale payload. Covers the section and its topic overview, whose question
+// counts would go stale too.
 function revalidateSection(topic: string, file: string) {
   revalidatePath(`/${topic}/${file}`);
   revalidatePath(`/${topic}`);
