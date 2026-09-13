@@ -1,46 +1,30 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import {
-  findGroup,
   findSection,
   findGroupForSection,
   findPrevNextSections,
-  sectionPath,
   sectionUrl,
 } from '@/lib/content/topics';
 import { getAllGroups } from '@/lib/content/topicsData';
 import { parseSection } from '@/lib/content/parser';
 import { fetchSectionOrder } from '@/lib/db/questionPositionServer';
 import { SectionClient } from '@/features/section-view';
-import { TopicOverview } from '@/features/topic-view';
-import { fetchTopicFlagIds } from '@/lib/db/shortlistServer';
 
 interface Props {
-  params: Promise<{ path: string[] }>;
+  params: Promise<{ topic: string; file: string }>;
 }
 
 export default async function Page({ params }: Props) {
-  const { path: segments } = await params;
-
-  if (segments.length === 1) {
-    const [groups, flagIds] = await Promise.all([
-      getAllGroups(),
-      fetchTopicFlagIds(segments[0]),
-    ]);
-
-    const group = findGroup(groups, segments[0]);
-    if (!group) notFound();
-
-    return <TopicOverview slug={group.slug} flagIds={flagIds} />;
-  }
+  const { topic, file } = await params;
 
   const [groups, questions, initialOrder] = await Promise.all([
     getAllGroups(),
-    parseSection(sectionPath(segments)),
-    fetchSectionOrder(sectionPath(segments)),
+    parseSection({ topic, file }),
+    fetchSectionOrder({ topic, file }),
   ]);
 
-  const section = findSection(groups, segments);
+  const section = findSection(groups, [topic, file]);
   if (!section) notFound();
 
   const group = findGroupForSection(groups, section);
@@ -93,10 +77,3 @@ export default async function Page({ params }: Props) {
     </div>
   );
 }
-
-// Deliberately no generateStaticParams(): everything is per-account now, and
-// getAllGroups() reads cookies() (via createClient()). Exporting it — even
-// returning [] — opts this route into static generation, and unlisted paths
-// are then generated on demand *statically*, so cookies() throws
-// DYNAMIC_SERVER_USAGE and every section page 500s. Without it the route is
-// server-rendered per request, which is what we want.
